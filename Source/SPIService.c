@@ -1,4 +1,4 @@
-/****************************************************************************
+  /****************************************************************************
  Module
    SPIService.c
 
@@ -60,27 +60,22 @@
 // SCR divisor for SSI clock rate (24)
 #define SCR 0x01
 
-// querry to Command Generator
-#define QueryBits 0xAA
-
-// SPI period (baud rate)
+// SPI period (4ms b/c need a minimum of 2ms)
 // these times assume a 1.000mS/tick timing
 #define TicksPerSec 976
-#define SPIPeriod (TicksPerSec/100)
-
+#define SPIPeriod (TicksPerSec/25)
 
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
 
 #define BitsPerNibble 4
 
-
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
    relevant to the behavior of this service
 */
 static void InitSerialHardware(void);
-void QuerySPI( void );
+void QuerySPI( uint32_t [5] );
 
 /*---------------------------- Module Variables ---------------------------*/
 static uint8_t MyPriority;
@@ -91,13 +86,25 @@ static SPIState_t CurrentState;
 // received data from data register
 static uint8_t ReceivedData;
 
-// data to write to data register
-// static uint8_t LastChunk;
-
-// ISR event
+// ISR events
 static ES_Event ISREvent;
-
 static ES_Event LastEvent;
+
+// Last command byte to LOC
+static uint8_t LastCommand;
+
+// Last response byte from the LOC
+static uint8_t LastResponse;
+
+// Commands to send to the LOC
+// Status command
+static uint32_t StatusCommand[5] = {0x0b,0x11,0x00,0x00,0x00};
+
+// Report staging area frequency command
+static uint32_t ReportFreqCommand[5] = {0x0b,0x10,0x00,0x00,0x00};
+
+// Query new response ready command
+static uint32_t QueryCommand[5] = {0x0b,0x01,0x11,0x00,0x00};
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -172,7 +179,7 @@ ES_Event RunSPIService ( ES_Event ThisEvent )
 			CurrentState = Busy;
 			
 			// query the Command Generator
-			QuerySPI();
+			QuerySPI( QueryCommand );
 		} 
 	}
 	return ReturnEvent;
@@ -250,12 +257,12 @@ void SPI_InterruptResponse( void )
  Author
      Team 16, 02/04/17, 23:00
 ****************************************************************************/
-void QuerySPI( void )
+void QuerySPI( uint32_t Command )
 {		
 	//Enable the NVIC interrupt for the SSI
 	HWREG(SSI0_BASE + SSI_O_IM) |= SSI_IM_TXIM;
 	
-	// write to data register
+	// chop up 5 command bytes and write them to the data register sequentially
 	HWREG(SSI0_BASE+SSI_O_DR) = QueryBits;
 }
 
