@@ -1,114 +1,79 @@
 /****************************************************************************
  Module
-   TopHSMTemplate.c
+   HSMTemplate.c
 
  Revision
    2.0.1
 
  Description
-   This is a template for the top level Hierarchical state machine
+   This is a template file for implementing state machines.
 
  Notes
 
  History
  When           Who     What/Why
  -------------- ---     --------
- 02/20/17 14:30 jec      updated to remove sample of consuming an event. We 
-                         always want to return ES_NO_EVENT at the top level 
-                         unless there is a non-recoverable error at the 
-                         framework level
- 02/03/16 15:27 jec      updated comments to reflect small changes made in '14 & '15
+ 02/20/17 10:14 jec      correction to Run function to correctly assign 
+                         ReturnEvent in the situation where a lower level
+                         machine consumed an event.
+ 02/03/16 12:38 jec      updated comments to reflect changes made in '14 & '15
                          converted unsigned char to bool where appropriate
                          spelling changes on true (was True) to match standard
                          removed local var used for debugger visibility in 'C32
-                         removed Microwave specific code and replaced with generic
- 02/08/12 01:39 jec      converted from MW_MasterMachine.c
- 02/06/12 22:02 jec      converted to Gen 2 Events and Services Framework
- 02/13/10 11:54 jec      converted During functions to return Event_t
-                         so that they match the template
- 02/21/07 17:04 jec      converted to pass Event_t to Start...()
- 02/20/07 21:37 jec      converted to use enumerated type for events
- 02/21/05 15:03 jec      Began Coding
+                         commented out references to Start & RunLowerLevelSM so
+                         that this can compile. 
+ 02/07/13 21:00 jec      corrections to return variable (should have been
+                         ReturnEvent, not CurrentEvent) and several EV_xxx
+                         event names that were left over from the old version
+ 02/08/12 09:56 jec      revisions for the Events and Services Framework Gen2
+ 02/13/10 14:29 jec      revised Start and run to add new kind of entry function
+                         to make implementing history entry cleaner
+ 02/13/10 12:29 jec      added NewEvent local variable to During function and
+                         comments about using either it or Event as the return
+ 02/11/10 15:54 jec      more revised comments, removing last comment in during
+                         function that belongs in the run function
+ 02/09/10 17:21 jec      updated comments about internal transitions on During funtion
+ 02/18/09 10:14 jec      removed redundant call to RunLowerlevelSM in EV_Entry
+                         processing in During function
+ 02/20/07 21:37 jec      converted to use enumerated type for events & states
+ 02/13/05 19:38 jec      added support for self-transitions, reworked
+                         to eliminate repeated transition code
+ 02/11/05 16:54 jec      converted to implment hierarchy explicitly
+ 02/25/03 10:32 jec      converted to take a passed event parameter
+ 02/18/99 10:19 jec      built template from MasterMachine.c
+ 02/14/99 10:34 jec      Began Coding
 ****************************************************************************/
 /*----------------------------- Include Files -----------------------------*/
+// Basic includes for a program using the Events and Services Framework
+#include "ES_Configure.h"
+#include "ES_Framework.h"
+
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
-#include "ES_Configure.h"
-#include "ES_Framework.h"
-#include "TopHSMTemplate.h"
+#include "HSMTemplate.h"
 
 /*----------------------------- Module Defines ----------------------------*/
+// define constants for the states for this machine
+// and any other local defines
+
+#define ENTRY_STATE STATE_ZERO
 
 /*---------------------------- Module Functions ---------------------------*/
+/* prototypes for private functions for this machine, things like during
+   functions, entry & exit functions.They should be functions relevant to the
+   behavior of this state machine
+*/
 static ES_Event DuringStateOne( ES_Event Event);
 
 /*---------------------------- Module Variables ---------------------------*/
-// everybody needs a state variable, though if the top level state machine
-// is just a single state container for orthogonal regions, you could get
-// away without it
-static MasterState_t CurrentState;
-// with the introduction of Gen2, we need a module level Priority var as well
-static uint8_t MyPriority;
+// everybody needs a state variable, you may need others as well
+static TemplateState_t CurrentState;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
-     InitMasterSM
-
- Parameters
-     uint8_t : the priorty of this service
-
- Returns
-     boolean, False if error in initialization, True otherwise
-
- Description
-     Saves away the priority,  and starts
-     the top level state machine
- Notes
-
- Author
-     J. Edward Carryer, 02/06/12, 22:06
-****************************************************************************/
-bool InitMasterSM ( uint8_t Priority )
-{
-  ES_Event ThisEvent;
-
-  MyPriority = Priority;  // save our priority
-
-  ThisEvent.EventType = ES_ENTRY;
-  // Start the Master State machine
-
-  StartMasterSM( ThisEvent );
-
-  return true;
-}
-
-/****************************************************************************
- Function
-     PostMasterSM
-
- Parameters
-     ES_Event ThisEvent , the event to post to the queue
-
- Returns
-     boolean False if the post operation failed, True otherwise
-
- Description
-     Posts an event to this state machine's queue
- Notes
-
- Author
-     J. Edward Carryer, 10/23/11, 19:25
-****************************************************************************/
-bool PostMasterSM( ES_Event ThisEvent )
-{
-  return ES_PostToService( MyPriority, ThisEvent);
-}
-
-/****************************************************************************
- Function
-    RunMasterSM
+    RunTemplateSM
 
  Parameters
    ES_Event: the event to process
@@ -117,24 +82,24 @@ bool PostMasterSM( ES_Event ThisEvent )
    ES_Event: an event to return
 
  Description
-   the run function for the top level state machine 
+   add your description here
  Notes
    uses nested switch/case to implement the machine.
  Author
-   J. Edward Carryer, 02/06/12, 22:09
+   J. Edward Carryer, 2/11/05, 10:45AM
 ****************************************************************************/
-ES_Event RunMasterSM( ES_Event CurrentEvent )
+ES_Event RunTemplateSM( ES_Event CurrentEvent )
 {
    bool MakeTransition = false;/* are we making a state transition? */
-   MasterState_t NextState = CurrentState;
+   TemplateState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
-   ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
+   ES_Event ReturnEvent = CurrentEvent; // assume we are not consuming event
 
-    switch ( CurrentState )
+   switch ( CurrentState )
    {
        case STATE_ONE :       // If current state is state one
          // Execute During function for state one. ES_ENTRY & ES_EXIT are
-         // processed here allow the lowere level state machines to re-map
+         // processed here allow the lower level state machines to re-map
          // or consume the event
          CurrentEvent = DuringStateOne(CurrentEvent);
          //process any events
@@ -149,11 +114,17 @@ ES_Event RunMasterSM( ES_Event CurrentEvent )
                   MakeTransition = true; //mark that we are taking a transition
                   // if transitioning to a state with history change kind of entry
                   EntryEventKind.EventType = ES_ENTRY_HISTORY;
+                  // optionally, consume or re-map this event for the upper
+                  // level state machine
+                  ReturnEvent.EventType = ES_NO_EVENT;
                   break;
                 // repeat cases as required for relevant events
             }
+         }else // Current Event is now ES_NO_EVENT. Probably means that Current 
+         {     //Event was consumed by lower level
+            ReturnEvent = CurrentEvent; // in that case update ReturnEvent too.
          }
-         break;
+       break;
       // repeat state pattern as required for other states
     }
     //   If we are making a state transition
@@ -161,46 +132,68 @@ ES_Event RunMasterSM( ES_Event CurrentEvent )
     {
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
-       RunMasterSM(CurrentEvent);
+       RunTemplateSM(CurrentEvent);
 
        CurrentState = NextState; //Modify state variable
 
-       // Execute entry function for new state
+       //   Execute entry function for new state
        // this defaults to ES_ENTRY
-       RunMasterSM(EntryEventKind);
+       RunTemplateSM(EntryEventKind);
      }
-   // in the absence of an error the top level state machine should
-   // always return ES_NO_EVENT, which we initialized at the top of func
-   return(ReturnEvent);
+     return(ReturnEvent);
 }
 /****************************************************************************
  Function
-     StartMasterSM
+     StartTemplateSM
 
  Parameters
-     ES_Event CurrentEvent
+     None
 
  Returns
-     nothing
+     None
 
  Description
      Does any required initialization for this state machine
  Notes
 
  Author
-     J. Edward Carryer, 02/06/12, 22:15
+     J. Edward Carryer, 2/18/99, 10:38AM
 ****************************************************************************/
-void StartMasterSM ( ES_Event CurrentEvent )
+void StartTemplateSM ( ES_Event CurrentEvent )
 {
-  // if there is more than 1 state to the top level machine you will need 
-  // to initialize the state variable
-  CurrentState = STATE_ONE;
-  // now we need to let the Run function init the lower level state machines
-  // use LocalEvent to keep the compiler from complaining about unused var
-  RunMasterSM(CurrentEvent);
-  return;
+   // to implement entry to a history state or directly to a substate
+   // you can modify the initialization of the CurrentState variable
+   // otherwise just start in the entry state every time the state machine
+   // is started
+   if ( ES_ENTRY_HISTORY != CurrentEvent.EventType )
+   {
+        CurrentState = ENTRY_STATE;
+   }
+   // call the entry function (if any) for the ENTRY_STATE
+   RunTemplateSM(CurrentEvent);
 }
 
+/****************************************************************************
+ Function
+     QueryTemplateSM
+
+ Parameters
+     None
+
+ Returns
+     TemplateState_t The current state of the Template state machine
+
+ Description
+     returns the current state of the Template state machine
+ Notes
+
+ Author
+     J. Edward Carryer, 2/11/05, 10:38AM
+****************************************************************************/
+TemplateState_t QueryTemplateSM ( void )
+{
+   return(CurrentState);
+}
 
 /***************************************************************************
  private functions
@@ -208,7 +201,7 @@ void StartMasterSM ( ES_Event CurrentEvent )
 
 static ES_Event DuringStateOne( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) ||
