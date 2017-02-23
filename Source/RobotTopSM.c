@@ -36,7 +36,7 @@
 */
 #include "ES_Configure.h"
 #include "ES_Framework.h"
-#include "TopHSMTemplate.h"
+#include "RobotTopSM.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 

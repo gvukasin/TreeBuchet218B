@@ -86,7 +86,6 @@
 static void InitOneShotISR(void);
 static void SetTimeoutAndStartOneShot( uint32_t);
 static void Look4Beacon(uint32_t);
-static void InitInputCaptureForIRDetection( void );
 
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable

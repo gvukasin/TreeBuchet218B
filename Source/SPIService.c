@@ -70,12 +70,16 @@
 
 #define BitsPerNibble 4
 
+#define QueryBits 0xaa
+
+#define numTransimittedBytes 5
+
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
    relevant to the behavior of this service
 */
 static void InitSerialHardware(void);
-void QuerySPI( uint32_t [5] );
+static void QuerySPI( uint32_t Command[numTransimittedBytes]  );
 
 /*---------------------------- Module Variables ---------------------------*/
 static uint8_t MyPriority;
@@ -257,7 +261,7 @@ void SPI_InterruptResponse( void )
  Author
      Team 16, 02/04/17, 23:00
 ****************************************************************************/
-void QuerySPI( uint32_t Command )
+static void QuerySPI( uint32_t Command[numTransimittedBytes]  )
 {		
 	//Enable the NVIC interrupt for the SSI
 	HWREG(SSI0_BASE + SSI_O_IM) |= SSI_IM_TXIM;
