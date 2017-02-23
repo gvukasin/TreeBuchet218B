@@ -463,6 +463,8 @@
               <FilePath>.\Source\TapeModule.c</FilePath>
             </File>
             <File>
+<<<<<<< HEAD
+=======
               <FileName>IRBeaconModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\IRBeaconModule.c</FilePath>
@@ -473,6 +475,7 @@
               <FilePath>.\Source\MagneticModule.c</FilePath>
             </File>
             <File>
+>>>>>>> 9969ff26a084f28451832533527b59ec7db78459
               <FileName>RobotTopSM.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\RobotTopSM.c</FilePath>
@@ -1443,6 +1446,8 @@
               <FilePath>.\Source\TapeModule.c</FilePath>
             </File>
             <File>
+<<<<<<< HEAD
+=======
               <FileName>IRBeaconModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\IRBeaconModule.c</FilePath>
@@ -2433,6 +2438,7 @@
               <FilePath>.\Source\MagneticModule.c</FilePath>
             </File>
             <File>
+>>>>>>> 9969ff26a084f28451832533527b59ec7db78459
               <FileName>RobotTopSM.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\RobotTopSM.c</FilePath>
