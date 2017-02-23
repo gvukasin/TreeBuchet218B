@@ -462,6 +462,16 @@
               <FileType>1</FileType>
               <FilePath>.\Source\TapeModule.c</FilePath>
             </File>
+            <File>
+              <FileName>RobotTopSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\RobotTopSM.c</FilePath>
+            </File>
+            <File>
+              <FileName>ShootingSubSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShootingSubSM.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1421,6 +1431,16 @@
               <FileName>TapeModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\TapeModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>RobotTopSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\RobotTopSM.c</FilePath>
+            </File>
+            <File>
+              <FileName>ShootingSubSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
           </Files>
         </Group>
