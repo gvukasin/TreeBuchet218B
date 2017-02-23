@@ -72,7 +72,7 @@ static uint32_t	DesiredFreqHIBoundary = lab8BeaconFreqHz + 0.2*lab8BeaconFreqHz;
  Author
      Team 16 
 ****************************************************************************/
-static void InitInputCaptureForIRDetection( void )
+void InitInputCaptureForIRDetection( void )
 {
 	//Start by enabling the clock to the timer (Wide Timer 1)
 	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R1;

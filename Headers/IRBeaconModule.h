@@ -11,7 +11,7 @@
 #include "ES_Types.h"     /* gets bool type for returns */
 
 // Public Function Prototypes
-static void InitInputCaptureForIRDetection( void );
+void InitInputCaptureForIRDetection( void );
 void EnableIRInterrupt(void);
 void InputCaptureForIRDetectionResponse( void );
 
