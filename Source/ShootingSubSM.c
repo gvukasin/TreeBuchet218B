@@ -51,7 +51,7 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
-#include "HSMTemplate.h"
+#include "ShootingSubSM.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
