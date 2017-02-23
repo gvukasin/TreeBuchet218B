@@ -31,8 +31,8 @@ int main(void)
 
 	// When doing testing, it is useful to announce just which program
 	// is running.
-	puts("\rStarting Group Lab 8 \r");
-	printf("the 2nd Generation Events & Services Framework V2.2\r\n");
+	puts("\rStarting Group 16 TreeBucket Project \r");
+	//printf("the 2nd Generation Events & Services Framework V2.2\r\n");
 	printf("%s %s\n",__TIME__, __DATE__);
 	printf("\n\r\n");
 
