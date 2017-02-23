@@ -9,6 +9,8 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
+#define TEST 
+
 #include "ES_Configure.h"
 #include "ES_Framework.h"
 #include "PWMmodule.h"
@@ -326,3 +328,26 @@ static void RestoreDC(uint8_t SelectedPin){
 		HWREG( PWM0_BASE+PWM_O_0_GENB) = PWM0_GenB_Normal;
 	}
 }
+
+// test harness for first check-off
+#ifdef TEST
+#include "termio.h"
+#define clrScrn() 	printf("\x1b[2J")
+int main(void){
+	
+// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
+	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
+			| SYSCTL_XTAL_16MHZ);
+	TERMIO_Init();
+	clrScrn();
+	printf("\r\n pwm test module \r\n");
+
+	//initialize pwm
+	InitializePWM();
+	
+	printf("\r\n pwm initialized \r\n");
+	
+	Set100DC(R_CW_MOTOR_PIN);
+	Set0DC(R_CCW_MOTOR_PIN);
+}
+#endif
