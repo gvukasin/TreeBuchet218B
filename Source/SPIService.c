@@ -174,31 +174,119 @@ bool InitSPIService ( uint8_t Priority )
  Author
      Team 16, 02/04/17, 16:00
 ****************************************************************************/
-ES_Event RunSPIService ( ES_Event ThisEvent )
+ES_Event RunSPIService ( ES_Event CurrentEvent )
 {
-	//printf("\r\n Last Received data: %x \r\n", ReceivedData);
+		bool MakeTransition = false;/* are we making a state transition? */
+   SPIState_t NextState = CurrentState;
+   ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
+   ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
+
+    switch ( CurrentState )
+   {
+       case WAITING2TRANSMIT :       // If current state is state one
+         // Execute During function for state one. ES_ENTRY & ES_EXIT are
+         // processed here allow the lowere level state machines to re-map
+         // or consume the event
+         CurrentEvent = DuringStateOne(CurrentEvent);
+         //process any events
+         if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
+         {
+            switch (CurrentEvent.EventType)
+            {
+               case ES_LOCK : //If event is event one
+                  // Execute action function for state one : event one
+                  NextState = STATE_TWO;//Decide what the next state will be
+                  // for internal transitions, skip changing MakeTransition
+                  MakeTransition = true; //mark that we are taking a transition
+                  // if transitioning to a state with history change kind of entry
+                  EntryEventKind.EventType = ES_ENTRY_HISTORY;
+                  break;
+                // repeat cases as required for relevant events
+            }
+         }
+         break;
+				 
+				 case WAITING4EOT :       // If current state is state one
+         // Execute During function for state one. ES_ENTRY & ES_EXIT are
+         // processed here allow the lowere level state machines to re-map
+         // or consume the event
+         CurrentEvent = DuringStateOne(CurrentEvent);
+         //process any events
+         if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
+         {
+            switch (CurrentEvent.EventType)
+            {
+               case ES_LOCK : //If event is event one
+                  // Execute action function for state one : event one
+                  NextState = STATE_TWO;//Decide what the next state will be
+                  // for internal transitions, skip changing MakeTransition
+                  MakeTransition = true; //mark that we are taking a transition
+                  // if transitioning to a state with history change kind of entry
+                  EntryEventKind.EventType = ES_ENTRY_HISTORY;
+                  break;
+                // repeat cases as required for relevant events
+            }
+         }
+         break;
+				 
+				 case WAITING4TIMEOUT :       // If current state is state one
+         // Execute During function for state one. ES_ENTRY & ES_EXIT are
+         // processed here allow the lowere level state machines to re-map
+         // or consume the event
+         CurrentEvent = DuringStateOne(CurrentEvent);
+         //process any events
+         if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
+         {
+            switch (CurrentEvent.EventType)
+            {
+               case ES_LOCK : //If event is event one
+                  // Execute action function for state one : event one
+                  NextState = STATE_TWO;//Decide what the next state will be
+                  // for internal transitions, skip changing MakeTransition
+                  MakeTransition = true; //mark that we are taking a transition
+                  // if transitioning to a state with history change kind of entry
+                  EntryEventKind.EventType = ES_ENTRY_HISTORY;
+                  break;
+                // repeat cases as required for relevant events
+            }
+         }
+         break;
+    }
+    //   If we are making a state transition
+    if (MakeTransition == true)
+    {
+       //   Execute exit function for current state
+       CurrentEvent.EventType = ES_EXIT;
+       RunSPIService(CurrentEvent);
+
+       CurrentState = NextState; //Modify state variable
+
+       // Execute entry function for new state
+       // this defaults to ES_ENTRY
+       RunSPIService(EntryEventKind);
+     }
+   // in the absence of an error the top level state machine should
+   // always return ES_NO_EVENT, which we initialized at the top of func
+   return(ReturnEvent);
 	
-	ES_Event ReturnEvent;
-  ReturnEvent.EventType = ES_NO_EVENT; // assume no errors
-	//printf("\r\n SPI Run \r\n");
 	
-	//if(ThisEvent.EventType == NEXT_COMMAND)
-	if(ThisEvent.EventType == ES_TIMEOUT)
-	{		
-		// Initialize shorttimer 
-		ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
-		
-		// Idling State
-		if(CurrentState == Idling)
-		{		
-			// change state to Busy
-			CurrentState = Busy;
-			
-			// query the Command Generator
-			QuerySPI( QueryCommand );
-		} 
-	}
-	return ReturnEvent;
+//	//if(ThisEvent.EventType == NEXT_COMMAND)
+//	if(ThisEvent.EventType == ES_TIMEOUT)
+//	{		
+//		// Initialize shorttimer 
+//		ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+//		
+//		// Idling State
+//		if(CurrentState == Idling)
+//		{		
+//			// change state to Busy
+//			CurrentState = Busy;
+//			
+//			// query the Command Generator
+//			QuerySPI( QueryCommand );
+//		} 
+//	}
+//	return ReturnEvent;
 }
 
 /****************************************************************************
@@ -242,12 +330,15 @@ bool PostSPIService( ES_Event ThisEvent )
 ****************************************************************************/
 void StartMasterSM ( ES_Event CurrentEvent )
 {
-  // initialize the state variable
-  CurrentState = WAITING2TRANSMIT;
+  // initialize the state variable if CurrentEvent is not enter history event
+	if(CurrentEvent.EventType != ES_ENTRY_HISTORY ){
+		
+		// start in initial state of WAITING2TRANSMIT
+		CurrentState = WAITING2TRANSMIT;
+	}
 
   // now we need to let the Run function init the lower level state machines
   RunSPIService(CurrentEvent);
-  return;
 }
 
 /****************************************************************************
@@ -280,7 +371,7 @@ void SPI_InterruptResponse( void )
 	PostActionService(ISREvent);
 	
 	// set current state to idling
-	CurrentState = Idling;
+	CurrentState = WAITING2TRANSMIT;
 }
 
 /****************************************************************************
@@ -404,8 +495,167 @@ static void InitSerialHardware(void)
 	printf("\r\nGot thru SPI interrupt init\n");
 }
 
+/****************************************************************************
+ Function
+     DuringW2T
 
+ Parameters
+     ES_Event CurrentEvent
 
+ Returns
+     ES_Event ReturnEvent
+
+ Description
+     During function for Waiting2Transmit state 
+ Notes
+
+ Author
+     J. Edward Carryer, 02/06/12, 22:15
+****************************************************************************/
+static ES_Event DuringW2T( ES_Event Event)
+{
+    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+
+    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+    if ( (Event.EventType == ES_ENTRY) ||
+         (Event.EventType == ES_ENTRY_HISTORY) )
+    {
+        // implement any entry actions required for this state machine
+        
+        // after that start any lower level machines that run in this state
+        //StartLowerLevelSM( Event );
+        // repeat the StartxxxSM() functions for concurrent state machines
+        // on the lower level
+    }
+    else if ( Event.EventType == ES_EXIT )
+    {
+        // on exit, give the lower levels a chance to clean up first
+        //RunLowerLevelSM(Event);
+        // repeat for any concurrently running state machines
+        // now do any local exit functionality
+      
+    }else
+    // do the 'during' function for this state
+    {
+        // run any lower level state machine
+        // ReturnEvent = RunLowerLevelSM(Event);
+      
+        // repeat for any concurrent lower level machines
+      
+        // do any activity that is repeated as long as we are in this state
+    }
+    // return either Event, if you don't want to allow the lower level machine
+    // to remap the current event, or ReturnEvent if you do want to allow it.
+    return(ReturnEvent);
+}
+
+/****************************************************************************
+ Function
+     DuringW4E
+
+ Parameters
+     ES_Event CurrentEvent
+
+ Returns
+     ES_Event ReturnEvent
+
+ Description
+     During function for Waiting4EOT state 
+ Notes
+
+ Author
+     J. Edward Carryer, 02/06/12, 22:15
+****************************************************************************/
+static ES_Event DuringW4E( ES_Event Event)
+{
+    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+
+    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+    if ( (Event.EventType == ES_ENTRY) ||
+         (Event.EventType == ES_ENTRY_HISTORY) )
+    {
+        // implement any entry actions required for this state machine
+        
+        // after that start any lower level machines that run in this state
+        //StartLowerLevelSM( Event );
+        // repeat the StartxxxSM() functions for concurrent state machines
+        // on the lower level
+    }
+    else if ( Event.EventType == ES_EXIT )
+    {
+        // on exit, give the lower levels a chance to clean up first
+        //RunLowerLevelSM(Event);
+        // repeat for any concurrently running state machines
+        // now do any local exit functionality
+      
+    }else
+    // do the 'during' function for this state
+    {
+        // run any lower level state machine
+        // ReturnEvent = RunLowerLevelSM(Event);
+      
+        // repeat for any concurrent lower level machines
+      
+        // do any activity that is repeated as long as we are in this state
+    }
+    // return either Event, if you don't want to allow the lower level machine
+    // to remap the current event, or ReturnEvent if you do want to allow it.
+    return(ReturnEvent);
+}
+
+/****************************************************************************
+ Function
+     DuringW2T
+
+ Parameters
+     ES_Event CurrentEvent
+
+ Returns
+     ES_Event ReturnEvent
+
+ Description
+     During function for Waiting2Timeout state 
+ Notes
+
+ Author
+     J. Edward Carryer, 02/06/12, 22:15
+****************************************************************************/
+static ES_Event DuringW4T( ES_Event Event)
+{
+    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+
+    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+    if ( (Event.EventType == ES_ENTRY) ||
+         (Event.EventType == ES_ENTRY_HISTORY) )
+    {
+        // implement any entry actions required for this state machine
+        
+        // after that start any lower level machines that run in this state
+        //StartLowerLevelSM( Event );
+        // repeat the StartxxxSM() functions for concurrent state machines
+        // on the lower level
+    }
+    else if ( Event.EventType == ES_EXIT )
+    {
+        // on exit, give the lower levels a chance to clean up first
+        //RunLowerLevelSM(Event);
+        // repeat for any concurrently running state machines
+        // now do any local exit functionality
+      
+    }else
+    // do the 'during' function for this state
+    {
+        // run any lower level state machine
+        // ReturnEvent = RunLowerLevelSM(Event);
+      
+        // repeat for any concurrent lower level machines
+      
+        // do any activity that is repeated as long as we are in this state
+    }
+    // return either Event, if you don't want to allow the lower level machine
+    // to remap the current event, or ReturnEvent if you do want to allow it.
+    return(ReturnEvent);
+}
 #ifdef TEST
 int main(void)
 {
