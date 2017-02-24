@@ -78,8 +78,11 @@
 /* prototypes for private functions for this service.They should be functions
    relevant to the behavior of this service
 */
-static void InitSerialHardware(void);
+static void InitSerialHardware( void );
 static void QuerySPI( uint32_t Command[numTransimittedBytes]  );
+static ES_Event DuringW2T( ES_Event );
+static ES_Event DuringW4E( ES_Event );
+static ES_Event DuringW4T( ES_Event );
 
 /*---------------------------- Module Variables ---------------------------*/
 static uint8_t MyPriority;
@@ -123,7 +126,7 @@ static uint32_t QueryCommand[5] = {0x0b,0x01,0x11,0x00,0x00};
      void
 
  Description
-     Initializes hardware in the Tiva to create an SPI master
+     Initializes this service to be the top level state of the HSM
  Notes
 
  Author
@@ -132,6 +135,8 @@ static uint32_t QueryCommand[5] = {0x0b,0x01,0x11,0x00,0x00};
 bool InitSPIService ( uint8_t Priority )
 {
 	 MyPriority = Priority;
+
+	 // set LastEvent parameter to 0
 	 LastEvent.EventParam = 0x00;
 	 
 	 // Initialize hardware
@@ -139,6 +144,13 @@ bool InitSPIService ( uint8_t Priority )
 	 
 	// Initialize shorttimer 
 	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+
+	// set ThisEvent for entry into this service's start function
+	ES_Event ThisEvent;
+	ThisEvent.EventType = ES_ENTRY_HISTORY;
+
+	// start this state machine
+	StartSPIService( ThisEvent );
 
 	printf("\r\nGot through SPI init\r\n");
 	
@@ -211,6 +223,32 @@ bool PostSPIService( ES_Event ThisEvent )
 	 return ES_PostToService(MyPriority, ThisEvent);
 }
 
+/****************************************************************************
+ Function
+     StartSPIService
+
+ Parameters
+     ES_Event CurrentEvent
+
+ Returns
+     nothing
+
+ Description
+     Does any required initialization for this state machine
+ Notes
+
+ Author
+     J. Edward Carryer, 02/06/12, 22:15
+****************************************************************************/
+void StartMasterSM ( ES_Event CurrentEvent )
+{
+  // initialize the state variable
+  CurrentState = WAITING2TRANSMIT;
+
+  // now we need to let the Run function init the lower level state machines
+  RunSPIService(CurrentEvent);
+  return;
+}
 
 /****************************************************************************
  Function
