@@ -188,7 +188,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 								 MakeTransition = true;
 								 break;
 							 default:
-								 printf("\r\nRobot is in CHECKING_IN and the event received is NOT VALID\n");
+								 printf("\r\nERROR: Robot is in CHECKING_IN and the event received is NOT VALID\n");
             }
 					}
 				 break;
@@ -219,7 +219,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 								 MakeTransition = true;
 								 break;
 							 default:
-								 printf("\r\nRobot is in SHOOTING and the event received is NOT VALID\n");
+								 printf("\r\nERROR: Robot is in SHOOTING and the event received is NOT VALID\n");
             }
 					}
 				 break;
@@ -330,11 +330,10 @@ the event
 
 static ES_Event DuringWaiting2Start( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -344,14 +343,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
         // on the lower level
     }
     else if ( Event.EventType == ES_EXIT )
-    {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
-    }else
-    // do the 'during' function for this state
+    { 
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -367,11 +361,10 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 
 static ES_Event DuringDriving2Staging( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -387,8 +380,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -404,11 +397,10 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 
 static ES_Event DuringCheckIn( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -424,8 +416,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -441,11 +433,10 @@ static ES_Event DuringCheckIn( ES_Event Event)
 
 static ES_Event DuringShooting( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -461,8 +452,8 @@ static ES_Event DuringShooting( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -478,11 +469,10 @@ static ES_Event DuringShooting( ES_Event Event)
 
 static ES_Event DuringDriving2Reload( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -498,8 +488,8 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -515,11 +505,10 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 
 static ES_Event DuringReloading( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -535,8 +524,8 @@ static ES_Event DuringReloading( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -552,11 +541,10 @@ static ES_Event DuringReloading( ES_Event Event)
 
 static ES_Event DuringEndingStrategy( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -572,8 +560,8 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -589,11 +577,10 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
 
 static ES_Event DuringStop( ES_Event Event)
 {
-    ES_Event ReturnEvent = Event; // assme no re-mapping or comsumption
+    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
         
@@ -609,8 +596,8 @@ static ES_Event DuringStop( ES_Event Event)
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
-    }else
-    // do the 'during' function for this state
+    }
+		else // do the 'during' function for this state
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
