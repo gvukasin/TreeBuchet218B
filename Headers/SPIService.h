@@ -13,13 +13,12 @@
 
 // typedefs for the states
 // State definitions for use with the query function
-typedef enum {WAITING2TRANSMIT,WAITING4EOT,WAITING4TIMEOUT} SPIState_t ;
+typedef enum {WAITING2TRANSMIT,TRANSMITTING} SPIState_t ;
 
 // Public Function Prototypes
 bool InitSPIService ( uint8_t );
 ES_Event RunSPIService( ES_Event );
 bool PostSPIService( ES_Event );
-void StartSPIService ( ES_Event );
 uint16_t getCommand(void);
 
 
