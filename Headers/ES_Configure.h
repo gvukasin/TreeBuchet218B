@@ -254,16 +254,25 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_INIT,   /* used to transition from initial pseudo-state */
                 ES_TIMEOUT, /* signals that the timer has expired */
                 ES_SHORT_TIMEOUT, /* signals that a short timer has expired */
+								ES_NEW_KEY, /* signals a new key received from terminal */	
                 /* User-defined events start here */
-								ES_ENTRY,
+								ES_ENTRY, /* SPI events*/
 								ES_ENTRY_HISTORY,
 								ES_EXIT,
 								ISR_COMMAND,
 								END_RUN,
 								NEXT_COMMAND,
-                ES_NEW_KEY, /* signals a new key received from terminal */
-								TapeSensed,
-								IRBeaconSensed
+								START, /* Robot SM events*/
+								STATION_REACHED,
+								CHECK_IN_FAIL,
+								CHECK_IN_SUCCESS,
+								FINISH_STRONG, 
+								MISSED_SHOT,
+								NO_BALLS,
+								RELOAD_STATION_REACHED,
+								BALLS_AVAILABLE,
+								SCORED,
+								GAME_OVER
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
