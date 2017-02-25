@@ -132,6 +132,18 @@ bool Check4Keystroke(void)
 			CommandEvent.EventParam = DRIVE2TAPE;
 			PostActionService(CommandEvent);
 		}	
+		else if( ThisEvent.EventParam == 'G' ){
+			CommandEvent.EventParam = ROBOT_QUERY;
+			PostSPIService(CommandEvent);
+		}	
+		else if( ThisEvent.EventParam == 'g' ){
+			CommandEvent.EventParam = ROBOT_FREQ_RESPONSE;
+			PostSPIService(CommandEvent);
+		}
+		else if( ThisEvent.EventParam == 'V' ){
+			CommandEvent.EventParam = ROBOT_STATUS;
+			PostSPIService(CommandEvent);
+		}
 		else{   // otherwise post to Service 0 for processing
    
     }
