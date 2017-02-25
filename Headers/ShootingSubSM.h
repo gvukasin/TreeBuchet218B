@@ -14,14 +14,13 @@
 
 // typedefs for the states
 // State definitions for use with the query function
-typedef enum { STATE_ZERO, STATE_ONE, STATE_TWO } TemplateState_t ;
-
+typedef enum { CALIBRATING, LOADING_BALL, WATING4SHOT_COMPLETE } ShootingState_t ;
 
 // Public Function Prototypes
 
-ES_Event RunTemplateSM( ES_Event CurrentEvent );
-void StartTemplateSM ( ES_Event CurrentEvent );
-TemplateState_t QueryTemplateSM ( void );
+ES_Event RunShootingSM( ES_Event CurrentEvent );
+void StartShootingSM ( ES_Event CurrentEvent );
+ShootingState_t QueryShootingSM ( void );
 
 #endif /*SHMTemplate_H */
 
