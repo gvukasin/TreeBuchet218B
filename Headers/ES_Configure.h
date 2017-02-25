@@ -272,7 +272,14 @@ typedef enum {  ES_NO_EVENT = 0,
 								RELOAD_STATION_REACHED,
 								BALLS_AVAILABLE,
 								SCORED,
-								GAME_OVER
+								GAME_OVER,
+								TEAM_COLOR,
+								ROBOT_STATUS,
+								ROBOT_FREQ_RESPONSE,
+								ROBOT_QUERY,
+								COM_STATUS,
+								COM_FREQ_REPORT,
+								COM_QUERY_RESPONSE
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
