@@ -256,13 +256,14 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_SHORT_TIMEOUT, /* signals that a short timer has expired */
 								ES_NEW_KEY, /* signals a new key received from terminal */	
                 /* User-defined events start here */
-								ES_ENTRY, /* SPI events*/
+								ES_ENTRY, 
 								ES_ENTRY_HISTORY,
 								ES_EXIT,
 								ISR_COMMAND,
 								END_RUN,
 								NEXT_COMMAND,
-								START, /* Robot SM events*/
+								/* Robot SM events*/
+								START, 
 								STATION_REACHED,
 								CHECK_IN_FAIL,
 								CHECK_IN_SUCCESS,
@@ -273,7 +274,8 @@ typedef enum {  ES_NO_EVENT = 0,
 								BALLS_AVAILABLE,
 								SCORED,
 								GAME_OVER,
-								TEAM_COLOR,
+								/* Robot and LOC com. exchange events */
+								TEAM_COLOR, 
 								ROBOT_STATUS,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
