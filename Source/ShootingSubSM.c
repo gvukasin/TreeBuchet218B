@@ -120,8 +120,8 @@ ES_Event RunTemplateSM( ES_Event CurrentEvent )
                   break;
                 // repeat cases as required for relevant events
             }
-         }else // Current Event is now ES_NO_EVENT. Probably means that Current 
-         {     //Event was consumed by lower level
+         }else // Current Event is now ES_NO_EVENT. Correction 2/20/17 
+         {     //Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too.
          }
        break;
