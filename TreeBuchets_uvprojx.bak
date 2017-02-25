@@ -617,6 +617,11 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\TapeModule.h</FilePath>
             </File>
+            <File>
+              <FileName>RobotTopSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\RobotTopSM.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1586,6 +1591,11 @@
               <FileName>TapeModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\TapeModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>RobotTopSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\RobotTopSM.h</FilePath>
             </File>
           </Files>
         </Group>
