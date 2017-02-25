@@ -617,6 +617,11 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\TapeModule.h</FilePath>
             </File>
+            <File>
+              <FileName>RobotTopSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\RobotTopSM.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -901,7 +906,7 @@
             <UsePdscDebugDescription>1</UsePdscDebugDescription>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>8</TargetSelection>
+          <TargetSelection>3</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -1586,6 +1591,11 @@
               <FileName>TapeModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\TapeModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>RobotTopSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\RobotTopSM.h</FilePath>
             </File>
           </Files>
         </Group>
