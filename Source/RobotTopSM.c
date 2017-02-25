@@ -37,6 +37,8 @@
 #include "ES_Configure.h"
 #include "ES_Framework.h"
 #include "RobotTopSM.h"
+#include "ShootingSubSM.h"
+#include "SPIService.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 
@@ -448,7 +450,7 @@ static ES_Event DuringShooting( ES_Event Event)
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
+        RunShootingSM(Event);
         // repeat for any concurrently running state machines
         // now do any local exit functionality
       
