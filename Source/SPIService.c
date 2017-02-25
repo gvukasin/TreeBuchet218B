@@ -36,6 +36,7 @@
 #include "inc/hw_ssi.h"
 #include "SPIService.h"
 #include "ActionService.h"
+#include "RobotTopSM.h"
 
 // to print comments to the terminal
 #include <stdio.h>
@@ -74,12 +75,22 @@
 
 #define numTransimittedBytes 5
 
+// Commands to send to the LOC
+// Status command
+#define StatusCommand (BIT7HI|BIT6HI)
+
+// Report staging area frequency command
+#define FreqCommand BIT7HI
+
+// Query new response ready command
+#define QueryCommand (BIT6HI|BIT5HI|BIT4HI)
+
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
    relevant to the behavior of this service
 */
 static void InitSerialHardware( void );
-static void QuerySPI( uint32_t Command[numTransimittedBytes]  );
+static uint16_t Transmit2LOC( uint8_t );
 
 /*---------------------------- Module Variables ---------------------------*/
 static uint8_t MyPriority;
@@ -89,9 +100,10 @@ static SPIState_t CurrentState;
 
 // received data from data register
 static uint8_t ReceivedData;
+static uint8_t ReceivedLOCData[5];
 
 // ISR events
-static ES_Event ISREvent;
+static ES_Event ISREvent; 
 static ES_Event LastEvent;
 
 // Last command byte to LOC
@@ -99,16 +111,6 @@ static uint8_t LastCommand;
 
 // Last response byte from the LOC
 static uint8_t LastResponse;
-
-// Commands to send to the LOC
-// Status command
-static uint32_t StatusCommand[5] = {0x0b,0x11,0x00,0x00,0x00};
-
-// Report staging area frequency command
-static uint32_t ReportFreqCommand[5] = {0x0b,0x10,0x00,0x00,0x00};
-
-// Query new response ready command
-static uint32_t QueryCommand[5] = {0x0b,0x01,0x11,0x00,0x00};
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -142,7 +144,7 @@ bool InitSPIService ( uint8_t Priority )
 	// Initialize shorttimer 
 	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 
-	printf("\r\nGot through SPI init\r\n");
+	printf("\r\n Got through SPI init \r\n");
 	
 	 return true;
 }
@@ -168,28 +170,39 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 {
 
   // define return event if no errors persist 
-  ES_Event ReturnEvent.EventType = ES_NO_EVENT;
+  ES_Event ReturnEvent;
+	ReturnEvent.EventType = ES_NO_EVENT;
 
   // WAITING2TRANSMIT State
   if(CurrentState == WAITING2TRANSMIT)
   {   
-
-    if(CurrentEvent.EventType == QueryLOC)
-    {
-
-    // change state to WAITING4TIMEOUT
+		// change state to WAITING4TIMEOUT
     CurrentState = WAITING4TIMEOUT;
-    
-    // query the LOC
-    QuerySPI( QueryCommand );
+		
+		// define event to post to RobotSM 
+		ES_Event PostEvent;
+		PostEvent.EventType = ES_NO_EVENT;
 
-    // Initialize shorttimer to wait for 2 ms 
+		// transmit to the LOC the bytes corresponding to the type of command event 	
+    if(CurrentEvent.EventType == ROBOT_QUERY)
+    {
+			PostEvent.EventParam = Transmit2LOC( QueryCommand );
+			
+    } else if (CurrentEvent.EventType == ROBOT_FREQ_RESPONSE) {
+		
+		// set last four bits to the frequency the RobotSM has determined
+		uint8_t FCommand = (FreqCommand|CurrentEvent.EventParam);
+		PostEvent.EventParam = Transmit2LOC( FCommand );
+
+    } else if (CurrentEvent.EventType == ROBOT_STATUS){
+		PostEvent.EventParam = Transmit2LOC( StatusCommand );
+		}
+
+		// Initialize shorttimer to wait for 2 ms 
     ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
-
-    } else if (CurrentEvent.EventType == ) {
-
-
-    }
+		
+		// Post event to RobotTopSM
+		PostRobotTopSM(PostEvent);
 
   // WAITING4TIMEOUT State
   } else if (CurrentState == WAITING4TIMEOUT) {
@@ -198,7 +211,6 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 
       // switch states to WAITING2TRANSMIT
       CurrentState = WAITING2TRANSMIT;
-
     }
   }
 		
@@ -256,38 +268,51 @@ void SPI_InterruptResponse( void )
 	ISREvent.EventParam = ReceivedData;
 	PostActionService(ISREvent);
 	
-	// set current state to idling
+	// set current state to WAITING2TRANSMIT
 	CurrentState = WAITING2TRANSMIT;
 }
 
+
+/*----------------------------------------------------------------------------
+private functions
+-----------------------------------------------------------------------------*/
+
 /****************************************************************************
  Function
-     QuerySPI
+     Transmit2LOC
 
  Parameters
-     8 bits to write to data register
+     first 8 bits to write to data register
 
  Returns
      void
 
  Description
-     writes 8 bits on Tx line 
+     writes the first 8 bits on Tx line, then 0 four more times
 
  Author
      Team 16, 02/04/17, 23:00
 ****************************************************************************/
-static void QuerySPI( uint32_t Command[numTransimittedBytes]  )
+static uint16_t Transmit2LOC( uint8_t Command )
 {		
 	//Enable the NVIC interrupt for the SSI
 	HWREG(SSI0_BASE + SSI_O_IM) |= SSI_IM_TXIM;
 	
-	// chop up 5 command bytes and write them to the data register sequentially
-	HWREG(SSI0_BASE+SSI_O_DR) = QueryBits;
+	// write command to the data register
+	HWREG(SSI0_BASE+SSI_O_DR) = Command;
+	
+	// write 0 to the data register four more times
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	
+	// read data from the data
+	for(int i=0;i<numTransimittedBytes;i++){
+		ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);
+	}
 }
 
-/*----------------------------------------------------------------------------
-private functions
------------------------------------------------------------------------------*/
 /****************************************************************************
  Function
      InitSerialHardware
@@ -391,7 +416,7 @@ int main(void)
 	printf("\r\n Starting SPI Test \r\n");
 	
 	InitSerialHardware();
-	QuerySPI();
+	Transmit2LOC();
 	
 	return 0;
 }
