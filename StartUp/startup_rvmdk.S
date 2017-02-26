@@ -80,8 +80,7 @@ __heap_limit
 ;******************************************************************************
         EXTERN  SysTickIntHandler
         EXTERN  ShortTimerAHandler
-        EXTERN  ShortTimerBHandler
-		EXTERN  TapeInterruptResponse	
+        EXTERN  ShortTimerBHandler	
 ;        EXTERN  UARTStdioIntHandler
 		EXTERN	SPI_InterruptResponse
 		EXTERN  InitInputCaptureForIRDetection
@@ -204,7 +203,7 @@ __Vectors
         DCD     0                           ; Reserved
         DCD     ShortTimerAHandler           ; Timer 5 subtimer A
         DCD     ShortTimerBHandler           ; Timer 5 subtimer B
-        DCD     TapeInterruptResponse        ; Wide Timer 0 subtimer A
+        DCD     IntDefaultHandler        ; Wide Timer 0 subtimer A
         DCD     OneShotISR		            ; Wide Timer 0 subtimer B
         DCD     InitInputCaptureForIRDetection           ; Wide Timer 1 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 1 subtimer B
