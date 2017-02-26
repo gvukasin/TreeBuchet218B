@@ -39,8 +39,38 @@
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
+#include "MagneticModule.h"
+#include "LEDModule.h"
+#include "DrivingModule.h"
+#include "ReloadingSubSM.h"
+
+// the common headers for C99 types 
+#include <stdint.h>
+#include <stdbool.h>
+
+// the headers to access the GPIO subsystem
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_sysctl.h"
+
+// the headers to access the TivaWare Library
+#include "driverlib/sysctl.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
+#include "driverlib/timer.h"
+#include "driverlib/interrupt.h"
+
+#include "BITDEFS.H"
 
 /*----------------------------- Module Defines ----------------------------*/
+#define RED_BUTTON GPIO_PIN_3 
+#define GREEN_BUTTON GPIO_PIN_4
+#define RED_BUTTON_PRESSED BIT3HI
+#define GREEN_BUTTON_PRESSED BIT4HI
+
+#define LEDS_ON 1
+#define LEDS_OFF 0
 
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
@@ -53,6 +83,8 @@ static ES_Event DuringReloading( ES_Event Event);
 static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
+static void InitializeTeamButtonsHardware(void);
+
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -60,6 +92,7 @@ static ES_Event DuringStop( ES_Event Event);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
+//static bool CheckInSuccessFlag = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -231,7 +264,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // During function
        CurrentEvent = DuringDriving2Reload(CurrentEvent);
 			 // Process events			 
-			 if (CurrentEvent.EventType == RELOAD_STATION_REACHED)
+			 if (CurrentEvent.EventType == RELOAD_BALLS)
 				{
 					 NextState = RELOADING;
 					 MakeTransition = true;
@@ -337,24 +370,29 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        // entry actions required for this state machine
+        InitializeTeamButtonsHardware();
     }
     else if ( Event.EventType == ES_EXIT )
     { 
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
         // do any activity that is repeated as long as we are in this state
+				// SHOULD WE USE THE BUTTON SERVICE FROM LAB 5????????????
+				ES_Event PostEvent;
+				PostEvent.EventType = TEAM_COLOR;
+				
+				if (RED_BUTTON_PRESSED)
+					PostEvent.EventParam = 0;
+				else if (GREEN_BUTTON_PRESSED)
+					PostEvent.EventParam = 1;
+				else
+					printf("\r\nYou need to press a button for team selection!\r\n");
+			
+				PostSPIService(PostEvent);
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -368,29 +406,25 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+      // Initialize magnetic sensing hardware  
+			InitMagneticSensor();
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+			// Wire sensing
+			CheckWirePosition();
+		
+			// PD control  TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			
+			//If a station has been reached post an event   MAKE THE IF!!!!!!!!!!!!!!
+			ES_Event PostEvent;
+			PostEvent.EventType = STATION_REACHED;
+			PostRobotTopSM(PostEvent); // We want to move to the next state
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -400,26 +434,22 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 static ES_Event DuringCheckIn( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
+		ES_Event PostEvent;
+	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        // Check Ball count
+			
+				// Check time
     }
-    else if ( Event.EventType == ES_EXIT )
+    else if ( Event.EventType == ES_EXIT)
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+	
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
         // run any lower level state machine
         // ReturnEvent = RunLowerLevelSM(Event);
@@ -440,29 +470,26 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        //Yellow LEDs ON to signal shooting is going to start
+				TurnOnOffYellowLEDs(LEDS_ON);
+			
+        // start any lower level machines that run in this state
+        StartShootingSM(Event);  // HOW DOES EVENT START THE SHOOTING SM????????????????????
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        RunShootingSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        RunShootingSM(Event);   
+				
+			  // Turn OFF LEDs
+				TurnOnOffYellowLEDs(LEDS_OFF);
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
         // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        ReturnEvent = RunShootingSM(Event);  // I THINK THIS WILL WORK??????????????????
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -476,29 +503,16 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
         // do any activity that is repeated as long as we are in this state
+				Drive2Reload();
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -511,30 +525,21 @@ static ES_Event DuringReloading( ES_Event Event)
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-        // implement any entry actions required for this state machine
-        
+    {        
         // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        StartReloadingSM( Event );
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        RunReloadingSM(Event); 
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
         // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        ReturnEvent = RunReloadingSM(Event);
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -613,22 +618,18 @@ static ES_Event DuringStop( ES_Event Event)
     return(ReturnEvent);
 }
 
+static void InitializeTeamButtonsHardware(void)
+{
+	// Initialize port F to monitor the buttons
+ 	HWREG(SYSCTL_RCGCGPIO) |= BIT5HI;
+ 	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R5) != SYSCTL_PRGPIO_R5);
+	HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= (RED_BUTTON|GREEN_BUTTON);	//NEED THIS????????????????????????????????
+	
+	// Set bits 3 and 4 in port F as input:
+ 	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= (RED_BUTTON|GREEN_BUTTON);	
+ 	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~(RED_BUTTON)| ~(GREEN_BUTTON));	
+}
+
 /*********************************************************  THE END *************************************************************/
-         
-//				 //process any events
-//         if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-//         {
-//            switch (CurrentEvent.EventType)
-//            {
-//               case ES_LOCK : //If event is event one
-//                  // Execute action function for state one : event one
-//                  NextState = DRIVING2STAGING;//Decide what the next state will be
-//                  // for internal transitions, skip changing MakeTransition
-//                  MakeTransition = true; //mark that we are taking a transition
-//                  // if transitioning to a state with history change kind of entry
-//                  EntryEventKind.EventType = ES_ENTRY_HISTORY;
-//                  break;
-//                // repeat cases as required for relevant events
-//            }
-//         }
+
 				
