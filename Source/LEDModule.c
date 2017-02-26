@@ -14,6 +14,7 @@
 #include "ShootingSubSM.h"
 #include "SPIService.h"
 #include "MagneticModule.h"
+#include "LEDModule.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -38,13 +39,13 @@
 
 /*---------------------------- Module Variables ---------------------------*/
 
-void TurnOnYellowLEDs(void)
+void TurnOnOffYellowLEDs(bool ONorOFF)
 {
 	// Initialize hardware
 	// Turn on
 }
 
-void TurnOnBlueLEDs(void)
+void TurnOnOffBlueLEDs(bool ONorOFF)
 {
 	// Initialize hardware
 	// Control blinking
