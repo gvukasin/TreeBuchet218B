@@ -458,11 +458,6 @@
               <FilePath>.\Source\MotorActionsModule.c</FilePath>
             </File>
             <File>
-              <FileName>TapeModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\TapeModule.c</FilePath>
-            </File>
-            <File>
               <FileName>RobotTopSM.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\RobotTopSM.c</FilePath>
@@ -613,11 +608,6 @@
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
             </File>
             <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
-            </File>
-            <File>
               <FileName>RobotTopSM.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\RobotTopSM.h</FilePath>
@@ -630,7 +620,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -1433,11 +1423,6 @@
               </FileOption>
             </File>
             <File>
-              <FileName>TapeModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\TapeModule.c</FilePath>
-            </File>
-            <File>
               <FileName>RobotTopSM.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\RobotTopSM.c</FilePath>
@@ -1588,11 +1573,6 @@
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
             </File>
             <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
-            </File>
-            <File>
               <FileName>RobotTopSM.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\RobotTopSM.h</FilePath>
@@ -1605,7 +1585,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
