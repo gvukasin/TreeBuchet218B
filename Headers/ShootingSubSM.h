@@ -4,8 +4,8 @@
  3/17/09  Fixed prototpyes to use Event_t
  ****************************************************************************/
 
-#ifndef HSMTemplate_H
-#define HSMTemplate_H
+#ifndef ShootingSubSM_H
+#define ShootingSubSM_H
 
 // Event Definitions
 #include "ES_Configure.h" /* gets us event definitions */
@@ -22,5 +22,5 @@ ES_Event RunShootingSM( ES_Event CurrentEvent );
 void StartShootingSM ( ES_Event CurrentEvent );
 ShootingState_t QueryShootingSM ( void );
 
-#endif /*SHMTemplate_H */
+#endif /*ShootingSubSM_H */
 
