@@ -270,7 +270,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								FINISH_STRONG, 
 								MISSED_SHOT,
 								NO_BALLS,
-								RELOAD_STATION_REACHED,
+								RELOAD_BALLS,
 								BALLS_AVAILABLE,
 								SCORED,
 								GAME_OVER,
@@ -285,7 +285,9 @@ typedef enum {  ES_NO_EVENT = 0,
 								/* Shooting SM events */
 								READY2SHOOT,
 								BALL_FLYING,
-								SHOOTING_TIMEOUT
+								SHOOTING_TIMEOUT,
+								/* Reloading SM events */
+								WAIT4BALL_DELIVERY,
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
