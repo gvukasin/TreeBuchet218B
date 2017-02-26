@@ -69,11 +69,11 @@
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
 
+// number of bits per nibble in Tiva registers
 #define BitsPerNibble 4
 
-#define QueryBits 0xaa
-
-#define numTransimittedBytes 5
+// number of bytes received from LOC with each interaction with the LOC
+#define numReceivedBytes 4
 
 // Commands to send to the LOC
 // Status command
@@ -84,6 +84,9 @@
 
 // Query new response ready command
 #define QueryCommand (BIT6HI|BIT5HI|BIT4HI)
+
+// Number of bits to shift 8 bit number to the top of a 16 bit number
+#define NumResponseBits 8
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
@@ -111,6 +114,11 @@ static uint8_t LastCommand;
 
 // Last response byte from the LOC
 static uint8_t LastResponse;
+
+// variable defining red or green team
+static uint8_t RED = 0;
+static uint8_t GREEN = 1;
+static uint8_t TeamColor;
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -143,6 +151,12 @@ bool InitSPIService ( uint8_t Priority )
 	 
 	// Initialize shorttimer 
 	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+	
+	// Initialize team color as red
+	TeamColor = RED;
+	
+	// Initialize current state
+	CurrentState = WAITING2TRANSMIT;
 
 	printf("\r\n Got through SPI init \r\n");
 	
@@ -175,43 +189,56 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 
   // WAITING2TRANSMIT State
   if(CurrentState == WAITING2TRANSMIT)
-  {   
-		// change state to WAITING4TIMEOUT
-    CurrentState = WAITING4TIMEOUT;
-		
-		// define event to post to RobotSM 
-		ES_Event PostEvent;
-		PostEvent.EventType = ES_NO_EVENT;
-
-		// transmit to the LOC the bytes corresponding to the type of command event 	
-    if(CurrentEvent.EventType == ROBOT_QUERY)
-    {
-			PostEvent.EventParam = Transmit2LOC( QueryCommand );
+  {
+		if(CurrentEvent.EventType == TEAM_COLOR){
 			
-    } else if (CurrentEvent.EventType == ROBOT_FREQ_RESPONSE) {
-		
-		// set last four bits to the frequency the RobotSM has determined
-		uint8_t FCommand = (FreqCommand|CurrentEvent.EventParam);
-		PostEvent.EventParam = Transmit2LOC( FCommand );
+			// set team color from the parameter of the TEAM_COLOR event
+			TeamColor = CurrentEvent.EventParam;
+			
+		} else {
+			// change state to WAITING4TIMEOUT
+			CurrentState = WAITING4TIMEOUT;
+			
+			// define event to post to RobotSM 
+			ES_Event PostEvent;
+			PostEvent.EventType = ES_NO_EVENT;
 
-    } else if (CurrentEvent.EventType == ROBOT_STATUS){
-		PostEvent.EventParam = Transmit2LOC( StatusCommand );
+			// transmit to the LOC the bytes corresponding to the type of command event 	
+			if(CurrentEvent.EventType == ROBOT_QUERY)
+			{
+				// set Query event type and send data to LOC, and set event param to response
+				PostEvent.EventType = COM_QUERY_RESPONSE;
+				PostEvent.EventParam = Transmit2LOC( QueryCommand );
+				
+			} else if (CurrentEvent.EventType == ROBOT_FREQ_RESPONSE) {
+			// set last four bits to the frequency the RobotSM has determined
+			uint8_t FCommand = (FreqCommand|CurrentEvent.EventParam);
+				
+			// set Freq event type and send data to LOC, and set event param to response
+			PostEvent.EventType = COM_FREQ_REPORT;
+			PostEvent.EventParam = Transmit2LOC( FCommand );
+
+			} else if (CurrentEvent.EventType == ROBOT_STATUS){
+			// set Query event type and send data to LOC, and set event param to response
+			PostEvent.EventType = COM_STATUS;
+			PostEvent.EventParam = Transmit2LOC( StatusCommand );
+			}
+
+			// Initialize shorttimer to wait for 2 ms 
+			ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+			
+			// Post event to RobotTopSM
+			PostRobotTopSM(PostEvent);
 		}
-
-		// Initialize shorttimer to wait for 2 ms 
-    ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 		
-		// Post event to RobotTopSM
-		PostRobotTopSM(PostEvent);
-
   // WAITING4TIMEOUT State
   } else if (CurrentState == WAITING4TIMEOUT) {
 
-    if(CurrentEvent.EventType == ES_TIMEOUT) {
+			if(CurrentEvent.EventType == ES_TIMEOUT) {
 
-      // switch states to WAITING2TRANSMIT
-      CurrentState = WAITING2TRANSMIT;
-    }
+				// switch states to WAITING2TRANSMIT
+				CurrentState = WAITING2TRANSMIT;
+			}
   }
 		
 	return ReturnEvent;
@@ -295,6 +322,9 @@ private functions
 ****************************************************************************/
 static uint16_t Transmit2LOC( uint8_t Command )
 {		
+	// define return data variable 
+	uint16_t ReturnedData = 0;
+	
 	//Enable the NVIC interrupt for the SSI
 	HWREG(SSI0_BASE + SSI_O_IM) |= SSI_IM_TXIM;
 	
@@ -308,9 +338,33 @@ static uint16_t Transmit2LOC( uint8_t Command )
 	HWREG(SSI0_BASE+SSI_O_DR) = 0;
 	
 	// read data from the data
-	for(int i=0;i<numTransimittedBytes;i++){
+	for(int i=0;i<numReceivedBytes;i++){
 		ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);
 	}
+	
+	// return the correct data for the corresponding Command into this function
+	if(Command == QueryCommand){
+		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
+		ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
+		
+	} else if (Command == FreqCommand) {
+		// set ReturnedData to the first two bytes of the total response from the LOC
+		
+		ReturnedData = ((ReceivedLOCData[0]<<NumResponseBits)|ReceivedLOCData[1]);
+		
+		
+	} else if (Command == StatusCommand){
+		// set ReturnedData to SB1 byte (bit shifted by 8) and SB2 or SB3 depending on red or green team
+		if(TeamColor == RED){	
+			ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[3]);
+		} else {
+			ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
+		}
+		
+	}
+	
+	// return the relevant data from the LOC
+	return ReturnedData;
 }
 
 /****************************************************************************

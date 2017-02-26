@@ -612,6 +612,7 @@ static ES_Event DuringStop( ES_Event Event)
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
+
 /*********************************************************  THE END *************************************************************/
          
 //				 //process any events
@@ -630,4 +631,4 @@ static ES_Event DuringStop( ES_Event Event)
 //                // repeat cases as required for relevant events
 //            }
 //         }
-				 
+				

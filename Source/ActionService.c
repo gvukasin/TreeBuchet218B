@@ -16,7 +16,6 @@
 #include "PWMmodule.h"
 #include "SPIService.h"
 #include "MotorActionsModule.h"
-#include "TapeModule.h"
 #include "IRBeaconModule.h"
 
 #include <stdio.h>
@@ -124,7 +123,6 @@ static ES_Event SPIEvent;
 	InitializePWM();
 	 
 	// Initialize Interrupts
-	InitTapeInterrupt();
 	InitInputCaptureForIRDetection();
 	InitOneShotISR();
 	
@@ -257,7 +255,6 @@ ES_Event RunActionService(ES_Event ThisEvent)
 			//Case 11
 			case DRIVE2TAPE:
 				//printf("\r\n DRIVE2TAPE Received\n");
-				EnableTapeInterrupt();
 				drive(DUTY_FULL_SPEED, FORWARD);
 				break;
 			
