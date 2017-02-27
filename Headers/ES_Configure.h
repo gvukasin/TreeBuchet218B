@@ -274,6 +274,8 @@ typedef enum {  ES_NO_EVENT = 0,
 								BALLS_AVAILABLE,
 								SCORED,
 								GAME_OVER,
+								IR_BEACON_SENSED,
+								HALL_EFFECT_EDGE,
 								/* Robot and LOC com. exchange events */
 								TEAM_COLOR, 
 								ROBOT_STATUS,
@@ -287,8 +289,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT,
 								/* Reloading SM events */
-								WAIT4BALL_DELIVERY,
-								IR_BEACON_SENSED
+								WAIT4BALL_DELIVERY
                 } ES_EventTyp_t ;
 
 /****************************************************************************/

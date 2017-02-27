@@ -1,6 +1,6 @@
 /****************************************************************************
-Magnetic Module
-	Define functions for Wire Sensing & Stage Sensing
+HallEffectModule
+	Define functions for staging area sensing
  
 Events to receive:
 
@@ -28,98 +28,265 @@ Events to post:
 
 
 /*----------------------------- Module Defines ----------------------------*/
-#define ALL_BITS (0xff<<2)
-#define TicksPerMS 40000
 #define BitsPerNibble 4
-//#define numbNibblesShifted 6
-//#define pinC6Mask 0xf0ffffff
-//#define ALIGN_BEACON 0x20 
 
-//#define STOP 0x00
+// staging area frequency codes
+#define code1333us 0000
+#define code1277us 0001
+#define code1222us 0010
+#define code1166us 0011
+#define code1111us 0100
+#define code1055us 0101
+#define code1000us 0110
+#define code944us 0111
+#define code889us 1000
+#define code833us 1001
+#define code778us 1010
+#define code722us 1011
+#define code667us 1100
+#define code611us 1101
+#define code556us 1110
+#define code500us 1111
+#define codeInvalidStagingArea 0xff
+
 /*---------------------------- Module Variables ---------------------------*/
-//static uint32_t LastCapture;
+static ES_Event HallEffectEdgeDetected;
+static uint8_t MyPriority;
+static uint16_t StagingAreaCode;
+static uint32_t LastEdge;
+static uint32_t CurrentEdge;
+static uint32_t MeasuredStagingAreaPeriod;
+uint8_t StagingAreaPeriod_Tolerance = 3;
+uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
-//static uint32_t LastCapture;
-//static uint32_t ThisCapture;
-//static uint32_t MeasuredSignalSpeedHz;
-//static uint32_t AveragedMeasuredSignalSpeedHz = 0;
-//static uint32_t SpeedAddition = 0;
-//static uint32_t DesiredFreqLOBoundary;
-//static uint32_t DesiredFreqHIBoundary;
-//static uint32_t MeasuredSignalPeriod;
-//static uint8_t counter = 1;
-
-////Initialize freq boundaries for IR beacon
-//static uint32_t	DesiredFreqLOBoundary = lab8BeaconFreqHz - 0.2*lab8BeaconFreqHz;
-//static uint32_t	DesiredFreqHIBoundary = lab8BeaconFreqHz + 0.2*lab8BeaconFreqHz;
+/*---------------------------- Module Functions ---------------------------*/
+void InitStagingAreaISR( void );
+void StagingAreaISR( void );
+uint16_t GetStagingAreaCode( void );
 
 /*------------------------------ Module Code ------------------------------*/
 
 /****************************************************************************
  Function
-     InitRLCSensor
+     InitHallEffectModule
 
  Parameters
-     void
+     uint8_t : the priorty of this service
 
  Returns
-     void
+     bool, false if error in initialization, true otherwise
 
  Description
-			Initialize PE0 & PE1 for wire sensing(Analog Input)
-			Initialize PC7 for stage sensing
+     Saves away the priority, sets up the initial transition and does any
+     other required initialization for this state machine
+ Notes
 
  Author
-     Team 16 
+     J. Edward Carryer, 10/23/11, 18:55
 ****************************************************************************/
-void InitRLCSensor( void )
+bool InitHallEffectModule ( uint8_t Priority )
 {
-	
-	//Enable PE0 and PE1 for analog input
-	ADC_MultiInit(2);
-	
-//	//Enable the clock to Port C	
-//	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R4;
-//	while (((HWREG(SYSCTL_PRGPIO)) & SYSCTL_PRGPIO_R4) != SYSCTL_PRGPIO_R4){
-//		;
-//  }
-//	// Enable Pin 7 as digital input
-//	HWREG(GPIO_PORTC_BASE+GPIO_O_DEN) |= GPIO_PIN_7; 
+  // initialize priority
+	MyPriority = Priority;
+		
+	// initialize interrupt for hall effect sensor
+	InitStagingAreaISR();
+		
+	// initialize hall effect edge detecting event
+	HallEffectEdgeDetected.EventType = HALL_EFFECT_EDGE;	
+
+	// return true 
+	return true;
 }
 
 /****************************************************************************
  Function
-     CheckWirePosition
+    InitStagingAreaISR
 
- Description
-     Check position of the two RLC sensors relative to the wire
+ Parameters
+   ES_Event : the event to process
 
  Returns
-		 int: signed integer, proportional to the distance away from the wire
-          positive: robot on the left of the wire
-					negative: robot on the right of the wire
-     The return value is between -1000 and 1000
-****************************************************************************/
-int CheckLeftRLC(void)
-{
-	uint32_t CurrentADRead[4];
-	
-  // Get the voltages from the input line	
-  ADC_MultiRead(CurrentADRead);
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
 
-	return CurrentADRead[0];
-}
-	
-int CheckRightRLC(void)
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+void InitStagingAreaISR( void )
 {
-	uint32_t CurrentADRead[4];
-	int VoltageDifference;
-  
-  // Get the voltages from the input line	
-  ADC_MultiRead(CurrentADRead);
-	printf("\n--------------PE0 Voltage = %u, PE1 Voltage = %u---------------\n",CurrentADRead[0],CurrentADRead[1]);
+	// enable Wide Timer 0 
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R0;
 	
-	VoltageDifference = CurrentADRead[1] - CurrentADRead[0];
-	printf("\n--------------Voltage Difference = %u---------------\n",VoltageDifference);
-	return VoltageDifference;
+	//enable clock to port C
+	HWREG(SYSCTL_RCGCGPIO) |=SYSCTL_RCGCGPIO_R2;
+		
+	// make sure timer A is disabled before configuring
+	HWREG(WTIMER0_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TAEN;
+	
+	// set up time in 32bit wide mode (non-concatinated mode)
+	HWREG(WTIMER0_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT;
+	
+	// use full 32 bit count by initializing the Interval Load Register to all ones 
+	HWREG(WTIMER0_BASE+TIMER_O_TAILR) = 0xffffffff;
+	
+	// set up timer A in capture mode (TAMR=3,TAAMS=0), for edge time (TACMR=1), 
+	// and upcounting (TACDIR = 1);
+	HWREG(WTIMER0_BASE+TIMER_O_TAMR) = (HWREG(WTIMER0_BASE+TIMER_O_TAMR) & ~TIMER_TAMR_TAAMS)|
+	(TIMER_TAMR_TACDIR | TIMER_TAMR_TACMR | TIMER_TAMR_TAMR_CAP);
+	
+	// set event to rising edge by modifying TAEVENT bits in GPTMCTL to 00 (clear bits)
+	HWREG(WTIMER0_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TAEVENT_M;
+	
+	// set up port to do capture by setting alt function for C4
+	HWREG(GPIO_PORTC_BASE+GPIO_O_AFSEL) |= BIT4HI;
+	
+	// map bit 4's alt function to WT0CCP0 (7), by clearing nibble then
+	// shifting 7 to fourth nibble 
+	HWREG(GPIO_PORTC_BASE+GPIO_O_PCTL) = (HWREG(GPIO_PORTC_BASE+GPIO_O_PCTL) & 0xfff0ffff) + (7<<(4*BitsPerNibble));
+	
+	// set pin C4 to digital
+	HWREG(GPIO_PORTC_BASE+GPIO_O_DEN) |= BIT4HI;
+	
+	// set pin C4 to input
+	HWREG(GPIO_PORTC_BASE+GPIO_O_DIR) &= BIT4LO;
+	
+	// enable local capture interrupt
+	HWREG(WTIMER0_BASE+TIMER_O_IMR) |= TIMER_IMR_CAEIM;
+	
+	// enable Timer A in Wide Timer 0 interrupt in the NVIC (94--> EN2, bit 30)
+	HWREG(NVIC_EN2) |= BIT30HI;
+	
+	// ensure interrupts are enabled globally
+	__enable_irq();
+	
+	// enable timer and enable timer to stall when program stopped by the debugger
+	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+}
+
+/****************************************************************************
+ Function
+    StagingAreaISR
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+void StagingAreaISR( void )
+{
+	// clear the source of the interrupt 
+	HWREG(WTIMER0_BASE+TIMER_O_ICR) = TIMER_ICR_CAECINT;
+	
+	// grab captured value and calc period 
+	CurrentEdge = HWREG(WTIMER0_BASE+TIMER_O_TAR);
+	MeasuredStagingAreaPeriod = CurrentEdge - LastEdge;
+	
+	// update LastCapture to prepare for the next edge
+	LastEdge = CurrentEdge;
+	
+	// post to this service's event 
+	PostHallEffectModule(HallEffectEdgeDetected);
+}
+
+/****************************************************************************
+ Function
+    GetStagingAreaCode
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+uint16_t GetStagingAreaCode( void )
+{
+	if ( (MeasuredStagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
+		if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1333us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1277us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1222us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1166us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1111us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1055us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code1000us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code944us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code889us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code833us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code778us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code722us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code667us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code611us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code556us;
+		}
+
+		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
+			StagingAreaCode = code500us;
+		}
+	}
+	else{
+		StagingAreaCode = codeInvalidStagingArea;
+	}
+	
+	return StagingAreaCode;
 }
