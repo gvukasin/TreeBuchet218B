@@ -78,76 +78,76 @@
 ****************************************************************************/
 bool Check4Keystroke(void)
 {
-  if ( IsNewKeyReady() ) // new key waiting?
-  {
-		// SEE ME
-    ES_Event ThisEvent;
-    ThisEvent.EventType = ES_NEW_KEY;
-    ThisEvent.EventParam = GetNewKey();
-		ES_Event CommandEvent;
-    // test distribution list functionality by sending the 'L' key out via
-    // a distribution list.
-    if ( ThisEvent.EventParam == 'L' ){
-			//PostSPIService(ThisEvent);
-			CommandEvent.EventParam = CCW_90;
-			PostActionService(CommandEvent);
-    }
-		else if( ThisEvent.EventParam == 'l' ){
-			CommandEvent.EventParam = CCW_45;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'R' ){
-			CommandEvent.EventParam = CW_90;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'r' ){
-			CommandEvent.EventParam = CW_45;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 's' ){
-			CommandEvent.EventParam = STOP;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'F' ){
-			CommandEvent.EventParam = FORWARD_FULL_SPEED;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'f' ){
-			CommandEvent.EventParam = FORWARD_HALF_SPEED;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'B' ){
-			CommandEvent.EventParam = REVERSE_FULL_SPEED;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'b' ){
-			CommandEvent.EventParam = REVERSE_HALF_SPEED;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'a' ){
-			CommandEvent.EventParam = ALIGN_BEACON;
-			PostActionService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'd' ){
-			CommandEvent.EventParam = DRIVE2TAPE;
-			PostActionService(CommandEvent);
-		}	
-		else if( ThisEvent.EventParam == 'G' ){
-			CommandEvent.EventParam = ROBOT_QUERY;
-			PostSPIService(CommandEvent);
-		}	
-		else if( ThisEvent.EventParam == 'g' ){
-			CommandEvent.EventParam = ROBOT_FREQ_RESPONSE;
-			PostSPIService(CommandEvent);
-		}
-		else if( ThisEvent.EventParam == 'V' ){
-			CommandEvent.EventParam = ROBOT_STATUS;
-			PostSPIService(CommandEvent);
-		}
-		else{   // otherwise post to Service 0 for processing
-   
-    }
-    return true;
-  }
+//  if ( IsNewKeyReady() ) // new key waiting?
+//  {
+//		// SEE ME
+//    ES_Event ThisEvent;
+//    ThisEvent.EventType = ES_NEW_KEY;
+//    ThisEvent.EventParam = GetNewKey();
+//		ES_Event CommandEvent;
+//    // test distribution list functionality by sending the 'L' key out via
+//    // a distribution list.
+//    if ( ThisEvent.EventParam == 'L' ){
+//			//PostSPIService(ThisEvent);
+//			CommandEvent.EventParam = CCW_90;
+//			PostActionService(CommandEvent);
+//    }
+//		else if( ThisEvent.EventParam == 'l' ){
+//			CommandEvent.EventParam = CCW_45;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'R' ){
+//			CommandEvent.EventParam = CW_90;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'r' ){
+//			CommandEvent.EventParam = CW_45;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 's' ){
+//			CommandEvent.EventParam = STOP;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'F' ){
+//			CommandEvent.EventParam = FORWARD_FULL_SPEED;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'f' ){
+//			CommandEvent.EventParam = FORWARD_HALF_SPEED;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'B' ){
+//			CommandEvent.EventParam = REVERSE_FULL_SPEED;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'b' ){
+//			CommandEvent.EventParam = REVERSE_HALF_SPEED;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'a' ){
+//			CommandEvent.EventParam = ALIGN_BEACON;
+//			PostActionService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'd' ){
+//			CommandEvent.EventParam = DRIVE2TAPE;
+//			PostActionService(CommandEvent);
+//		}	
+//		else if( ThisEvent.EventParam == 'G' ){
+//			CommandEvent.EventParam = ROBOT_QUERY;
+//			PostSPIService(CommandEvent);
+//		}	
+//		else if( ThisEvent.EventParam == 'g' ){
+//			CommandEvent.EventParam = ROBOT_FREQ_RESPONSE;
+//			PostSPIService(CommandEvent);
+//		}
+//		else if( ThisEvent.EventParam == 'V' ){
+//			CommandEvent.EventParam = ROBOT_STATUS;
+//			PostSPIService(CommandEvent);
+//		}
+//		else{   // otherwise post to Service 0 for processing
+//   
+//    }
+//    return true;
+//  }
   return false;
 }

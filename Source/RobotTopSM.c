@@ -40,9 +40,11 @@
 #include "ShootingSubSM.h"
 #include "SPIService.h"
 #include "HallEffectModule.h"
+#include "WireSensingModule.h"
 #include "LEDModule.h"
 #include "DrivingModule.h"
 #include "ReloadingSubSM.h"
+#include "MotorActionsModule.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -74,10 +76,38 @@
 
 #define Time4FrequencyReport 200
 
+<<<<<<< HEAD
+=======
+//Magnetic frequency codes
+#define code1333us 0000
+#define code1277us 0001
+#define code1222us 0010
+#define code1166us 0011
+#define code1111us 0100
+#define code1055us 0101
+#define code1000us 0110
+#define code944us 0111
+#define code889us 1000
+#define code833us 1001
+#define code778us 1010
+#define code722us 1011
+#define code667us 1100
+#define code611us 1101
+#define code556us 1110
+#define code500us 1111
+#define CodeInvalidStagingArea 0xff
+
+>>>>>>> 45f71c32154314c757364fe8d511c34c46e4c536
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
 #define WireFollow_TIME ONE_SEC/10
+#define PWMOffset 80
+#define PWMProportionalGain 0.05
+
+// MotorActionDefines
+#define FORWARD 1
+#define BACKWARD 0
 
 
 
@@ -100,8 +130,15 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
+<<<<<<< HEAD
 static uint32_t PositionDifference;
 static uint8_t FrequencyCode;
+=======
+
+int *LeftRLCReading;
+int *RightRLCReading;
+int PositionDifference;
+>>>>>>> 45f71c32154314c757364fe8d511c34c46e4c536
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -130,8 +167,14 @@ bool InitRobotTopSM ( uint8_t Priority )
 
   ThisEvent.EventType = ES_ENTRY;
 	
+<<<<<<< HEAD
+	// Initialize RLC hardware and the timer for wire following
+=======
 	// Initialize HARDWARE
+>>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
 	InitRLCSensor();
+	ES_Timer_SetTimer(WireFollow_TIMER, WireFollow_TIME);
+	
 	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
 	
 	// Initialize TIMERS
@@ -214,6 +257,12 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				{
 					 NextState = CHECKING_IN;
 					 MakeTransition = true;
+					 ReturnEvent.EventType = ES_NO_EVENT;
+				}
+				if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
+				{
+					 // Internal self transition
+					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
 				 break;
@@ -430,23 +479,53 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     {
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
-			ES_Timer_InitTimer(WireFollow_TIMER, WireFollow_TIME);
+			ES_Timer_StartTimer(WireFollow_TIMER);
+			
     }
     else if ( Event.EventType == ES_EXIT )
     {
+			// Stop the motor
+			stop();
     }
 		
 		// do the 'during' function for this state
 		else 
     {
-			// Wire following
-			CheckWirePosition();
-						
+			// Read the RLC sensor values
+			// Positive when too left, negative when too right
+			CheckWirePosition(LeftRLCReading, RightRLCReading);
+			PositionDifference = *RightRLCReading - *LeftRLCReading;
 			
-			//If a station has been reached post an event   MAKE THE IF!!!!!!!!!!!!!!
-			ES_Event PostEvent;
-			PostEvent.EventType = STATION_REACHED;
-			PostRobotTopSM(PostEvent); // We want to move to the next state
+			// P Control
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			  
+			//Clamp the value to 0-100
+			if(PWMLeft < 0){
+				PWMLeft = 0;
+			 }else if(PWMLeft > 100){
+				PWMLeft = 100;
+			}
+				
+			if(PWMRight < 0){
+				PWMRight = 0;
+			 }else if(PWMRight > 100){
+				PWMRight = 100;
+			}
+			
+			// Drive the motors using new PWM duty cycles
+			driveSeperate(PWMLeft,PWMRight,FORWARD);
+			
+			// Restart the timer
+			ES_Timer_StartTimer(WireFollow_TIMER);
+			
+			// Check if a staging area has been reached
+			uint16_t stageFreq = GetStagingAreaCode();
+			if(stageFreq != CodeInvalidStagingArea){
+				ES_Event PostEvent;
+			  PostEvent.EventType = STATION_REACHED;
+			  PostRobotTopSM(PostEvent); // Move to the next state
+			}
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

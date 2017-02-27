@@ -3,8 +3,8 @@
   Header file for Magnetic Module
  ****************************************************************************/
 
-#ifndef MagneticModule_H
-#define MagneticModule_H
+#ifndef RLCSensing_H
+#define RLCSensing_H
 
 // Event Definitions
 #include "ES_Configure.h" /* gets us event definitions */
@@ -12,6 +12,6 @@
 
 // Public Function Prototypes
 void InitRLCSensor( void );
-int CheckWirePosition(void);
+void CheckWirePosition(int *Left, int *Right);
 
 #endif 
