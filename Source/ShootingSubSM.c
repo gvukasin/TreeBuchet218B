@@ -66,7 +66,7 @@
    behavior of this state machine
 */
 static ES_Event DuringCalibrating( ES_Event Event);
-;static ES_Event DuringLoadingBall( ES_Event Event);
+static ES_Event DuringLoadingBall( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 
 /*---------------------------- Module Variables ---------------------------*/

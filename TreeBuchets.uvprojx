@@ -454,6 +454,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\ReloadingSubSM.c</FilePath>
             </File>
+            <File>
+              <FileName>Driving2StagingSubSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Driving2StagingSubSM.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -633,6 +638,11 @@
               <FileName>ShootingSubSM.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
+            <File>
+              <FileName>Driving2StagingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Driving2StagingSubSM.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1436,6 +1446,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\ReloadingSubSM.c</FilePath>
             </File>
+            <File>
+              <FileName>Driving2StagingSubSM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Driving2StagingSubSM.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1615,6 +1630,11 @@
               <FileName>ShootingSubSM.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
+            <File>
+              <FileName>Driving2StagingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Driving2StagingSubSM.h</FilePath>
             </File>
           </Files>
         </Group>

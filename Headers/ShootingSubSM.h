@@ -23,4 +23,3 @@ void StartShootingSM ( ES_Event CurrentEvent );
 ShootingState_t QueryShootingSM ( void );
 
 #endif /*ShootingSubSM_H */
-
