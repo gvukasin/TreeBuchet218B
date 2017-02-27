@@ -138,6 +138,9 @@ bool InitRobotTopSM ( uint8_t Priority )
   MyPriority = Priority;  // save our priority
 
   ThisEvent.EventType = ES_ENTRY;
+	
+	// Initialize hardware
+	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
   
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -389,7 +392,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // entry actions required for this state machine
-        //InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
+       
     }
     else if ( Event.EventType == ES_EXIT )
     { 
@@ -638,6 +641,9 @@ static ES_Event DuringStop( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+Hardware Functions:
+****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
 {
 	// Initialize port F to monitor the buttons
@@ -649,6 +655,7 @@ static void InitializeTeamButtonsHardware(void)
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= (RED_BUTTON|GREEN_BUTTON);	
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~(RED_BUTTON)| ~(GREEN_BUTTON));	
 }
+
 
 /*********************************************************  THE END *************************************************************/
 
