@@ -65,11 +65,17 @@
 
 #include "BITDEFS.H"
 
+// to print comments to the terminal
+#include <stdio.h>
+#include "termio.h" 
+#define clrScrn() 	printf("\x1b[2J")
+
+
 /*----------------------------- Module Defines ----------------------------*/
-#define RED_BUTTON GPIO_PIN_3 
-#define GREEN_BUTTON GPIO_PIN_4
-#define RED_BUTTON_PRESSED BIT3HI
-#define GREEN_BUTTON_PRESSED BIT4HI
+#define RED_BUTTON BIT4HI
+//#define GREEN_BUTTON GPIO_PIN_4
+#define ALL_BITS 0xff
+
 
 #define LEDS_ON 1
 #define LEDS_OFF 0
@@ -425,34 +431,49 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-    }
-    else if ( Event.EventType == ES_EXIT )
-    { 
-				//Post team color
+			//Post team color
 				ES_Event PostEvent;
-				PostEvent.EventType = TEAM_COLOR;			
-				if (RED_BUTTON_PRESSED)
+				PostEvent.EventType = TEAM_COLOR;	
+				PostEvent.EventParam = 0; //Defaults to 0			
+
+				// read state of button
+				uint8_t PinState;
+				PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+			
+				if (PinState == RED_BUTTON)
 				{
 					PostEvent.EventParam = 0;
 				}
-				else if (GREEN_BUTTON_PRESSED)
+				else 
 				{
 					PostEvent.EventParam = 1;
 				}
-				else
-				{
-					PostEvent.EventParam = 0; //Defaults to 0
-					//printf("\r\nYou need to press a button for team selection!\r\n");
-				}				
+
 				PostSPIService(PostEvent);
+    }
+    else if ( Event.EventType == ES_EXIT )
+    { 
+				
     }
 		
 		// do the 'during' function for this state
 		else 
     {			
-			//Query to know if we should start
-			ES_Event PostEvent;
-			PostEvent.EventType = ROBOT_QUERY;	
+			
+			if(Event.EventType == COM_STATUS){
+				
+				// check game status bit
+				if((Event.EventParam & BIT7HI) == BIT7HI){
+					// change return event to START to begin the game
+					Event.EventType = START;
+				}
+			} else {
+				
+				//ask LOC if for game status to know if we should start
+				ES_Event PostEvent;
+				PostEvent.EventType = ROBOT_STATUS;	
+				PostSPIService(PostEvent);
+			}
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -724,14 +745,17 @@ Hardware Functions:
 static void InitializeTeamButtonsHardware(void)
 {
 	// Initialize port F to monitor the buttons
- 	HWREG(SYSCTL_RCGCGPIO) |= BIT5HI;
+	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R5;
  	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R5) != SYSCTL_PRGPIO_R5);
-	HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= (RED_BUTTON|GREEN_BUTTON);	//NEED THIS????????????????????????????????
 	
-	// Set bits 3 and 4 in port F as input:
- 	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= (RED_BUTTON|GREEN_BUTTON);	
- 	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~(RED_BUTTON)| ~(GREEN_BUTTON));	
-}
+	// activate pull up for button pin 
+  HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= RED_BUTTON;
 
+	// Set bit 4 in port F as digital input:
+ 	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= RED_BUTTON;	
+ 	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~RED_BUTTON);
+
+	printf("\r\n button init \r\n");
+}
 
 /*********************************************************  THE END *************************************************************/

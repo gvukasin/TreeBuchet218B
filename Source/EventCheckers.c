@@ -98,3 +98,43 @@ bool Check4Keystroke(void)
   }
   return false;
 }
+///****************************************************************************
+// Function
+//   Check4Buttons
+// Parameters
+//   None
+// Returns
+//   bool: true if a new key was detected & posted
+// Description
+//   checks to see if a new key from the keyboard is detected and, if so, 
+//   retrieves the key and posts an ES_NewKey event to TestHarnessService0
+// Notes
+//   The functions that actually check the serial hardware for characters
+//   and retrieve them are assumed to be in ES_Port.c
+//   Since we always retrieve the keystroke when we detect it, thus clearing the
+//   hardware flag that indicates that a new key is ready this event checker 
+//   will only generate events on the arrival of new characters, even though we
+//   do not internally keep track of the last keystroke that we retrieved.
+// Author
+//   J. Edward Carryer, 08/06/13, 13:48
+//****************************************************************************/
+//bool Check4Buttons(void)
+//{
+//	// local variable for return 
+//	static uint8_t ButtonPressed = 0;
+//	
+//	if(){
+//		
+//		// set return variable to true
+//		ButtonPressed = 1;
+//		
+//		// post red event to robot sm
+//		PostRobotTopSM();
+//		
+//	} else if () {
+//		// set return variable to true
+//		ButtonPressed = 1;
+//	}
+//	
+//	return ButtonPressed;
+//}
