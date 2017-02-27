@@ -35,6 +35,7 @@
 #include "BITDEFS.H"
 #include "inc/hw_ssi.h"
 #include "SPIService.h"
+#include "RobotTopSM.h"
 
 // to print comments to the terminal
 #include <stdio.h>
@@ -57,12 +58,13 @@
 #define CPSDVSR 0x28
 
 // SCR divisor for SSI clock rate (99)
-#define SCR 0x63
+//#define SCR 0x63
+#define SCR 0x78
 
 // SPI period (4ms b/c need a minimum of 2ms)
 // these times assume a 1.000mS/tick timing
 #define TicksPerSec 976
-#define SPIPeriod (TicksPerSec/25)
+#define SPIPeriod (TicksPerSec/250)
 
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
@@ -91,7 +93,8 @@
    relevant to the behavior of this service
 */
 static void InitSerialHardware( void );
-static uint16_t Transmit2LOC( uint8_t );
+static void Transmit2LOC( uint8_t );
+static void SendData( void );
 
 /*---------------------------- Module Variables ---------------------------*/
 static uint8_t MyPriority;
@@ -105,10 +108,9 @@ static uint8_t ReceivedLOCData[5];
 
 // ISR events
 static ES_Event ISREvent; 
-static ES_Event LastEvent;
 
-// Last command byte to LOC
-static uint8_t LastCommand;
+// Last Event describes command sent to LOC before the zero bytes are sent
+static ES_Event LastEvent;
 
 // Last response byte from the LOC
 static uint8_t LastResponse;
@@ -143,15 +145,12 @@ static uint8_t ByteCount = 0;
 bool InitSPIService ( uint8_t Priority )
 {
 	 MyPriority = Priority;
-
-	 // set LastEvent parameter to 0
-	 LastEvent.EventParam = 0x00;
 	 
 	 // Initialize hardware
 	 InitSerialHardware();
 	 
 	// Initialize shorttimer 
-	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+	ES_Timer_SetTimer(SPI_TIMER,SPIPeriod);
 	
 	// Initialize team color as red
 	TeamColor = RED;
@@ -181,7 +180,7 @@ bool InitSPIService ( uint8_t Priority )
 ****************************************************************************/
 ES_Event RunSPIService ( ES_Event CurrentEvent )
 {	
-	printf("\r\n Run SPI: %i \r\n",CurrentEvent.EventType);
+	//printf("\r\n Run SPI: %i \r\n",CurrentEvent.EventType);
   // define return event if no errors persist 
   ES_Event ReturnEvent;
 	ReturnEvent.EventType = ES_NO_EVENT;
@@ -189,78 +188,59 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
   // WAITING2TRANSMIT State
   if(CurrentState == WAITING2TRANSMIT)
   {
-		if(CurrentEvent.EventType == TEAM_COLOR){
+		// change state to WAITING4TIMEOUT
+		CurrentState = WAITING4TIMEOUT;
+
+			if(CurrentEvent.EventType == TEAM_COLOR){
 			
 			// set team color from the parameter of the TEAM_COLOR event
 			TeamColor = CurrentEvent.EventParam;
-			
-		} else {
-			// change state to TRANSMITTING
-			CurrentState = TRANSMITTING;
-
-			
-			// define event to post to RobotSM 
-			ES_Event PostEvent;
-			PostEvent.EventType = ES_NO_EVENT;
+				
+			// change state to WAITING2TRANSMIT
+			CurrentState = WAITING2TRANSMIT;
 
 			// transmit to the LOC the bytes corresponding to the type of command event 	
-			if(CurrentEvent.EventType == ROBOT_QUERY)
-			{printf("\r\n ROBOT_QUERY \r\n");
-				// set Query event type and send data to LOC, and set event param to response
-				PostEvent.EventType = COM_QUERY_RESPONSE;
-				PostEvent.EventParam = Transmit2LOC( QueryCommand );
+			} else if(CurrentEvent.EventType == ROBOT_QUERY)
+			{
+				
+				// set LastEvent to the current event
+				LastEvent.EventType = CurrentEvent.EventType;
+				
+				// send Query Command to LOC
+				Transmit2LOC( QueryCommand );
 				
 			} else if (CurrentEvent.EventType == ROBOT_FREQ_RESPONSE) {
-				printf("\r\n ROBOT_FREQ_RESPONSE \r\n");
+			//	printf("\r\n ROBOT_FREQ_RESPONSE \r\n");
 				
-			// set last four bits to the frequency the RobotSM has determined
-				printf("\r\n FREQ:%x \r\n",CurrentEvent.EventParam);
-			uint8_t FCommand = (FreqCommand|CurrentEvent.EventParam);
+				// set LastEvent to the current event
+				LastEvent.EventType = CurrentEvent.EventType;
 				
-			// set Freq event type and send data to LOC, and set event param to response
-			PostEvent.EventType = COM_FREQ_REPORT;
-			PostEvent.EventParam = Transmit2LOC( FCommand );
+				// set last four bits to the frequency the RobotSM has determined
+				uint8_t FCommand = (FreqCommand|CurrentEvent.EventParam);
+				
+				// send data to LOC
+				Transmit2LOC( FCommand );
 
 			} else if (CurrentEvent.EventType == ROBOT_STATUS){
-				printf("\r\n ROBOT_STATUS \r\n");
-			// set Query event type and send data to LOC, and set event param to response
-			PostEvent.EventType = COM_STATUS;
-			PostEvent.EventParam = Transmit2LOC( StatusCommand );
+				//printf("\r\n ROBOT_STATUS \r\n");
+				
+				// set LastEvent to the current event
+				LastEvent.EventType = CurrentEvent.EventType;
+				
+				// send data to LOC
+				Transmit2LOC( StatusCommand );
 			}
-
-			// Initialize shorttimer to wait for 2 ms 
-			ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 			
-			// Post event to RobotTopSM
-			//PostRobotTopSM(PostEvent);
-		}
-
-	// TRANSMITTING State
-	} else if (CurrentState == TRANSMITTING) {
-
-		if(CurrentEvent.EventType == ES_TIMEOUT) {
-
-			if(ByteCount <= numReceivedBytes) {
-
-				// transmit a 0x00 byte to the LOC
-				HWREG(SSI0_BASE+SSI_O_DR) = 0;
-
-				// Increment ByteCount
-				ByteCount = ByteCount + 1;
-
-				// reset timer 
-				ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
-
-			} else {
-
-				// clear ByteCount
-				ByteCount = 0;
-
-				// Change state to 
+		//WAITING4TIMEOUT State
+	}	else if (CurrentState == WAITING4TIMEOUT){
+		
+			if(CurrentEvent.EventType == ES_TIMEOUT){
+			
+				// Change state to WAITING2TRANSMIT
 				CurrentState = WAITING2TRANSMIT;
+			
 			}
-		}
-	}	
+	}
 		
 	return ReturnEvent;
 }
@@ -298,7 +278,7 @@ bool PostSPIService( ES_Event ThisEvent )
      void
 
  Description
-     Initializes hardware in the Tiva to create an SPI master
+     Interupt response for SPI master
 
  Author
      Team 16, 02/04/17, 16:00
@@ -308,16 +288,19 @@ void SPI_InterruptResponse( void )
 	// clear interrupt
 	HWREG(SSI0_BASE + SSI_O_IM) &= (~SSI_IM_TXIM);
 
-	// read command 
-	ReceivedData = HWREG(SSI0_BASE+SSI_O_DR);	
+	// read command and store response from data register
+	for(int i=0; i<5;i++){
+	ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
+	}
+
+	// Change State to WAITING4TIMEOUT
+	CurrentState = WAITING4TIMEOUT;
 	
-	// post command to action service
-	ISREvent.EventType = ISR_COMMAND;
-	ISREvent.EventParam = ReceivedData;
-	//PostActionService(ISREvent);
+	// Send data to RobotSM
+	SendData();
 	
-	// set current state to WAITING2TRANSMIT
-	CurrentState = WAITING2TRANSMIT;
+	// reset timer 
+	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 }
 
 
@@ -341,52 +324,18 @@ private functions
  Author
      Team 16, 02/04/17, 23:00
 ****************************************************************************/
-static uint16_t Transmit2LOC( uint8_t Command )
+static void Transmit2LOC( uint8_t Command )
 {		
-	// define return data variable 
-	uint16_t ReturnedData = 0;
 	
 	//Enable the NVIC interrupt for the SSI
 	HWREG(SSI0_BASE + SSI_O_IM) |= SSI_IM_TXIM;
 	
 	// write command to the data register
 	HWREG(SSI0_BASE+SSI_O_DR) = Command;
-	
-	// write 0 to the data register four more times
-//	HWREG(SSI0_BASE+SSI_O_DR) = 0;
-//	HWREG(SSI0_BASE+SSI_O_DR) = 0;
-//	HWREG(SSI0_BASE+SSI_O_DR) = 0;
-//	HWREG(SSI0_BASE+SSI_O_DR) = 0;
-	
-	// read data from the data
-//	for(int i=0;i<numReceivedBytes;i++){
-//		ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);
-//	}
-	ReceivedLOCData[0] = HWREG(SSI0_BASE+SSI_O_DR);
-	// return the correct data for the corresponding Command into this function
-	if(Command == QueryCommand){
-		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
-		ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
-		
-	} else if (Command == FreqCommand) {
-		// set ReturnedData to the first two bytes of the total response from the LOC
-		
-		ReturnedData = ((ReceivedLOCData[0]<<NumResponseBits)|ReceivedLOCData[1]);
-		
-		
-	} else if (Command == StatusCommand){
-		// set ReturnedData to SB1 byte (bit shifted by 8) and SB2 or SB3 depending on red or green team
-		if(TeamColor == RED){	
-			ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[3]);
-		} else {
-			ReturnedData = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
-		}
-		
-	}
-	
-	// return the relevant data from the LOC
-	printf("\r\n Returned data:%x \r\n",ReturnedData);
-	return ReturnedData;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
+	HWREG(SSI0_BASE+SSI_O_DR) = 0;
 }
 
 /****************************************************************************
@@ -478,8 +427,66 @@ static void InitSerialHardware(void)
 	//Enable the NVIC interrupt for the SSI when starting to transmit
 	//Interrupt number -tiva DS pg.104
 	HWREG(NVIC_EN0) |= SSI_NVIC_HI;
+}
+/****************************************************************************
+ Function
+     SendData
+
+ Parameters
+     void
+
+ Returns
+     void
+
+ Description
+     sends the correct response to the TopRobotSM
+
+ Author
+     Team 16, 02/04/17, 16:00
+****************************************************************************/
+static void SendData(void){
 	
-	printf("\r\nGot thru SPI interrupt init\n");
+	// define event to post to RobotSM 
+	ES_Event PostEvent;
+	PostEvent.EventType = ES_ERROR; // incase of error 
+		
+	// create a local variable for data to return
+	uint16_t Data2Return = 0;
+
+	// send the correct data for the corresponding Command to the RobotSM
+	if(LastEvent.EventType == ROBOT_QUERY){
+		
+		// set post event type to COM_QUERY_RESPONSE
+		PostEvent.EventType = COM_QUERY_RESPONSE;
+		
+		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
+		Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
+		
+	} else if (LastEvent.EventType == ROBOT_FREQ_RESPONSE) {
+		// set return event type to COM_FREQ_REPORT
+		PostEvent.EventType = COM_FREQ_REPORT;
+		
+		// set ReturnedData to the first two bytes of the total response from the LOC
+		Data2Return = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
+		
+	} else if (LastEvent.EventType == ROBOT_STATUS){
+		
+			// set return event type to COM_STATUS
+			PostEvent.EventType = COM_STATUS;
+			
+			// set ReturnedData to SB1 byte (bit shifted by 8) and SB2 or SB3 depending on red or green team
+			if(TeamColor == RED){	
+				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[4]);
+			} else {
+				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
+			}
+				
+		}
+	
+		// Post event to RobotTopSM
+		//printf("\r\n D2R %x \r\n", Data2Return);
+		PostEvent.EventParam = Data2Return;
+		PostRobotTopSM(PostEvent);
 }
 
 #ifdef TEST

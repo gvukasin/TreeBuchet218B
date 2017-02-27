@@ -412,6 +412,22 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>1</Focus>
+<<<<<<< HEAD
+=======
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\Source\HallEffectModule.c</PathWithFileName>
+      <FilenameWithoutPath>HallEffectModule.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>2</GroupNumber>
+      <FileNumber>10</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <Focus>1</Focus>
+>>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\DrivingModule.c</PathWithFileName>
@@ -476,7 +492,11 @@
       <FileNumber>14</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+<<<<<<< HEAD
       <Focus>0</Focus>
+=======
+      <Focus>1</Focus>
+>>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\WireSensingModule.c</PathWithFileName>
@@ -884,7 +904,24 @@
     </File>
     <File>
       <GroupNumber>3</GroupNumber>
+<<<<<<< HEAD
       <FileNumber>45</FileNumber>
+=======
+      <FileNumber>46</FileNumber>
+      <FileType>5</FileType>
+      <tvExp>0</tvExp>
+      <Focus>1</Focus>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\Headers\HallEffectModule.h</PathWithFileName>
+      <FilenameWithoutPath>HallEffectModule.h</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>3</GroupNumber>
+      <FileNumber>47</FileNumber>
+>>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <Focus>1</Focus>
@@ -939,7 +976,11 @@
       <FileNumber>49</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+<<<<<<< HEAD
       <Focus>0</Focus>
+=======
+      <Focus>1</Focus>
+>>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\WireSensingModule.h</PathWithFileName>
