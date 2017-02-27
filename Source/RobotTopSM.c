@@ -74,24 +74,6 @@
 
 #define Time4FrequencyReport 200
 
-//Magnetic frequency codes
-#define code1333us 0000
-#define code1277us 0001
-#define code1222us 0010
-#define code1166us 0011
-#define code1111us 0100
-#define code1055us 0101
-#define code1000us 0110
-#define code944us 0111
-#define code889us 1000
-#define code833us 1001
-#define code778us 1010
-#define code722us 1011
-#define code667us 1100
-#define code611us 1101
-#define code556us 1110
-#define code500us 1111
-
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
@@ -118,7 +100,8 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
-uint32_t PositionDifference;
+static uint32_t PositionDifference;
+static uint8_t FrequencyCode;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -248,14 +231,14 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
                   NextState = SHOOTING;
                   MakeTransition = true; 
                   break;
-               case CHECK_IN_FAIL :
-								  NextState = CHECKING_IN; // Self transition
-                  MakeTransition = true; 
+               //case CHECK_IN_FAIL :
+							 case ES_TIMEOUT:
+								  NextState = CHECKING_IN; // Internal Self transition
                   break;
 							 case FINISH_STRONG :
 								 NextState = ENDING_STRATEGY;
 								 MakeTransition = true;
-								 break;
+								 break;							 
 							 default:
 								 printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
             }
@@ -480,19 +463,28 @@ static ES_Event DuringCheckIn( ES_Event Event)
     {
        // Check Ball count  
 			 // Check time
+			
+			 //(1) Report frequency
+			 PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+			 PostEvent.EventParam = FrequencyCode;
+			 PostSPIService(PostEvent);
+							
+			 //(2) Start 200ms timer
+			 ES_Timer_StartTimer(FrequencyReport_TIMER);
     }
     else if ( Event.EventType == ES_EXIT)
     {
-	
     }
 		
 		// do the 'during' function for this state
 		else 
-    {
-			//(1) Report frequency
-			//(2) Wait 200ms
-			//(3) Query until LOC returns a Response Ready
-       
+    {			
+			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
+			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
+			{
+				PostEvent.EventType = ROBOT_QUERY;
+			  PostSPIService(PostEvent);
+			}     
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
