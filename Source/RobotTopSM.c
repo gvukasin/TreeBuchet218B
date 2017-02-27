@@ -556,6 +556,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				
 			}     
     }
+		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
