@@ -76,8 +76,6 @@
 
 #define Time4FrequencyReport 200
 
-<<<<<<< HEAD
-=======
 //Magnetic frequency codes
 #define code1333us 0000
 #define code1277us 0001
@@ -97,7 +95,6 @@
 #define code500us 1111
 #define CodeInvalidStagingArea 0xff
 
->>>>>>> 45f71c32154314c757364fe8d511c34c46e4c536
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
@@ -130,15 +127,10 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
-<<<<<<< HEAD
-static uint32_t PositionDifference;
 static uint8_t FrequencyCode;
-=======
-
 int *LeftRLCReading;
 int *RightRLCReading;
 int PositionDifference;
->>>>>>> 45f71c32154314c757364fe8d511c34c46e4c536
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -167,11 +159,8 @@ bool InitRobotTopSM ( uint8_t Priority )
 
   ThisEvent.EventType = ES_ENTRY;
 	
-<<<<<<< HEAD
 	// Initialize RLC hardware and the timer for wire following
-=======
 	// Initialize HARDWARE
->>>>>>> e3f2556b4bed49ede0694b6f1eec470d6e46d9e6
 	InitRLCSensor();
 	ES_Timer_SetTimer(WireFollow_TIMER, WireFollow_TIME);
 	
