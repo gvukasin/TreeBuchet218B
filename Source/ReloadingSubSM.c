@@ -1,6 +1,6 @@
 /****************************************************************************
  Module
-   ShootingSubSM.c
+   HSMTemplate.c
 
  Revision
    2.0.1
@@ -51,27 +51,28 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
-#include "ShootingSubSM.h"
+#include "ReloadingSubSM.h"
 #include "SPIService.h"
 #include "RobotTopSM.h"
+#include "LEDModule.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
-
+#define LEDS_ON 1
+#define LEDS_OFF 0
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
    functions, entry & exit functions.They should be functions relevant to the
    behavior of this state machine
 */
-static ES_Event DuringCalibrating( ES_Event Event);
-;static ES_Event DuringLoadingBall( ES_Event Event);
-static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
+static ES_Event DuringRequestingBall( ES_Event Event);
+static ES_Event DuringWaiting4Ball( ES_Event Event);
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
-static ShootingState_t CurrentState;
+static ReloadingState_t CurrentState;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -94,20 +95,20 @@ static ShootingState_t CurrentState;
 ES_Event RunShootingSM( ES_Event CurrentEvent )
 {
    bool MakeTransition = false;/* are we making a state transition? */
-   ShootingState_t NextState = CurrentState;
+   ReloadingState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = CurrentEvent; // assume we are not consuming event
 
    switch ( CurrentState )
    {
-			 // CASE 1/3
-       case CALIBRATING :       
+			 // CASE 1/2
+       case REQUESTING_BALL :       
          // Execute During function 
-         CurrentEvent = DuringCalibrating(CurrentEvent);
+         CurrentEvent = DuringRequestingBall(CurrentEvent);
          //process any events
-         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == READY2SHOOT )) //If an event is active and it's the correct one
+         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == WAIT4BALL_DELIVERY )) //If an event is active and it's the correct one
          {       
-                  NextState = LOADING_BALL;//Decide what the next state will be
+                  NextState = WAITING4BALL;//Decide what the next state will be
                   MakeTransition = true; //mark that we are taking a transition
                   // if transitioning to a state with history change kind of entry
                   //EntryEventKind.EventType = ES_ENTRY_HISTORY;
@@ -120,33 +121,28 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          }
 				 else
 				 {
-					 printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
+					 printf("\r\nERROR: robot in reloading>requestingBall with NOT VALID EVENT\r");
 				 }
        break;
       
-				 // CASE 2/3				 
-			 case LOADING_BALL:
+				 // CASE 2/2				 
+			 case WAITING4BALL:
 			 // During function
-       CurrentEvent = DuringLoadingBall(CurrentEvent);
-			 // Process events			 
-			 if (CurrentEvent.EventType == BALL_FLYING)
-				{
-					 NextState = WATING4SHOT_COMPLETE;
+       CurrentEvent = DuringWaiting4Ball(CurrentEvent);
+			 // Process events	
+			 switch (CurrentEvent.EventType)
+			 {
+				 case RELOAD_BALLS:
+					 NextState = REQUESTING_BALL;
 					 MakeTransition = true;
-					 ReturnEvent.EventType = ES_NO_EVENT;
-				}							 
-				 break;
-				
-				// CASE 3/3				 
-			 case WATING4SHOT_COMPLETE:
-			 // During function
-       CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-			 // Process events			 
-			 if (CurrentEvent.EventType == SHOOTING_TIMEOUT)
-				{
-					 ReturnEvent.EventType = SHOOTING_TIMEOUT; //re-map this event for the upper level state machine
-				}							 
-				 break;
+					 ReturnEvent.EventType = ES_NO_EVENT;						 
+					 break;
+				 case BALLS_AVAILABLE:
+					 //ReturnEvent.EventType = ES_NO_EVENT;	 DONT KNOW WHAT TO DO
+					 break;
+				 default:
+					 printf("\r\nERROR: robot in reloading>requestingBall with NOT VALID EVENT\r");					 
+			 }
     }
     //   If we are making a state transition
     if (MakeTransition == true)
@@ -188,7 +184,7 @@ void StartShootingSM ( ES_Event CurrentEvent )
    // is started
    if ( ES_ENTRY_HISTORY != CurrentEvent.EventType )
    {
-        CurrentState = CALIBRATING;
+        CurrentState = REQUESTING_BALL;
    }
    // call the entry function (if any) for the ENTRY_STATE
    RunShootingSM(CurrentEvent);
@@ -211,7 +207,7 @@ void StartShootingSM ( ES_Event CurrentEvent )
  Author
      J. Edward Carryer, 2/11/05, 10:38AM
 ****************************************************************************/
-ShootingState_t QueryShootingSM ( void )
+ReloadingState_t QueryShootingSM ( void )
 {
    return(CurrentState);
 }
@@ -220,7 +216,7 @@ ShootingState_t QueryShootingSM ( void )
  private functions
  ***************************************************************************/
 
-static ES_Event DuringCalibrating( ES_Event Event)
+static ES_Event DuringRequestingBall( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
@@ -229,100 +225,42 @@ static ES_Event DuringCalibrating( ES_Event Event)
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        TurnOnOffBlueLEDs(LEDS_ON);
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        // do any local exit functionality
+        TurnOnOffBlueLEDs(LEDS_OFF);
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        // Send 10 pulses (10ms ON + 30ms OFF) 
+				
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
 
-static ES_Event DuringLoadingBall( ES_Event Event)
+static ES_Event DuringWaiting4Ball( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        // Start 3 second timer
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
     }
-		else // do the 'during' function for this state
+		
+		// do the 'during' function for this state
+		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
-    }
-    // return either Event, if you don't want to allow the lower level machine
-    // to remap the current event, or ReturnEvent if you do want to allow it.
-    return(ReturnEvent);
-}
-
-static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
-{
-    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
-    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
-    }
-    else if ( Event.EventType == ES_EXIT )
-    {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
-    }
-		else // do the 'during' function for this state
-    {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+				// we are just waiting to get a timeout
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
