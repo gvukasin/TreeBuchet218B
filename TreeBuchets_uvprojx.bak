@@ -10,6 +10,7 @@
       <TargetName>BaseFrameworkTarget</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>TM4C123GH6PM</Device>
@@ -424,11 +425,6 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\HallEffectModule.c</FilePath>
-            </File>
-            <File>
               <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\DrivingModule.c</FilePath>
@@ -456,7 +452,12 @@
             <File>
               <FileName>WireSensingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\WireSensingModule.c</FilePath>
+              <FilePath>.\Source\WireSensingModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>HallEffectModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -559,11 +560,6 @@
               <FilePath>.\Headers\termio.h</FilePath>
             </File>
             <File>
-              <FileName>TestHarnessService0.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TestHarnessService0.h</FilePath>
-            </File>
-            <File>
               <FileName>ES_ShortTimer.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ES_ShortTimer.h</FilePath>
@@ -572,21 +568,6 @@
               <FileName>PWMmodule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\PWMmodule.h</FilePath>
-            </File>
-            <File>
-              <FileName>TemplateFSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TemplateFSM.h</FilePath>
-            </File>
-            <File>
-              <FileName>TemplateService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TemplateService.h</FilePath>
-            </File>
-            <File>
-              <FileName>SPIService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\SPIService.h</FilePath>
             </File>
             <File>
               <FileName>ActionService.h</FileName>
@@ -614,11 +595,6 @@
               <FilePath>.\Headers\DrivingModule.h</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
               <FileName>IRBeaconModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\IRBeaconModule.h</FilePath>
@@ -641,7 +617,17 @@
             <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\WireSensingModule.h</FilePath>
+              <FilePath>.\Headers\WireSensingModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>SPIService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\SPIService.h</FilePath>
+            </File>
+            <File>
+              <FileName>HallEffectModule.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\HallEffectModule.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -651,7 +637,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -1416,11 +1402,6 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\HallEffectModule.c</FilePath>
-            </File>
-            <File>
               <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\DrivingModule.c</FilePath>
@@ -1448,7 +1429,12 @@
             <File>
               <FileName>WireSensingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\WireSensingModule.c</FilePath>
+              <FilePath>.\Source\WireSensingModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>HallEffectModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1551,11 +1537,6 @@
               <FilePath>.\Headers\termio.h</FilePath>
             </File>
             <File>
-              <FileName>TestHarnessService0.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TestHarnessService0.h</FilePath>
-            </File>
-            <File>
               <FileName>ES_ShortTimer.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ES_ShortTimer.h</FilePath>
@@ -1564,21 +1545,6 @@
               <FileName>PWMmodule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\PWMmodule.h</FilePath>
-            </File>
-            <File>
-              <FileName>TemplateFSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TemplateFSM.h</FilePath>
-            </File>
-            <File>
-              <FileName>TemplateService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TemplateService.h</FilePath>
-            </File>
-            <File>
-              <FileName>SPIService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\SPIService.h</FilePath>
             </File>
             <File>
               <FileName>ActionService.h</FileName>
@@ -1606,11 +1572,6 @@
               <FilePath>.\Headers\DrivingModule.h</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
               <FileName>IRBeaconModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\IRBeaconModule.h</FilePath>
@@ -1633,7 +1594,17 @@
             <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\WireSensingModule.h</FilePath>
+              <FilePath>.\Headers\WireSensingModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>SPIService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\SPIService.h</FilePath>
+            </File>
+            <File>
+              <FileName>HallEffectModule.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\HallEffectModule.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1643,7 +1614,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
