@@ -29,6 +29,7 @@ Events to post:
 
 /*----------------------------- Module Defines ----------------------------*/
 #define BitsPerNibble 4
+#define TicksPerMS 40000
 
 // staging area frequency codes
 #define code1333us 0000
@@ -191,6 +192,7 @@ void StagingAreaISR( void )
 	// grab captured value and calc period 
 	CurrentEdge = HWREG(WTIMER0_BASE+TIMER_O_TAR);
 	MeasuredStagingAreaPeriod = CurrentEdge - LastEdge;
+	MeasuredStagingAreaPeriod = MeasuredStagingAreaPeriod/TicksPerMS;
 	
 	// update LastCapture to prepare for the next edge
 	LastEdge = CurrentEdge;
