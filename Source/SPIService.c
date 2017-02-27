@@ -35,6 +35,7 @@
 #include "BITDEFS.H"
 #include "inc/hw_ssi.h"
 #include "SPIService.h"
+#include "RobotTopSM.h"
 
 // to print comments to the terminal
 #include <stdio.h>
