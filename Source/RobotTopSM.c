@@ -478,7 +478,8 @@ static ES_Event DuringShooting( ES_Event Event)
 				TurnOnOffYellowLEDs(LEDS_ON);
 			
         // start any lower level machines that run in this state
-        StartShootingSM(Event);  // HOW DOES EVENT START THE SHOOTING SM????????????????????
+        StartShootingSM(Event);  
+	
     }
     else if ( Event.EventType == ES_EXIT )
     {
