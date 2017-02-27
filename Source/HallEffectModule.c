@@ -24,7 +24,7 @@ Events to post:
 
 #include "ActionService.h"
 #include "MotorActionsModule.h"
-#include "MagneticModule.h"
+#include "HallEffectModule.h"
 
 
 /*----------------------------- Module Defines ----------------------------*/

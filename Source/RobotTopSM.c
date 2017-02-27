@@ -39,7 +39,7 @@
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
-#include "MagneticModule.h"
+#include "HallEffectModule.h"
 #include "LEDModule.h"
 #include "DrivingModule.h"
 #include "ReloadingSubSM.h"
@@ -95,6 +95,7 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
+uint32_t PositionDifference;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -422,6 +423,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			CheckWirePosition();
 		
 			// PD control  TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+						
 			
 			//If a station has been reached post an event   MAKE THE IF!!!!!!!!!!!!!!
 			ES_Event PostEvent;

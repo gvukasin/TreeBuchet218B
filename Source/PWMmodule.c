@@ -9,7 +9,7 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
-#define TEST 
+// #define TEST 
 
 #include "ES_Configure.h"
 #include "ES_Framework.h"

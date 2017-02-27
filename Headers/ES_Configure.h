@@ -288,6 +288,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								SHOOTING_TIMEOUT,
 								/* Reloading SM events */
 								WAIT4BALL_DELIVERY,
+								IR_BEACON_SENSED
                 } ES_EventTyp_t ;
 
 /****************************************************************************/

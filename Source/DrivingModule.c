@@ -13,7 +13,7 @@
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
-#include "MagneticModule.h"
+#include "HallEffectModule.h"
 #include "DrivingModule.h"
 
 // the common headers for C99 types 

@@ -23,7 +23,6 @@ Events to post:
 #include "inc/hw_nvic.h"
 
 #include "ActionService.h"
-#include "TapeModule.h"
 #include "MotorActionsModule.h"
 
 
@@ -182,7 +181,7 @@ void InputCaptureForIRDetectionResponse( void )
 		AveragedMeasuredSignalSpeedHz = SpeedAddition/counter;
 		SpeedAddition = 0;
 		ES_Event ThisEvent;
-		ThisEvent.EventType = IRBeaconSensed;
+		ThisEvent.EventType = IR_BEACON_SENSED;
 		ThisEvent.EventParam = ALIGN_BEACON;
 		PostActionService(ThisEvent);
 	}
