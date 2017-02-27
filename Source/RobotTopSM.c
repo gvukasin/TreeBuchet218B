@@ -1,12 +1,12 @@
 /****************************************************************************
  Module
-   TopHSMTemplate.c
+   RobotTopSM.c
 
  Revision
    2.0.1
 
  Description
-   This is a template for the top level Hierarchical state machine
+   This is the robot top state machine
 
  Notes
 
@@ -72,6 +72,9 @@
 #define LEDS_ON 1
 #define LEDS_OFF 0
 
+//Magnetic frequency codes
+#define code1333Hz 0000
+
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
@@ -92,7 +95,6 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
-//static bool CheckInSuccessFlag = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -180,7 +182,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// Execute During function for WAITING2START
         CurrentEvent = DuringWaiting2Start(CurrentEvent);
 				//process any events
-				if (CurrentEvent.EventType == START)
+				if (CurrentEvent.EventType == START) //an event is active and it is START
 				{
 					 NextState = DRIVING2STAGING;
 					 MakeTransition = true;
@@ -223,7 +225,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 								 MakeTransition = true;
 								 break;
 							 default:
-								 printf("\r\nERROR: Robot is in CHECKING_IN and the event received is NOT VALID\n");
+								 printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
             }
 					}
 				 break;
