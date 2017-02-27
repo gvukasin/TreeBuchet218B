@@ -62,7 +62,6 @@ uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944
 /*---------------------------- Module Functions ---------------------------*/
 void InitStagingAreaISR( void );
 void StagingAreaISR( void );
-uint16_t GetStagingAreaCode( void );
 
 /*------------------------------ Module Code ------------------------------*/
 
@@ -195,9 +194,6 @@ void StagingAreaISR( void )
 	
 	// update LastCapture to prepare for the next edge
 	LastEdge = CurrentEdge;
-	
-	// post to this service's event 
-	PostHallEffectModule(HallEffectEdgeDetected);
 }
 
 /****************************************************************************

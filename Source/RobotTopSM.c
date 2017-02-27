@@ -93,7 +93,7 @@
 #define code611us 1101
 #define code556us 1110
 #define code500us 1111
-#define CodeInvalidStagingArea 0xff
+#define codeInvalidStagingArea 0xff
 
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
@@ -510,7 +510,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			uint16_t stageFreq = GetStagingAreaCode();
-			if(stageFreq != CodeInvalidStagingArea){
+			if(stageFreq != codeInvalidStagingArea){
 				ES_Event PostEvent;
 			  PostEvent.EventType = STATION_REACHED;
 			  PostRobotTopSM(PostEvent); // Move to the next state
