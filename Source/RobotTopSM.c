@@ -463,8 +463,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // Check Ball count
-			
+        // Check Ball count  
 				// Check time
     }
     else if ( Event.EventType == ES_EXIT)
@@ -475,12 +474,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+       
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
