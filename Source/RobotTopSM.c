@@ -389,7 +389,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // entry actions required for this state machine
-        InitializeTeamButtonsHardware();
+        //InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
     }
     else if ( Event.EventType == ES_EXIT )
     { 
@@ -408,7 +408,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				else if (GREEN_BUTTON_PRESSED)
 					PostEvent.EventParam = 1;
 				else
-					printf("\r\nYou need to press a button for team selection!\r\n");
+					PostEvent.EventParam = 0; //Defaults to 0
+
+					//printf("\r\nYou need to press a button for team selection!\r\n");
 			
 				PostSPIService(PostEvent);
     }
@@ -434,10 +436,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-			// Wire sensing
+			// Wire following
 			CheckWirePosition();
-		
-			// PD control  TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 						
 			
 			//If a station has been reached post an event   MAKE THE IF!!!!!!!!!!!!!!
