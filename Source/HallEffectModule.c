@@ -57,7 +57,7 @@ Events to post:
 
 /****************************************************************************
  Function
-     InitMagneticSensor
+     InitRLCSensor
 
  Parameters
      void
@@ -72,19 +72,19 @@ Events to post:
  Author
      Team 16 
 ****************************************************************************/
-void InitMagneticSensor( void )
+void InitRLCSensor( void )
 {
 	
 	//Enable PE0 and PE1 for analog input
 	ADC_MultiInit(2);
 	
-	//Enable the clock to Port C	
-	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R4;
-	while (((HWREG(SYSCTL_PRGPIO)) & SYSCTL_PRGPIO_R4) != SYSCTL_PRGPIO_R4){
-		;
-  }
-	// Enable Pin 7 as digital input
-	HWREG(GPIO_PORTC_BASE+GPIO_O_DEN) |= GPIO_PIN_7; 
+//	//Enable the clock to Port C	
+//	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R4;
+//	while (((HWREG(SYSCTL_PRGPIO)) & SYSCTL_PRGPIO_R4) != SYSCTL_PRGPIO_R4){
+//		;
+//  }
+//	// Enable Pin 7 as digital input
+//	HWREG(GPIO_PORTC_BASE+GPIO_O_DEN) |= GPIO_PIN_7; 
 }
 
 /****************************************************************************
@@ -100,7 +100,17 @@ void InitMagneticSensor( void )
 					negative: robot on the right of the wire
      The return value is between -1000 and 1000
 ****************************************************************************/
-int CheckWirePosition(void)
+int CheckLeftRLC(void)
+{
+	uint32_t CurrentADRead[4];
+	
+  // Get the voltages from the input line	
+  ADC_MultiRead(CurrentADRead);
+
+	return CurrentADRead[0];
+}
+	
+int CheckRightRLC(void)
 {
 	uint32_t CurrentADRead[4];
 	int VoltageDifference;
@@ -113,4 +123,3 @@ int CheckWirePosition(void)
 	printf("\n--------------Voltage Difference = %u---------------\n",VoltageDifference);
 	return VoltageDifference;
 }
-	

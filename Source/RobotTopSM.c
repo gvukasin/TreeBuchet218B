@@ -90,6 +90,13 @@
 #define code556us 1110
 #define code500us 1111
 
+// Wire Following Control Defines
+// these times assume a 1.000mS/tick timing
+#define ONE_SEC 976
+#define WireFollow_TIME ONE_SEC/10
+
+
+
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
@@ -139,6 +146,7 @@ bool InitRobotTopSM ( uint8_t Priority )
   ThisEvent.EventType = ES_ENTRY;
 	
 	// Initialize hardware
+	InitRLCSensor();
 	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
   
 	// Start the Master State machine
@@ -390,35 +398,38 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // entry actions required for this state machine
-       
     }
     else if ( Event.EventType == ES_EXIT )
     { 
+				//Post team color
+				ES_Event PostEvent;
+				PostEvent.EventType = TEAM_COLOR;			
+				if (RED_BUTTON_PRESSED)
+				{
+					PostEvent.EventParam = 0;
+				}
+				else if (GREEN_BUTTON_PRESSED)
+				{
+					PostEvent.EventParam = 1;
+				}
+				else
+				{
+					PostEvent.EventParam = 0; //Defaults to 0
+					//printf("\r\nYou need to press a button for team selection!\r\n");
+				}				
+				PostSPIService(PostEvent);
     }
 		
 		// do the 'during' function for this state
 		else 
-    {
-        // do any activity that is repeated as long as we are in this state
-				// SHOULD WE USE THE BUTTON SERVICE FROM LAB 5????????????
-				ES_Event PostEvent;
-				PostEvent.EventType = TEAM_COLOR;
-				
-				if (RED_BUTTON_PRESSED)
-					PostEvent.EventParam = 0;
-				else if (GREEN_BUTTON_PRESSED)
-					PostEvent.EventParam = 1;
-				else
-					PostEvent.EventParam = 0; //Defaults to 0
-
-					//printf("\r\nYou need to press a button for team selection!\r\n");
-			
-				PostSPIService(PostEvent);
+    {			
+			//Query to know if we should start
+			ES_Event PostEvent;
+			PostEvent.EventType = ROBOT_QUERY;	
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
-    return(ReturnEvent);
+    return(Event);
 }
 
 static ES_Event DuringDriving2Staging( ES_Event Event)
@@ -428,8 +439,9 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-      // Initialize magnetic sensing hardware  
-			InitMagneticSensor();
+			// When getting into this state from other states,
+			// Start the timer to periodically read the sensor values
+			ES_Timer_InitTimer(WireFollow_TIMER, WireFollow_TIME);
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -460,8 +472,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // Check Ball count
-			
+        // Check Ball count  
 				// Check time
     }
     else if ( Event.EventType == ES_EXIT)
@@ -472,12 +483,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+       
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

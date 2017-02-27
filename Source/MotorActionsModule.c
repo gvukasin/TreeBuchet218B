@@ -116,6 +116,20 @@ void drive(uint8_t DutyCycle, bool direction)
 	SetPWMDutyCycle(DutyCycle - 5, direction, wheelSide);
 }
 
+
+// Drive with seperate duty cycles for left/right wheel
+void driveSeperate(uint8_t LeftDutyCycle, uint8_t RightDutyCycle, bool direction)
+{
+	// drive left motor at specified DutyCycle and direction
+	wheelSide = LEFT;
+	SetPWMDutyCycle(LeftDutyCycle, direction, wheelSide);
+	
+	// drive right motor at specified DutyCycle and direction
+	wheelSide = RIGHT;
+	SetPWMDutyCycle(RightDutyCycle, direction, wheelSide);
+}
+
+
 void stop(void)
 {
 	uint8_t DutyCycle = 0; // to stop motor
