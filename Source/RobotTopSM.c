@@ -483,6 +483,12 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
+			//(1) Report frequency
+			//(2) Query until LOC returns a Response Ready
+			
+			//If the frequency was INcorrect then 
+			// - wait 200ms
+			// - repeat (1) and (2) 
        
     }
     // return either Event, if you don't want to allow the lower level machine
