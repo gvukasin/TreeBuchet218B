@@ -39,7 +39,7 @@
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
-#include "MagneticModule.h"
+#include "HallEffectModule.h"
 #include "LEDModule.h"
 #include "DrivingModule.h"
 #include "ReloadingSubSM.h"
@@ -73,13 +73,27 @@
 #define LEDS_OFF 0
 
 //Magnetic frequency codes
-#define code1333Hz 0000
+#define code1333us 0000
+#define code1277us 0001
+#define code1222us 0010
+#define code1166us 0011
+#define code1111us 0100
+#define code1055us 0101
+#define code1000us 0110
+#define code944us 0111
+#define code889us 1000
+#define code833us 1001
+#define code778us 1010
+#define code722us 1011
+#define code667us 1100
+#define code611us 1101
+#define code556us 1110
+#define code500us 1111
 
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
 static ES_Event DuringCheckIn( ES_Event Event);
-static ES_Event DuringShooting( ES_Event Event);
 static ES_Event DuringShooting( ES_Event Event);
 static ES_Event DuringDriving2Reload( ES_Event Event);
 static ES_Event DuringReloading( ES_Event Event);
@@ -95,6 +109,7 @@ static void InitializeTeamButtonsHardware(void);
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
+uint32_t PositionDifference;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -122,6 +137,9 @@ bool InitRobotTopSM ( uint8_t Priority )
   MyPriority = Priority;  // save our priority
 
   ThisEvent.EventType = ES_ENTRY;
+	
+	// Initialize hardware
+	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
   
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -373,7 +391,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // entry actions required for this state machine
-        InitializeTeamButtonsHardware();
+       
     }
     else if ( Event.EventType == ES_EXIT )
     { 
@@ -392,7 +410,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				else if (GREEN_BUTTON_PRESSED)
 					PostEvent.EventParam = 1;
 				else
-					printf("\r\nYou need to press a button for team selection!\r\n");
+					PostEvent.EventParam = 0; //Defaults to 0
+
+					//printf("\r\nYou need to press a button for team selection!\r\n");
 			
 				PostSPIService(PostEvent);
     }
@@ -418,10 +438,9 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-			// Wire sensing
+			// Wire following
 			CheckWirePosition();
-		
-			// PD control  TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+						
 			
 			//If a station has been reached post an event   MAKE THE IF!!!!!!!!!!!!!!
 			ES_Event PostEvent;
@@ -476,7 +495,8 @@ static ES_Event DuringShooting( ES_Event Event)
 				TurnOnOffYellowLEDs(LEDS_ON);
 			
         // start any lower level machines that run in this state
-        StartShootingSM(Event);  // HOW DOES EVENT START THE SHOOTING SM????????????????????
+        StartShootingSM(Event);  
+	
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -620,6 +640,9 @@ static ES_Event DuringStop( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+Hardware Functions:
+****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
 {
 	// Initialize port F to monitor the buttons
@@ -631,6 +654,7 @@ static void InitializeTeamButtonsHardware(void)
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= (RED_BUTTON|GREEN_BUTTON);	
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~(RED_BUTTON)| ~(GREEN_BUTTON));	
 }
+
 
 /*********************************************************  THE END *************************************************************/
 

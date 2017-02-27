@@ -55,6 +55,7 @@
 #include "SPIService.h"
 #include "RobotTopSM.h"
 #include "LEDModule.h"
+#include "ShootingSubSM.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -92,7 +93,7 @@ static ReloadingState_t CurrentState;
  Author
    J. Edward Carryer, 2/11/05, 10:45AM
 ****************************************************************************/
-ES_Event RunShootingSM( ES_Event CurrentEvent )
+ES_Event RunReloadingSM( ES_Event CurrentEvent )
 {
    bool MakeTransition = false;/* are we making a state transition? */
    ReloadingState_t NextState = CurrentState;
@@ -176,7 +177,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
  Author
      J. Edward Carryer, 2/18/99, 10:38AM
 ****************************************************************************/
-void StartShootingSM ( ES_Event CurrentEvent )
+void StartReloadingSM ( ES_Event CurrentEvent )
 {
    // to implement entry to a history state or directly to a substate
    // you can modify the initialization of the CurrentState variable
@@ -207,7 +208,7 @@ void StartShootingSM ( ES_Event CurrentEvent )
  Author
      J. Edward Carryer, 2/11/05, 10:38AM
 ****************************************************************************/
-ReloadingState_t QueryShootingSM ( void )
+ReloadingState_t QueryReloadingSM ( void )
 {
    return(CurrentState);
 }

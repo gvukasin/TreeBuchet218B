@@ -13,7 +13,7 @@
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
-#include "MagneticModule.h"
+#include "HallEffectModule.h"
 #include "DrivingModule.h"
 
 // the common headers for C99 types 
@@ -39,17 +39,26 @@
 
 /*---------------------------- Module Variables ---------------------------*/
 
-void DriveOnWire(void)
-{
 
+void DriveOnWire(void) //TODO
+{
+	
 }
 
 void Drive2Wire(void)
 {
-
+	// FOR 2/26 CHECKOFF RUN
+	// drive randomly in 4 directions until wire is sensed
+	
+	// FOR PROJECT RUN
+	// determine if on red or green side
+	// align with appropriate IR signal
+	// drive towards wire accordingly
 }
 
 void Drive2Reload(void)
 {
-
+	// determine if on red or green side
+	// align with corresponding IR signal
+	// drive to reloading station (might need limit switch to know when to stop)
 }
