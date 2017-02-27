@@ -90,6 +90,13 @@
 #define code556us 1110
 #define code500us 1111
 
+// Wire Following Control Defines
+// these times assume a 1.000mS/tick timing
+#define ONE_SEC 976
+#define WireFollow_TIME ONE_SEC/10
+
+
+
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
@@ -139,6 +146,7 @@ bool InitRobotTopSM ( uint8_t Priority )
   ThisEvent.EventType = ES_ENTRY;
 	
 	// Initialize hardware
+	InitRLCSensor();
 	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
   
 	// Start the Master State machine
@@ -428,8 +436,9 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-      // Initialize magnetic sensing hardware  
-			InitMagneticSensor();
+			// When getting into this state from other states,
+			// Start the timer to periodically read the sensor values
+			ES_Timer_InitTimer(WireFollow_TIMER, WireFollow_TIME);
     }
     else if ( Event.EventType == ES_EXIT )
     {

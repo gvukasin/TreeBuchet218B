@@ -38,11 +38,11 @@
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
 // the header file with the public function prototypes
-#define SERV_0_HEADER "ActionService.h"
+#define SERV_0_HEADER "RobotTopSM.h"
 // the name of the Init function
-#define SERV_0_INIT InitializeActionService
+#define SERV_0_INIT InitRobotTopSM
 // the name of the run function
-#define SERV_0_RUN RunActionService
+#define SERV_0_RUN RunRobotTopSM
 // How big should this services Queue be?
 #define SERV_0_QUEUE_SIZE 5
 
@@ -337,7 +337,7 @@ typedef enum {  ES_NO_EVENT = 0,
 // priority in servicing them
 #define TIMER_UNUSED ((pPostFunc)0)
 #define TIMER0_RESP_FUNC PostSPIService
-#define TIMER1_RESP_FUNC TIMER_UNUSED
+#define TIMER1_RESP_FUNC PostRobotTopSM
 #define TIMER2_RESP_FUNC TIMER_UNUSED
 #define TIMER3_RESP_FUNC TIMER_UNUSED
 #define TIMER4_RESP_FUNC TIMER_UNUSED
@@ -361,5 +361,7 @@ typedef enum {  ES_NO_EVENT = 0,
 // These symbolic names should be changed to be relevant to your application 
 
 #define SPI_TIMER 0
+#define WireFollow_TIMER 1
+
 
 #endif /* CONFIGURE_H */
