@@ -72,6 +72,8 @@
 #define LEDS_ON 1
 #define LEDS_OFF 0
 
+#define Time4FrequencyReport 200
+
 //Magnetic frequency codes
 #define code1333us 0000
 #define code1277us 0001
@@ -145,9 +147,13 @@ bool InitRobotTopSM ( uint8_t Priority )
 
   ThisEvent.EventType = ES_ENTRY;
 	
-	// Initialize hardware
+	// Initialize HARDWARE
 	InitRLCSensor();
 	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
+	
+	// Initialize TIMERS
+	// Initialize 200ms timer for handshake
+		ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
   
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -472,8 +478,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // Check Ball count  
-				// Check time
+       // Check Ball count  
+			 // Check time
     }
     else if ( Event.EventType == ES_EXIT)
     {
@@ -484,11 +490,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		else 
     {
 			//(1) Report frequency
-			//(2) Query until LOC returns a Response Ready
-			
-			//If the frequency was INcorrect then 
-			// - wait 200ms
-			// - repeat (1) and (2) 
+			//(2) Wait 200ms
+			//(3) Query until LOC returns a Response Ready
        
     }
     // return either Event, if you don't want to allow the lower level machine
