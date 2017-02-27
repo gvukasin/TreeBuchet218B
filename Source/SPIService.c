@@ -478,7 +478,7 @@ static void SendData(void){
 			if(TeamColor == RED){	
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[4]);
 			} else {
-				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
+				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]|(BIT7HI & ReceivedLOCData[4]));
 			}
 				
 		}
