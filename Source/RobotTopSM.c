@@ -484,6 +484,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			{
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
+				
+				
 			}     
     }
     // return either Event, if you don't want to allow the lower level machine
