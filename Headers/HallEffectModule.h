@@ -11,7 +11,7 @@
 #include "ES_Types.h"     /* gets bool type for returns */
 
 // Public Function Prototypes
-void InitRLCSensor( void );
-int CheckWirePosition(void);
+//void InitRLCSensor( void );
+//int CheckWirePosition(void);
 
 #endif 
