@@ -100,26 +100,15 @@ void InitRLCSensor( void )
 					negative: robot on the right of the wire
      The return value is between -1000 and 1000
 ****************************************************************************/
-int CheckLeftRLC(void)
+void CheckWirePosition(int *Left, int *Right)
 {
 	uint32_t CurrentADRead[4];
 	
   // Get the voltages from the input line	
   ADC_MultiRead(CurrentADRead);
 
-	return CurrentADRead[0];
+	*Left = CurrentADRead[0];
+	*Right = CurrentADRead[1];
 }
 	
-int CheckRightRLC(void)
-{
-	uint32_t CurrentADRead[4];
-	int VoltageDifference;
-  
-  // Get the voltages from the input line	
-  ADC_MultiRead(CurrentADRead);
-	printf("\n--------------PE0 Voltage = %u, PE1 Voltage = %u---------------\n",CurrentADRead[0],CurrentADRead[1]);
-	
-	VoltageDifference = CurrentADRead[1] - CurrentADRead[0];
-	printf("\n--------------Voltage Difference = %u---------------\n",VoltageDifference);
-	return VoltageDifference;
-}
+

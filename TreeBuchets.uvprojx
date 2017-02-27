@@ -425,11 +425,6 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\HallEffectModule.c</FilePath>
-            </File>
-            <File>
               <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\DrivingModule.c</FilePath>
@@ -457,7 +452,7 @@
             <File>
               <FileName>WireSensingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\WireSensingModule.c</FilePath>
+              <FilePath>.\Source\WireSensingModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -585,11 +580,6 @@
               <FilePath>.\Headers\TemplateService.h</FilePath>
             </File>
             <File>
-              <FileName>SPIService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\SPIService.h</FilePath>
-            </File>
-            <File>
               <FileName>ActionService.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ActionService.h</FilePath>
@@ -615,11 +605,6 @@
               <FilePath>.\Headers\DrivingModule.h</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
               <FileName>IRBeaconModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\IRBeaconModule.h</FilePath>
@@ -642,7 +627,12 @@
             <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\WireSensingModule.h</FilePath>
+              <FilePath>.\Headers\WireSensingModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>SPIService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>C:\Users\egalbally\Documents\GITHUB REPOS\TreeBuchets\Headers\SPIService.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1417,11 +1407,6 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\HallEffectModule.c</FilePath>
-            </File>
-            <File>
               <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\DrivingModule.c</FilePath>
@@ -1449,7 +1434,7 @@
             <File>
               <FileName>WireSensingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\WireSensingModule.c</FilePath>
+              <FilePath>.\Source\WireSensingModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1577,11 +1562,6 @@
               <FilePath>.\Headers\TemplateService.h</FilePath>
             </File>
             <File>
-              <FileName>SPIService.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\SPIService.h</FilePath>
-            </File>
-            <File>
               <FileName>ActionService.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\ActionService.h</FilePath>
@@ -1607,11 +1587,6 @@
               <FilePath>.\Headers\DrivingModule.h</FilePath>
             </File>
             <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
               <FileName>IRBeaconModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\IRBeaconModule.h</FilePath>
@@ -1634,7 +1609,12 @@
             <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\WireSensingModule.h</FilePath>
+              <FilePath>.\Headers\WireSensingModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>SPIService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>C:\Users\egalbally\Documents\GITHUB REPOS\TreeBuchets\Headers\SPIService.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1794,5 +1774,11 @@
       </Groups>
     </Target>
   </Targets>
+
+  <RTE>
+    <apis/>
+    <components/>
+    <files/>
+  </RTE>
 
 </Project>
