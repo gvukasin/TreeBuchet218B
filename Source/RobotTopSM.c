@@ -95,7 +95,6 @@ static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
 static ES_Event DuringCheckIn( ES_Event Event);
 static ES_Event DuringShooting( ES_Event Event);
-static ES_Event DuringShooting( ES_Event Event);
 static ES_Event DuringDriving2Reload( ES_Event Event);
 static ES_Event DuringReloading( ES_Event Event);
 static ES_Event DuringEndingStrategy( ES_Event Event);

@@ -10,13 +10,10 @@
       <TargetName>BaseFrameworkTarget</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>TM4C123GH6PM</Device>
           <Vendor>Texas Instruments</Vendor>
-          <PackID>Keil.TM4C_DFP.1.1.0</PackID>
-          <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IROM(0x00000000,0x040000) IRAM(0x20000000,0x008000) CPUTYPE("Cortex-M4") FPU2 CLOCK(80000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
@@ -85,8 +82,6 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
-            <nStopA1X>0</nStopA1X>
-            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -125,6 +120,48 @@
             <HexOffset>0</HexOffset>
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
+          <Simulator>
+            <UseSimulator>0</UseSimulator>
+            <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
+            <RunToMain>1</RunToMain>
+            <RestoreBreakpoints>1</RestoreBreakpoints>
+            <RestoreWatchpoints>1</RestoreWatchpoints>
+            <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
+            <RestoreFunctions>1</RestoreFunctions>
+            <RestoreToolbox>1</RestoreToolbox>
+            <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
+            <RestoreSysVw>1</RestoreSysVw>
+          </Simulator>
+          <Target>
+            <UseTarget>1</UseTarget>
+            <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
+            <RunToMain>1</RunToMain>
+            <RestoreBreakpoints>1</RestoreBreakpoints>
+            <RestoreWatchpoints>1</RestoreWatchpoints>
+            <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
+            <RestoreFunctions>0</RestoreFunctions>
+            <RestoreToolbox>1</RestoreToolbox>
+            <RestoreTracepoints>1</RestoreTracepoints>
+            <RestoreSysVw>1</RestoreSysVw>
+            <UsePdscDebugDescription>1</UsePdscDebugDescription>
+          </Target>
+          <RunDebugAfterBuild>0</RunDebugAfterBuild>
+          <TargetSelection>3</TargetSelection>
+          <SimDlls>
+            <CpuDll></CpuDll>
+            <CpuDllArguments></CpuDllArguments>
+            <PeripheralDll></PeripheralDll>
+            <PeripheralDllArguments></PeripheralDllArguments>
+            <InitializationFile></InitializationFile>
+          </SimDlls>
+          <TargetDlls>
+            <CpuDll></CpuDll>
+            <CpuDllArguments></CpuDllArguments>
+            <PeripheralDll></PeripheralDll>
+            <PeripheralDllArguments></PeripheralDllArguments>
+            <InitializationFile></InitializationFile>
+            <Driver>BIN\lmidk-agdi.dll</Driver>
+          </TargetDlls>
         </DebugOption>
         <Utilities>
           <Flash1>
@@ -189,7 +226,6 @@
             <useUlib>0</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
-            <nSecure>0</nSecure>
             <RoSelD>3</RoSelD>
             <RwSelD>3</RwSelD>
             <CodeSel>0</CodeSel>
@@ -324,13 +360,6 @@
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <useXO>0</useXO>
-            <v6Lang>1</v6Lang>
-            <v6LangP>1</v6LangP>
-            <vShortEn>1</vShortEn>
-            <vShortWch>1</vShortWch>
-            <v6Lto>0</v6Lto>
-            <v6WtE>0</v6WtE>
-            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--c99</MiscControls>
               <Define>rvmdk PART_TM4C123GH6PM TARGET_IS_TM4C123_RB1</Define>
@@ -348,7 +377,6 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -395,6 +423,21 @@
               <FilePath>.\Source\EventCheckers.c</FilePath>
             </File>
             <File>
+              <FileName>ES_ShortTimer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ES_ShortTimer.c</FilePath>
+            </File>
+            <File>
+              <FileName>ES_Queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ES_Queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\main.c</FilePath>
+            </File>
+            <File>
               <FileName>PWMmodule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\PWMmodule.c</FilePath>
@@ -425,34 +468,14 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>ADMulti.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ADMulti.c</FilePath>
-            </File>
-            <File>
-              <FileName>DrivingModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\DrivingModule.c</FilePath>
-            </File>
-            <File>
               <FileName>HallEffectModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
             <File>
-              <FileName>IRBeaconModule.c</FileName>
+              <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\IRBeaconModule.c</FilePath>
-            </File>
-            <File>
-              <FileName>LEDModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\LEDModule.c</FilePath>
-            </File>
-            <File>
-              <FileName>ReloadingSubSM.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ReloadingSubSM.c</FilePath>
+              <FilePath>.\Source\DrivingModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -599,41 +622,6 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\RobotTopSM.h</FilePath>
             </File>
-            <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>ADMulti.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ADMulti.h</FilePath>
-            </File>
-            <File>
-              <FileName>DrivingModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\DrivingModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>IRBeaconModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\IRBeaconModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>LEDModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\LEDModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>ReloadingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
-            </File>
-            <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -642,7 +630,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -692,13 +680,6 @@
                 <uSurpInc>2</uSurpInc>
                 <uC99>2</uC99>
                 <useXO>2</useXO>
-                <v6Lang>0</v6Lang>
-                <v6LangP>0</v6LangP>
-                <vShortEn>2</vShortEn>
-                <vShortWch>2</vShortWch>
-                <v6Lto>2</v6Lto>
-                <v6WtE>2</v6WtE>
-                <v6Rtti>2</v6Rtti>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -716,7 +697,6 @@
                 <NoWarn>2</NoWarn>
                 <uSurpInc>2</uSurpInc>
                 <useXO>2</useXO>
-                <uClangAs>2</uClangAs>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -781,11 +761,6 @@
               <FileName>uartstdio.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\uartstdio.c</FilePath>
-            </File>
-            <File>
-              <FileName>ES_ShortTimer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ES_ShortTimer.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -867,8 +842,6 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
-            <nStopA1X>0</nStopA1X>
-            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -907,6 +880,48 @@
             <HexOffset>0</HexOffset>
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
+          <Simulator>
+            <UseSimulator>0</UseSimulator>
+            <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
+            <RunToMain>1</RunToMain>
+            <RestoreBreakpoints>1</RestoreBreakpoints>
+            <RestoreWatchpoints>1</RestoreWatchpoints>
+            <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
+            <RestoreFunctions>1</RestoreFunctions>
+            <RestoreToolbox>1</RestoreToolbox>
+            <LimitSpeedToRealTime>0</LimitSpeedToRealTime>
+            <RestoreSysVw>1</RestoreSysVw>
+          </Simulator>
+          <Target>
+            <UseTarget>1</UseTarget>
+            <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
+            <RunToMain>1</RunToMain>
+            <RestoreBreakpoints>1</RestoreBreakpoints>
+            <RestoreWatchpoints>1</RestoreWatchpoints>
+            <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
+            <RestoreFunctions>0</RestoreFunctions>
+            <RestoreToolbox>1</RestoreToolbox>
+            <RestoreTracepoints>1</RestoreTracepoints>
+            <RestoreSysVw>1</RestoreSysVw>
+            <UsePdscDebugDescription>1</UsePdscDebugDescription>
+          </Target>
+          <RunDebugAfterBuild>0</RunDebugAfterBuild>
+          <TargetSelection>3</TargetSelection>
+          <SimDlls>
+            <CpuDll></CpuDll>
+            <CpuDllArguments></CpuDllArguments>
+            <PeripheralDll></PeripheralDll>
+            <PeripheralDllArguments></PeripheralDllArguments>
+            <InitializationFile></InitializationFile>
+          </SimDlls>
+          <TargetDlls>
+            <CpuDll></CpuDll>
+            <CpuDllArguments></CpuDllArguments>
+            <PeripheralDll></PeripheralDll>
+            <PeripheralDllArguments></PeripheralDllArguments>
+            <InitializationFile></InitializationFile>
+            <Driver>BIN\lmidk-agdi.dll</Driver>
+          </TargetDlls>
         </DebugOption>
         <Utilities>
           <Flash1>
@@ -971,7 +986,6 @@
             <useUlib>0</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
-            <nSecure>0</nSecure>
             <RoSelD>3</RoSelD>
             <RwSelD>3</RwSelD>
             <CodeSel>0</CodeSel>
@@ -1106,13 +1120,6 @@
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <useXO>0</useXO>
-            <v6Lang>1</v6Lang>
-            <v6LangP>1</v6LangP>
-            <vShortEn>1</vShortEn>
-            <vShortWch>1</vShortWch>
-            <v6Lto>0</v6Lto>
-            <v6WtE>0</v6WtE>
-            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--c99</MiscControls>
               <Define>rvmdk PART_TM4C123GH6PM TARGET_IS_TM4C123_RB1</Define>
@@ -1130,7 +1137,6 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -1199,13 +1205,6 @@
                     <uSurpInc>2</uSurpInc>
                     <uC99>2</uC99>
                     <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
                     <VariousControls>
                       <MiscControls></MiscControls>
                       <Define></Define>
@@ -1225,6 +1224,64 @@
               <FileName>EventCheckers.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\EventCheckers.c</FilePath>
+            </File>
+            <File>
+              <FileName>ES_ShortTimer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ES_ShortTimer.c</FilePath>
+            </File>
+            <File>
+              <FileName>ES_Queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ES_Queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\main.c</FilePath>
+              <FileOption>
+                <CommonProperty>
+                  <UseCPPCompiler>2</UseCPPCompiler>
+                  <RVCTCodeConst>0</RVCTCodeConst>
+                  <RVCTZI>0</RVCTZI>
+                  <RVCTOtherData>0</RVCTOtherData>
+                  <ModuleSelection>0</ModuleSelection>
+                  <IncludeInBuild>0</IncludeInBuild>
+                  <AlwaysBuild>0</AlwaysBuild>
+                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
+                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
+                  <PublicsOnly>2</PublicsOnly>
+                  <StopOnExitCode>11</StopOnExitCode>
+                  <CustomArgument></CustomArgument>
+                  <IncludeLibraryModules></IncludeLibraryModules>
+                  <ComprImg>1</ComprImg>
+                </CommonProperty>
+                <FileArmAds>
+                  <Cads>
+                    <interw>2</interw>
+                    <Optim>0</Optim>
+                    <oTime>2</oTime>
+                    <SplitLS>2</SplitLS>
+                    <OneElfS>2</OneElfS>
+                    <Strict>2</Strict>
+                    <EnumInt>2</EnumInt>
+                    <PlainCh>2</PlainCh>
+                    <Ropi>2</Ropi>
+                    <Rwpi>2</Rwpi>
+                    <wLevel>2</wLevel>
+                    <uThumb>2</uThumb>
+                    <uSurpInc>2</uSurpInc>
+                    <uC99>2</uC99>
+                    <useXO>2</useXO>
+                    <VariousControls>
+                      <MiscControls></MiscControls>
+                      <Define></Define>
+                      <Undefine></Undefine>
+                      <IncludePath></IncludePath>
+                    </VariousControls>
+                  </Cads>
+                </FileArmAds>
+              </FileOption>
             </File>
             <File>
               <FileName>PWMmodule.c</FileName>
@@ -1264,13 +1321,6 @@
                     <uSurpInc>2</uSurpInc>
                     <uC99>2</uC99>
                     <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
                     <VariousControls>
                       <MiscControls></MiscControls>
                       <Define></Define>
@@ -1324,13 +1374,6 @@
                     <uSurpInc>2</uSurpInc>
                     <uC99>2</uC99>
                     <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
                     <VariousControls>
                       <MiscControls></MiscControls>
                       <Define></Define>
@@ -1379,13 +1422,6 @@
                     <uSurpInc>2</uSurpInc>
                     <uC99>2</uC99>
                     <useXO>2</useXO>
-                    <v6Lang>0</v6Lang>
-                    <v6LangP>0</v6LangP>
-                    <vShortEn>2</vShortEn>
-                    <vShortWch>2</vShortWch>
-                    <v6Lto>2</v6Lto>
-                    <v6WtE>2</v6WtE>
-                    <v6Rtti>2</v6Rtti>
                     <VariousControls>
                       <MiscControls></MiscControls>
                       <Define></Define>
@@ -1407,34 +1443,14 @@
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
             <File>
-              <FileName>ADMulti.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ADMulti.c</FilePath>
-            </File>
-            <File>
-              <FileName>DrivingModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\DrivingModule.c</FilePath>
-            </File>
-            <File>
               <FileName>HallEffectModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
             <File>
-              <FileName>IRBeaconModule.c</FileName>
+              <FileName>DrivingModule.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Source\IRBeaconModule.c</FilePath>
-            </File>
-            <File>
-              <FileName>LEDModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\LEDModule.c</FilePath>
-            </File>
-            <File>
-              <FileName>ReloadingSubSM.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ReloadingSubSM.c</FilePath>
+              <FilePath>.\Source\DrivingModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1581,41 +1597,6 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\RobotTopSM.h</FilePath>
             </File>
-            <File>
-              <FileName>HallEffectModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\HallEffectModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>ADMulti.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ADMulti.h</FilePath>
-            </File>
-            <File>
-              <FileName>DrivingModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\DrivingModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>IRBeaconModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\IRBeaconModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>LEDModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\LEDModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>ReloadingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
-            </File>
-            <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -1624,7 +1605,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -1674,13 +1655,6 @@
                 <uSurpInc>2</uSurpInc>
                 <uC99>2</uC99>
                 <useXO>2</useXO>
-                <v6Lang>0</v6Lang>
-                <v6LangP>0</v6LangP>
-                <vShortEn>2</vShortEn>
-                <vShortWch>2</vShortWch>
-                <v6Lto>2</v6Lto>
-                <v6WtE>2</v6WtE>
-                <v6Rtti>2</v6Rtti>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -1698,7 +1672,6 @@
                 <NoWarn>2</NoWarn>
                 <uSurpInc>2</uSurpInc>
                 <useXO>2</useXO>
-                <uClangAs>2</uClangAs>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -1763,11 +1736,6 @@
               <FileName>uartstdio.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\uartstdio.c</FilePath>
-            </File>
-            <File>
-              <FileName>ES_ShortTimer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\ES_ShortTimer.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -608,11 +608,6 @@
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
             </File>
             <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
-            </File>
-            <File>
               <FileName>RobotTopSM.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\RobotTopSM.h</FilePath>
@@ -1576,11 +1571,6 @@
               <FileName>MotorActionsModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
             </File>
             <File>
               <FileName>RobotTopSM.h</FileName>
