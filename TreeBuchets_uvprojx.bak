@@ -467,6 +467,16 @@
               <FileType>1</FileType>
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
+            <File>
+              <FileName>HallEffectModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\HallEffectModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>DrivingModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\DrivingModule.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -606,11 +616,6 @@
               <FileName>MotorActionsModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
             </File>
             <File>
               <FileName>RobotTopSM.h</FileName>
@@ -1437,6 +1442,16 @@
               <FileType>1</FileType>
               <FilePath>.\Source\ShootingSubSM.c</FilePath>
             </File>
+            <File>
+              <FileName>HallEffectModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\HallEffectModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>DrivingModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\DrivingModule.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1576,11 +1591,6 @@
               <FileName>MotorActionsModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\MotorActionsModule.h</FilePath>
-            </File>
-            <File>
-              <FileName>TapeModule.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\TapeModule.h</FilePath>
             </File>
             <File>
               <FileName>RobotTopSM.h</FileName>
