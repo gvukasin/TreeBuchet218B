@@ -329,7 +329,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions 
-#define EVENT_CHECK_LIST Check4Keystroke
+#define EVENT_CHECK_LIST Check4Keystroke, Check4Button
 
 /****************************************************************************/
 // These are the definitions for the post functions to be executed when the

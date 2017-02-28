@@ -46,6 +46,7 @@
 #include "ReloadingSubSM.h"
 #include "MotorActionsModule.h"
 #include "PWMModule.h"
+#include "EventCheckers.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -74,9 +75,10 @@
 
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
-//#define GREEN_BUTTON GPIO_PIN_4
 #define ALL_BITS 0xff
 
+#define RED 0
+#define GREEN 1
 
 #define LEDS_ON 1
 #define LEDS_OFF 0
@@ -113,8 +115,6 @@
 #define FORWARD 1
 #define BACKWARD 0
 
-
-
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
 static ES_Event DuringDriving2Staging( ES_Event Event);
@@ -135,9 +135,13 @@ static void InitializeTeamButtonsHardware(void);
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
 static uint8_t FrequencyCode;
-int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
-int PositionDifference;
-bool DoFirstTimeFlag;
+static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
+static int PositionDifference;
+static bool DoFirstTimeFlag;
+static uint16_t CurrentButtonState;
+static uint16_t LastButtonState;
+static bool ColorMode;
+static bool CheckFlag = 1;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -172,21 +176,14 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize RLC hardware 
 	InitRLCSensor();
 	
-	InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
+	InitializeTeamButtonsHardware();   
 	
 	// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
-  
-
-	
+  	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
-
-//  // For wire following test
-//  ES_Event Event2Post;
-//  Event2Post.EventType = START;
-//	PostRobotTopSM(Event2Post);
 
   return true;
 }
@@ -254,7 +251,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
         break;
 			
 				// CASE 2/8				 
-			 case DRIVING2STAGING:
+			 case DRIVING2STAGING:   //USE TEAMOPTION VARIABLE FOR DIFFERENT DRIVING
 			 
 			 // During function
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
@@ -269,8 +266,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				}
 				if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{
-					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");
-					
+					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -450,55 +446,28 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			//Post team color
-				ES_Event PostEvent;
-				PostEvent.EventType = TEAM_COLOR;	
-				PostEvent.EventParam = 0; //Defaults to 0			
-
-				// read state of button
-				uint8_t PinState;
-			  
-			  //the statement below is stuck for some reason
-				PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
-			
-			printf("\r\n pin:%x",PinState);
-			
-				if (PinState == RED_BUTTON)
-				{
-					PostEvent.EventParam = 0;
-				}
-				else 
-				{
-					PostEvent.EventParam = 1;
-				}
-				
-				// not posting this event??????????
-				PostSPIService(PostEvent);
-				
-				// send no event (QUESTION: Do we want this here??)
-				//ReturnEvent.EventType = ES_NO_EVENT;
     }
     else if ( Event.EventType == ES_EXIT )
     { 
-
     }
 		
 		// do the 'during' function for this state
 		else 
-    {			
+    {		
 			
-			if(Event.EventType == COM_STATUS){
+			if(Event.EventType == COM_STATUS)
+			{
 				printf("\r\n comStat sent: %x \r\n",Event.EventParam);
-				
-				
+								
 				// check game status bit
-				if((Event.EventParam & BIT7HI) == BIT7HI){
-					
+				if( ((Event.EventParam & BIT7HI) == BIT7HI) && (Event.EventParam != 0xff))
+				{			
 					// change return event to START to begin the game
 					ReturnEvent.EventType = START;
 				}
-			} else {
-				
+			} 
+			else 
+			{			
 				//ask LOC if for game status to know if we should start
 				ES_Event PostEvent;
 				PostEvent.EventType = ROBOT_STATUS;	
@@ -805,9 +774,6 @@ static void InitializeTeamButtonsHardware(void)
 	// Initialize port F to monitor the buttons
 	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R5;
  	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R5) != SYSCTL_PRGPIO_R5);
-	
-	// activate pull up for button pin 
-  //HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= RED_BUTTON;
 
 	// Set bit 4 in port F as digital input:
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= RED_BUTTON;	
@@ -816,4 +782,54 @@ static void InitializeTeamButtonsHardware(void)
 	printf("\r\n button init \r\n");
 }
 
+bool Check4But( void )
+{		
+	if(CheckFlag)
+	{
+		bool ReturnVal = false;
+		ES_Event PostEvent;
+		CurrentButtonState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+		printf("\r\n button:%x",CurrentButtonState);
+		
+		if(CurrentButtonState != LastButtonState)
+		{
+			ReturnVal = true;
+			
+			if (CurrentButtonState == RED_BUTTON)
+			{
+					//Post team RED to SPI
+					PostEvent.EventType = TEAM_COLOR;	
+					PostEvent.EventParam = RED; 	
+					PostSPIService(PostEvent);
+					
+					//Set color mode for the robot
+					ColorMode = RED;
+				
+					//Flag
+					CheckFlag = 0;
+			}			
+			else
+			{
+					//Post team GREEN to SPI
+					PostEvent.EventType = TEAM_COLOR;	
+					PostEvent.EventParam = GREEN; 	
+					PostSPIService(PostEvent);
+				
+					//Set color mode for the robot
+					ColorMode = GREEN;
+				
+					//Flag
+					CheckFlag = 0;
+			}
+
+			LastButtonState = CurrentButtonState;
+			return ReturnVal;
+		}
+	}
+	
+	else
+	{
+		//Do nothing
+	}
+}
 /*********************************************************  THE END *************************************************************/

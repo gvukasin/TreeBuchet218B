@@ -19,10 +19,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 // prototypes for event checkers
-
 bool Check4Keystroke(void);
-
+bool Check4Button( void );
 
 #endif /* EventCheckers_H */
