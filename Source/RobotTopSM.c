@@ -172,7 +172,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize RLC hardware 
 	InitRLCSensor();
 	
-	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
+	InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
 	
 	// Initialize TIMERS
 	// Initialize 200ms timer for handshake
@@ -182,12 +182,11 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
-	printf("\r\nRobot SM initialized\r\n");
 
-  // For wire following test
-  ES_Event Event2Post;
-  Event2Post.EventType = START;
-	PostRobotTopSM(Event2Post);
+//  // For wire following test
+//  ES_Event Event2Post;
+//  Event2Post.EventType = START;
+//	PostRobotTopSM(Event2Post);
 
   return true;
 }
@@ -283,6 +282,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				 printf("\r\n run \r\n");
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);
+			 
 			 // Process events			 
 			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
          {
@@ -459,7 +459,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				uint8_t PinState;
 			  
 			  //the statement below is stuck for some reason
-				//PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+				PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+			
+			printf("\r\n pin:%x",PinState);
 			
 				if (PinState == RED_BUTTON)
 				{
@@ -469,11 +471,12 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				{
 					PostEvent.EventParam = 1;
 				}
-
+				
+				// not posting this event??????????
 				PostSPIService(PostEvent);
 				
-				// send no event
-				ReturnEvent.EventType = ES_NO_EVENT;
+				// send no event (QUESTION: Do we want this here??)
+				//ReturnEvent.EventType = ES_NO_EVENT;
     }
     else if ( Event.EventType == ES_EXIT )
     { 
@@ -485,9 +488,12 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     {			
 			
 			if(Event.EventType == COM_STATUS){
+				printf("\r\n comStat sent: %x \r\n",Event.EventParam);
+				
 				
 				// check game status bit
 				if((Event.EventParam & BIT7HI) == BIT7HI){
+					
 					// change return event to START to begin the game
 					ReturnEvent.EventType = START;
 				}
@@ -801,11 +807,11 @@ static void InitializeTeamButtonsHardware(void)
  	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R5) != SYSCTL_PRGPIO_R5);
 	
 	// activate pull up for button pin 
-  HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= RED_BUTTON;
+  //HWREG(GPIO_PORTF_BASE+GPIO_O_PUR) |= RED_BUTTON;
 
 	// Set bit 4 in port F as digital input:
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= RED_BUTTON;	
- 	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= (~RED_BUTTON);
+ 	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= ~(RED_BUTTON);
 
 	printf("\r\n button init \r\n");
 }

@@ -16,10 +16,9 @@ typedef enum { WAITING2START, DRIVING2STAGING, CHECKING_IN, SHOOTING, DRIVING2RE
 
 // Public Function Prototypes
 
+bool InitRobotTopSM ( uint8_t Priority );
+bool PostRobotTopSM( ES_Event ThisEvent );
 ES_Event RunRobotTopSM( ES_Event CurrentEvent );
 void StartRobotTopSM ( ES_Event CurrentEvent );
-bool PostRobotTopSM( ES_Event ThisEvent );
-bool InitRobotTopSM ( uint8_t Priority );
 
 #endif /*TopHSMTemplate_H */
-

@@ -38,11 +38,11 @@
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
 // the header file with the public function prototypes
-#define SERV_0_HEADER "RobotTopSM.h"
+#define SERV_0_HEADER "SPIService.h"
 // the name of the Init function
-#define SERV_0_INIT InitRobotTopSM
+#define SERV_0_INIT InitSPIService
 // the name of the run function
-#define SERV_0_RUN RunRobotTopSM
+#define SERV_0_RUN RunSPIService
 // How big should this services Queue be?
 #define SERV_0_QUEUE_SIZE 5
 
@@ -54,13 +54,13 @@
 // These are the definitions for Service 1
 #if NUM_SERVICES > 1
 // the header file with the public function prototypes
-#define SERV_1_HEADER "SPIService.h"
+#define SERV_1_HEADER "RobotTopSM.h"
 // the name of the Init function
-#define SERV_1_INIT InitSPIService
+#define SERV_1_INIT InitRobotTopSM
 // the name of the run function
-#define SERV_1_RUN RunSPIService
+#define SERV_1_RUN RunRobotTopSM
 // How big should this services Queue be?
-#define SERV_1_QUEUE_SIZE 3
+#define SERV_1_QUEUE_SIZE 5
 #endif
 
 /****************************************************************************/
@@ -284,6 +284,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								COM_STATUS,
 								COM_FREQ_REPORT, //30
 								COM_QUERY_RESPONSE,
+								COM_GAME_READY,
 								/* Shooting SM events */
 								READY2SHOOT,
 								BALL_FLYING,

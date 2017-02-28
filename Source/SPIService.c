@@ -158,6 +158,8 @@ bool InitSPIService ( uint8_t Priority )
 	// Initialize current state
 	CurrentState = WAITING2TRANSMIT;
 	
+	printf("\r\n end init SPI \r\n");
+	
 	 return true;
 }
 
@@ -198,6 +200,11 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				
 			// change state to WAITING2TRANSMIT
 			CurrentState = WAITING2TRANSMIT;
+				
+			// post event to start the RobotTopSM querying
+				ES_Event PostEvent;
+				PostEvent.EventType = COM_GAME_READY;
+				PostRobotTopSM(PostEvent);
 
 			// transmit to the LOC the bytes corresponding to the type of command event 	
 			} else if(CurrentEvent.EventType == ROBOT_QUERY)
