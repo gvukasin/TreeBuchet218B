@@ -184,6 +184,11 @@ bool InitRobotTopSM ( uint8_t Priority )
   StartRobotTopSM( ThisEvent );
 	printf("\r\nRobot SM initialized\r\n");
 
+  // For wire following test
+  ES_Event Event2Post;
+  Event2Post.EventType = START;
+	PostRobotTopSM(Event2Post);
+
   return true;
 }
 
@@ -419,7 +424,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
   // if there is more than 1 state to the top level machine you will need 
   // to initialize the state variable
-  CurrentState = CHECKING_IN;
+  CurrentState = WAITING2START;
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);

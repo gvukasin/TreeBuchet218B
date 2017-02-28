@@ -54,11 +54,17 @@ Events to post:
 static ES_Event HallEffectEdgeDetected;
 static uint8_t MyPriority;
 static uint16_t StagingAreaCode;
+uint8_t StagingAreaPeriod_Tolerance = 10;
+uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
+
+// For Staging Area Frequency Capture
 static uint32_t LastEdge;
 static uint32_t CurrentEdge;
 static uint32_t MeasuredStagingAreaPeriod;
-uint8_t StagingAreaPeriod_Tolerance = 3;
-uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
+static uint8_t counter = 0;
+static int StagingAreaPeriod = 0;
+static int StagingAreaPeriodAddition = 0;
+
 
 /*---------------------------- Module Functions ---------------------------*/
 void InitStagingAreaISR( void );
@@ -192,7 +198,19 @@ void StagingAreaISR( void )
 	// grab captured value and calc period 
 	CurrentEdge = HWREG(WTIMER0_BASE+TIMER_O_TAR);
 	MeasuredStagingAreaPeriod = CurrentEdge - LastEdge;
-	MeasuredStagingAreaPeriod = MeasuredStagingAreaPeriod/TicksPerMS;
+	MeasuredStagingAreaPeriod = 1000*MeasuredStagingAreaPeriod/TicksPerMS; // Unit: us
+	
+	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
+	// Update it every 10 interrupts
+	if(counter >= 10){
+		StagingAreaPeriod = StagingAreaPeriodAddition/10;
+
+		StagingAreaPeriodAddition = 0;
+		counter = 0;
+  }
+  
+	StagingAreaPeriodAddition  += MeasuredStagingAreaPeriod;
+	counter ++;
 	
 	// update LastCapture to prepare for the next edge
 	LastEdge = CurrentEdge;
@@ -217,68 +235,68 @@ void StagingAreaISR( void )
 ****************************************************************************/
 uint16_t GetStagingAreaCode( void )
 {
-	if ( (MeasuredStagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
-		if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
+	if ( (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
+		if ( (StagingAreaPeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1333us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1277us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1222us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1166us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1111us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1055us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1000us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code944us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code889us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code833us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code778us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code722us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code667us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code611us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code556us;
 		}
 
-		else if ( (MeasuredStagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (MeasuredStagingAreaPeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code500us;
 		}
 	}
