@@ -138,6 +138,7 @@ static uint8_t FrequencyCode;
 int *LeftRLCReading;
 int *RightRLCReading;
 int PositionDifference;
+bool DoFirstTimeFlag;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -585,18 +586,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
        // Check Ball count  
-			 // Check time
-			
-			 //(1) Report frequency
-			printf("\r\n Report freq posted to spi \r\n");
-			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-			PostEvent.EventParam = FrequencyCode;
-			PostSPIService(PostEvent);
-			printf("\r\n Report freq posted end\r\n");
-			
-							
-			 //(2) Start 200ms timer
-			 ES_Timer_StartTimer(FrequencyReport_TIMER);
+			 // Check time		
+			DoFirstTimeFlag = 1;			
     }
     else if ( Event.EventType == ES_EXIT)
     {
@@ -604,7 +595,23 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
 		// do the 'during' function for this state
 		else 
-    {			
+    {		
+				
+			if(DoFirstTimeFlag)
+			{
+			 //(1) Report frequency
+			printf("\r\n Report freq posted to spi \r\n");
+			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+			PostEvent.EventParam = FrequencyCode;
+			PostSPIService(PostEvent);
+			printf("\r\n Report freq posted end\r\n");
+										
+			 //(2) Start 200ms timer
+			 ES_Timer_StartTimer(FrequencyReport_TIMER);
+				
+			// reset flag
+				DoFirstTimeFlag = 0;
+			}
 			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
 			{
