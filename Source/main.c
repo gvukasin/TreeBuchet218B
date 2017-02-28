@@ -21,6 +21,7 @@
 int main(void)
 {  
 	// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
+
 	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
 			| SYSCTL_XTAL_16MHZ);
 	TERMIO_Init();

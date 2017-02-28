@@ -137,6 +137,7 @@ static uint8_t MyPriority;
 static uint8_t FrequencyCode;
 int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 int PositionDifference;
+bool DoFirstTimeFlag;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -232,7 +233,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-
+	 printf("\r\n event : %i\r\n", CurrentEvent.EventType);
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -274,11 +275,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
+				 printf("\r\n run \r\n");
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);
 			 // Process events			 
 			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
          {
+					 
             switch (CurrentEvent.EventType)
             {
                case CHECK_IN_SUCCESS : 
@@ -416,7 +419,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
   // if there is more than 1 state to the top level machine you will need 
   // to initialize the state variable
-  CurrentState = WAITING2START;
+  CurrentState = CHECKING_IN;
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -463,10 +466,13 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				}
 
 				PostSPIService(PostEvent);
+				
+				// send no event
+				ReturnEvent.EventType = ES_NO_EVENT;
     }
     else if ( Event.EventType == ES_EXIT )
     { 
-				
+
     }
 		
 		// do the 'during' function for this state
@@ -478,7 +484,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				// check game status bit
 				if((Event.EventParam & BIT7HI) == BIT7HI){
 					// change return event to START to begin the game
-					Event.EventType = START;
+					ReturnEvent.EventType = START;
 				}
 			} else {
 				
@@ -490,7 +496,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
-    return(Event);
+    return(ReturnEvent);
 }
 
 static ES_Event DuringDriving2Staging( ES_Event Event)
@@ -579,15 +585,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
        // Check Ball count  
-			 // Check time
-			
-			 //(1) Report frequency
-			 PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-			 PostEvent.EventParam = FrequencyCode;
-			 PostSPIService(PostEvent);
-							
-			 //(2) Start 200ms timer
-			 ES_Timer_StartTimer(FrequencyReport_TIMER);
+			 // Check time		
+			DoFirstTimeFlag = 1;			
     }
     else if ( Event.EventType == ES_EXIT)
     {
@@ -595,19 +594,39 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
 		// do the 'during' function for this state
 		else 
-    {			
+    {		
+				
+			if(DoFirstTimeFlag)
+			{
+			 //(1) Report frequency
+			printf("\r\n Report freq posted to spi \r\n");
+			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+			PostEvent.EventParam = FrequencyCode;
+			PostSPIService(PostEvent);
+			printf("\r\n Report freq posted end\r\n");
+										
+			 //(2) Start 200ms timer
+			 ES_Timer_StartTimer(FrequencyReport_TIMER);
+				
+			// reset flag
+				DoFirstTimeFlag = 0;
+			}
 			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
 			{
+				printf("\r\n Robot query \r\n");
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
+				printf("\r\n Robot query end \r\n");
 				
-				
+				//ReturnEvrn
 			}     
     }
 		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
+		printf("\n\rReturnEvent.EventType = %d\n\r",ReturnEvent.EventType);
+		printf("\n\rReturnEvent.EventParam = %d\n\r",ReturnEvent.EventParam);
     return(ReturnEvent);
 }
 
