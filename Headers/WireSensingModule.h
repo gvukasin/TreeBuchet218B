@@ -12,6 +12,6 @@
 
 // Public Function Prototypes
 void InitRLCSensor( void );
-void CheckWirePosition(int *Left, int *Right);
+void ReadRLCSensor(int RLCReading[2]);
 
 #endif 

@@ -89,26 +89,22 @@ void InitRLCSensor( void )
 
 /****************************************************************************
  Function
-     CheckWirePosition
+     ReadRLCSensor
 
  Description
-     Check position of the two RLC sensors relative to the wire
+     Write the reading from left and right RLC sensor to the array RLCReading
 
- Returns
-		 int: signed integer, proportional to the distance away from the wire
-          positive: robot on the left of the wire
-					negative: robot on the right of the wire
-     The return value is between -1000 and 1000
 ****************************************************************************/
-void CheckWirePosition(int *Left, int *Right)
+void ReadRLCSensor(int RLCReading[2])
 {
 	uint32_t CurrentADRead[4];
 	
   // Get the voltages from the input line	
   ADC_MultiRead(CurrentADRead);
 
-	*Left = CurrentADRead[0];
-	*Right = CurrentADRead[1];
+	RLCReading[0] = CurrentADRead[0];
+	RLCReading[1] = CurrentADRead[1];
+	printf("\r\nLeft = %d,%d,Right = %d,%d\r\n",CurrentADRead[0],RLCReading[0],CurrentADRead[1],RLCReading[1]);
 }
 	
 
