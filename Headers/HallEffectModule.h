@@ -12,6 +12,7 @@
 
 // Public Function Prototypes
 bool InitHallEffectModule ( uint8_t Priority );
+void InitStagingAreaISR( void );
 uint16_t GetStagingAreaCode( void );
 
 #endif /* HallEffectModule_H */

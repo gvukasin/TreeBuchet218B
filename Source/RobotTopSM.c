@@ -174,7 +174,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize TIMERS
 	// Initialize 200ms timer for handshake
-		ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
+	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
   
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -487,9 +487,15 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+			printf("\r\nGets into the entry routine of Driving2Staging\r\n");
+			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
 			ES_Timer_StartTimer(WireFollow_TIMER);
+			
+			// Initialize stage area frequency reading
+			InitStagingAreaISR();
+			printf("\r\nStage Sensing ISR initialized in Driving2Staging entry routine\r\n");
 			
     }
     else if ( Event.EventType == ES_EXIT )
