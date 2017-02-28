@@ -234,7 +234,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-	 printf("\r\n event : %i\r\n", CurrentEvent.EventType);
+	 printf("\r\n event (run entry): %i\r\n", CurrentEvent.EventType);
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -276,7 +276,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				 printf("\r\n run \r\n");
+				// printf("\r\n run \r\n");
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);
 			 // Process events			 
@@ -289,8 +289,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
                   NextState = SHOOTING;
                   MakeTransition = true; 
                   break;
-               //case CHECK_IN_FAIL :
-							 case ES_TIMEOUT:
+							 case ES_TIMEOUT: 
 								  NextState = CHECKING_IN; // Internal Self transition
                   break;
 							 case FINISH_STRONG :
@@ -586,8 +585,11 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
        // Check Ball count  
-			 // Check time		
-			DoFirstTimeFlag = 1;			
+			 // Check time	
+			
+			 //	Flag that will make sure we only report frequency the first time we go into the during
+			 // If we make an internal self transition then this entry won't be called and we won't report freq
+			 //DoFirstTimeFlag = 1;			
     }
     else if ( Event.EventType == ES_EXIT)
     {
@@ -597,8 +599,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		else 
     {		
 				
-			if(DoFirstTimeFlag)
-			{
+			//if(DoFirstTimeFlag)
+			//{
 			 //(1) Report frequency
 			printf("\r\n Report freq posted to spi \r\n");
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
@@ -611,7 +613,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				
 			// reset flag
 				DoFirstTimeFlag = 0;
-			}
+			//}
+			
 			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
 			{
@@ -619,8 +622,6 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
 				printf("\r\n Robot query end \r\n");
-				
-				//ReturnEvrn
 			}     
     }
 		
