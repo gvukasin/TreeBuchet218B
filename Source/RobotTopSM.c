@@ -45,6 +45,7 @@
 #include "DrivingModule.h"
 #include "ReloadingSubSM.h"
 #include "MotorActionsModule.h"
+#include "PWMModule.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -165,10 +166,11 @@ bool InitRobotTopSM ( uint8_t Priority )
 
   ThisEvent.EventType = ES_ENTRY;
 	
-	// Initialize RLC hardware and the timer for wire following
-	// Initialize HARDWARE
+	// Initialize PWM hardware to drive the motors
+	InitializePWM();
+	
+	// Initialize RLC hardware 
 	InitRLCSensor();
-	ES_Timer_SetTimer(WireFollow_TIMER, WireFollow_TIME);
 	
 	//InitializeTeamButtonsHardware();   //UNCOMMENT AFTER CHECK OFF
 	
@@ -176,8 +178,11 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
   
+
+	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
+	printf("\r\nRobot SM initialized\r\n");
 
   return true;
 }
@@ -223,6 +228,7 @@ bool PostRobotTopSM( ES_Event ThisEvent )
 ****************************************************************************/
 ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 {
+	 
    bool MakeTransition = false;/* are we making a state transition? */
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
@@ -245,17 +251,22 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			
 				// CASE 2/8				 
 			 case DRIVING2STAGING:
+			 
 			 // During function
-       CurrentEvent = DuringDriving2Staging(CurrentEvent);
+       CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
+			 
 			 // Process events			 
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
+					 //printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
 					 NextState = CHECKING_IN;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
 				if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{
+					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");
+					
 					 // Internal self transition
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -369,6 +380,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
     //   If we are making a state transition
     if (MakeTransition == true)
     {
+			 printf("\r\nState Transition Made\r\n");
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunRobotTopSM(CurrentEvent);
@@ -438,7 +450,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 
 				// read state of button
 				uint8_t PinState;
-				PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+			  
+			  //the statement below is stuck for some reason
+				//PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
 			
 				if (PinState == RED_BUTTON)
 				{
@@ -482,6 +496,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 
 static ES_Event DuringDriving2Staging( ES_Event Event)
 {
+
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
@@ -491,7 +506,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
-			ES_Timer_StartTimer(WireFollow_TIMER);
+			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Initialize stage area frequency reading
 			InitStagingAreaISR();
@@ -505,7 +520,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     }
 		
 		// do the 'during' function for this state
-		else 
+		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
     {
 			// Read the RLC sensor values
 			// Positive when too left, negative when too right
@@ -528,21 +543,29 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			 }else if(PWMRight > 100){
 				PWMRight = 100;
 			}
+			 
+			printf("\r\nRLC:Left=%u,Right=%u,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",*LeftRLCReading,*RightRLCReading,PositionDifference,PWMLeft,PWMRight);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
+									printf("\r\ndrive\r\n");
 			
 			// Restart the timer
-			ES_Timer_StartTimer(WireFollow_TIMER);
+			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
 			uint16_t stageFreq = GetStagingAreaCode();
+			printf("\r\nstaging area code=%u got in Driving2Stage during routine\r\n",stageFreq);
 			if(stageFreq != codeInvalidStagingArea){
+				printf("\r\nstage detected in Driving2Stage during routine\r\n");
 				ES_Event PostEvent;
 			  PostEvent.EventType = STATION_REACHED;
 			  PostRobotTopSM(PostEvent); // Move to the next state
 			}
     }
+		else{
+			
+	  }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);

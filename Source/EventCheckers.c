@@ -79,6 +79,10 @@ bool Check4Keystroke(void)
 			ThisEvent.EventType = START;
 			PostRobotTopSM(ThisEvent);
 		}
+		else if( ThisEvent.EventParam == 's' ){
+			ThisEvent.EventType = STATION_REACHED;
+			PostRobotTopSM(ThisEvent);
+		}
 		else if( ThisEvent.EventParam == 'G' ){
 			CommandEvent.EventParam = ROBOT_QUERY;
 			PostSPIService(CommandEvent);
