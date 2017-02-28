@@ -135,8 +135,7 @@ static void InitializeTeamButtonsHardware(void);
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
 static uint8_t FrequencyCode;
-int *LeftRLCReading;
-int *RightRLCReading;
+int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 int PositionDifference;
 
 /*------------------------------ Module Code ------------------------------*/
@@ -524,8 +523,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     {
 			// Read the RLC sensor values
 			// Positive when too left, negative when too right
-			CheckWirePosition(LeftRLCReading, RightRLCReading);
-			PositionDifference = *RightRLCReading - *LeftRLCReading;
+			ReadRLCSensor(RLCReading);
+			PositionDifference = RLCReading[1] - RLCReading[0];
 			
 			// P Control
 			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
@@ -544,7 +543,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			printf("\r\nRLC:Left=%u,Right=%u,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",*LeftRLCReading,*RightRLCReading,PositionDifference,PWMLeft,PWMRight);
+			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
