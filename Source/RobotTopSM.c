@@ -238,7 +238,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-	 printf("\r\n event : %i\r\n", CurrentEvent.EventType);
+	 //printf("\r\n event : %i\r\n", CurrentEvent.EventType);
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -279,7 +279,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				 printf("\r\n run \r\n");
+				// printf("\r\n run \r\n");
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);
 			 
@@ -476,7 +476,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			
 			if(Event.EventType == COM_STATUS)
 			{
-				printf("\r\n comStat sent: %x \r\n",Event.EventParam);
+				printf("\r\n COM_STATUS event: %x \r\n",Event.EventParam);
 								
 				// check game status bit
 				if( ((Event.EventParam & BIT7HI) == BIT7HI) && (Event.EventParam != 0xff))
@@ -506,7 +506,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			printf("\r\nGets into the entry routine of Driving2Staging\r\n");
+			printf("\r\nDriving2Staging ENTRY\r\n");
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
@@ -514,7 +514,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Initialize stage area frequency reading
 			InitStagingAreaISR();
-			printf("\r\nStage Sensing ISR initialized in Driving2Staging entry routine\r\n");
+			//printf("\r\nStage Sensing ISR initialized in Driving2Staging entry routine\r\n");
 			
     }
     else if ( Event.EventType == ES_EXIT )
@@ -548,20 +548,20 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
+			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
-									printf("\r\ndrive\r\n");
+			//printf("\r\ndrive\r\n");
 			
 			// Restart the timer
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
 			uint16_t stageFreq = GetStagingAreaCode();
-			printf("\r\nstaging area code=%u got in Driving2Stage during routine\r\n",stageFreq);
+			printf("\r\nstaging area code=%u \r\n",stageFreq);
 			if(stageFreq != codeInvalidStagingArea){
-				printf("\r\nstage detected in Driving2Stage during routine\r\n");
+				//printf("\r\nstage detected in Driving2Stage during routine\r\n");
 				ES_Event PostEvent;
 			  PostEvent.EventType = STATION_REACHED;
 			  PostRobotTopSM(PostEvent); // Move to the next state
@@ -598,11 +598,11 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			if(DoFirstTimeFlag)
 			{
 			 //(1) Report frequency
-			printf("\r\n Report freq posted to spi \r\n");
+			//printf("\r\n Report freq posted to spi \r\n");
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
 			PostEvent.EventParam = FrequencyCode;
 			PostSPIService(PostEvent);
-			printf("\r\n Report freq posted end\r\n");
+			//printf("\r\n Report freq posted end\r\n");
 										
 			 //(2) Start 200ms timer
 			 ES_Timer_StartTimer(FrequencyReport_TIMER);
@@ -610,22 +610,22 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			// reset flag
 				DoFirstTimeFlag = 0;
 			}
+			
 			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
 			{
-				printf("\r\n Robot query \r\n");
+				//printf("\r\n Robot query \r\n");
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
-				printf("\r\n Robot query end \r\n");
+				//printf("\r\n Robot query end \r\n");
 				
-				//ReturnEvrn
 			}     
     }
 		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
-		printf("\n\rReturnEvent.EventType = %d\n\r",ReturnEvent.EventType);
-		printf("\n\rReturnEvent.EventParam = %d\n\r",ReturnEvent.EventParam);
+		//		printf("\n\rReturnEvent.EventType = %d\n\r",ReturnEvent.EventType);
+		//		printf("\n\rReturnEvent.EventParam = %d\n\r",ReturnEvent.EventParam);
     return(ReturnEvent);
 }
 
@@ -803,7 +803,7 @@ static void InitializeTeamButtonsHardware(void)
 	PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
 	ColorMode = PinState;
 
-	printf("\r\n Pin %x is button: %x \r\n", RED_BUTTON, PinState);
+	//printf("\r\n Pin %x is button: %x \r\n", RED_BUTTON, PinState);
 
 }
 
