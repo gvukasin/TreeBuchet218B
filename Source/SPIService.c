@@ -197,6 +197,7 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 			
 			// set team color from the parameter of the TEAM_COLOR event
 			TeamColor = CurrentEvent.EventParam;
+				printf("\r\n team color is %i \r\n",TeamColor);
 				
 			// change state to WAITING2TRANSMIT
 			CurrentState = WAITING2TRANSMIT;

@@ -20,6 +20,5 @@ bool InitRobotTopSM ( uint8_t Priority );
 bool PostRobotTopSM( ES_Event ThisEvent );
 ES_Event RunRobotTopSM( ES_Event CurrentEvent );
 void StartRobotTopSM ( ES_Event CurrentEvent );
-bool Check4But( void );
 
 #endif /*TopHSMTemplate_H */

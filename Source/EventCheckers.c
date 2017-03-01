@@ -102,20 +102,3 @@ bool Check4Keystroke(void)
   }
   return false;
 }
-///****************************************************************************
-// Function
-//   Check4Button
-// Parameters
-//   None
-// Returns
-//   bool: true if a new key was detected & posted
-// Description
-//   checks to see if a new key from the keyboard is detected and, if so, 
-//   retrieves the key and posts an ES_NewKey event to TestHarnessService0
-// Author
-//   Team 16
-//****************************************************************************/
-bool Check4Button( void )
-{
-	return Check4But();
-}

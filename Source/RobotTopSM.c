@@ -75,7 +75,7 @@
 
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
-#define ALL_BITS 0xff
+#define ALL_BITS (0xff<<2)
 
 #define RED 0
 #define GREEN 1
@@ -170,15 +170,15 @@ bool InitRobotTopSM ( uint8_t Priority )
 
   ThisEvent.EventType = ES_ENTRY;
 	
+  InitializeTeamButtonsHardware();   
+	
 	// Initialize PWM hardware to drive the motors
 	InitializePWM();
 	
 	// Initialize RLC hardware 
 	InitRLCSensor();
 	
-	InitializeTeamButtonsHardware();   
-	
-	// Initialize TIMERS
+		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
   	
@@ -446,6 +446,21 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+			//Post team color to SPIService
+				ES_Event PostEvent;
+				PostEvent.EventType = TEAM_COLOR;			
+			
+				if (ColorMode == RED)
+				{
+					PostEvent.EventParam = 0;
+				}
+				else 
+				{
+					PostEvent.EventParam = 1;
+				}
+				
+				PostSPIService(PostEvent);
+				
     }
     else if ( Event.EventType == ES_EXIT )
     { 
@@ -778,58 +793,15 @@ static void InitializeTeamButtonsHardware(void)
 	// Set bit 4 in port F as digital input:
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DEN) |= RED_BUTTON;	
  	HWREG(GPIO_PORTF_BASE+GPIO_O_DIR) &= ~(RED_BUTTON);
-
-	printf("\r\n button init \r\n");
-}
-
-bool Check4But( void )
-{		
-	if(CheckFlag)
-	{
-		bool ReturnVal = false;
-		ES_Event PostEvent;
-		CurrentButtonState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
-		printf("\r\n button:%x",CurrentButtonState);
-		
-		if(CurrentButtonState != LastButtonState)
-		{
-			ReturnVal = true;
-			
-			if (CurrentButtonState == RED_BUTTON)
-			{
-					//Post team RED to SPI
-					PostEvent.EventType = TEAM_COLOR;	
-					PostEvent.EventParam = RED; 	
-					PostSPIService(PostEvent);
-					
-					//Set color mode for the robot
-					ColorMode = RED;
-				
-					//Flag
-					CheckFlag = 0;
-			}			
-			else
-			{
-					//Post team GREEN to SPI
-					PostEvent.EventType = TEAM_COLOR;	
-					PostEvent.EventParam = GREEN; 	
-					PostSPIService(PostEvent);
-				
-					//Set color mode for the robot
-					ColorMode = GREEN;
-				
-					//Flag
-					CheckFlag = 0;
-			}
-
-			LastButtonState = CurrentButtonState;
-			return ReturnVal;
-		}
-	}
 	
-	else
-	{
-		//Do nothing
-	}
+	// read state of button and set team color accordingly (RED = 0, GREEN = 1)
+	uint16_t PinState;
+	PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
+	ColorMode = PinState;
+
+	printf("\r\n Pin %x is button: %x \r\n", RED_BUTTON, PinState);
+
 }
+
+
 /*********************************************************  THE END *************************************************************/

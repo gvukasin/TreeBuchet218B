@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_sysctl.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
@@ -12,11 +14,12 @@
 #include "ES_Framework.h"
 #include "ES_Port.h"
 #include "termio.h"
+#include "BITDEFS.H"
+#include "ES_General.h"
 
 #define clrScrn() 	printf("\x1b[2J")
 #define goHome()	printf("\x1b[1,1H")
 #define clrLine()	printf("\x1b[K")
-
 
 int main(void)
 {  
@@ -38,6 +41,7 @@ int main(void)
 	printf("\n\r\n");
 
 	// Your hardware initialization function calls go here
+
 
 	// now initialize the Events and Services Framework and start it running
 	ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
