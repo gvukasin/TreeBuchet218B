@@ -41,6 +41,7 @@
 #include "SPIService.h"
 #include "HallEffectModule.h"
 #include "WireSensingModule.h"
+#include "IRBeaconModule.h"
 #include "LEDModule.h"
 #include "DrivingModule.h"
 #include "ReloadingSubSM.h"
@@ -177,6 +178,9 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize RLC hardware 
 	InitRLCSensor();
+	
+	// Initialize hardware for IR but not kicking the timer off 
+	InitInputCaptureForIRDetection();
 	
 		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
