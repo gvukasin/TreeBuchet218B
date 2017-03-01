@@ -589,8 +589,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
 		// do the 'during' function for this state
 		else 
-    {		
-				
+    {	
+			// ONLY DO (1) & (2) ONCE
 			if(DoFirstTimeFlag)
 			{
 			 //(1) Report frequency
@@ -607,14 +607,15 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				DoFirstTimeFlag = 0;
 			}
 			
-			// (3) If there has been a timeout --> Query until LOC returns a Response Ready
+			//REPEAT UNTIL LOC RESPONDS IT'S READY
+			/* (3) If there has been a timeout -which means the reporting process 
+						 has had time to be completed- Query until LOC returns a Response Ready */
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
 			{
-				//printf("\r\n Robot query \r\n");
+				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
-				//printf("\r\n Robot query end \r\n");
-				
+				//printf("\r\n Robot query end \r\n");				
 			}     
     }
 		
@@ -799,7 +800,7 @@ static void InitializeTeamButtonsHardware(void)
 	PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
 	ColorMode = PinState;
 
-	//printf("\r\n Pin %x is button: %x \r\n", RED_BUTTON, PinState);
+	printf("\r\n Button: %x \r\n", PinState);
 
 }
 
