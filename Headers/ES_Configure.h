@@ -341,7 +341,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER0_RESP_FUNC PostSPIService
 #define TIMER1_RESP_FUNC PostRobotTopSM
 #define TIMER2_RESP_FUNC PostRobotTopSM
-#define TIMER3_RESP_FUNC TIMER_UNUSED
+#define TIMER3_RESP_FUNC PostRobotTopSM
 #define TIMER4_RESP_FUNC TIMER_UNUSED
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
@@ -365,5 +365,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define SPI_TIMER 0
 #define WireFollow_TIMER 1
 #define FrequencyReport_TIMER 2
+#define Looking4Beacon_TIMER 3
 
 #endif /* CONFIGURE_H */
