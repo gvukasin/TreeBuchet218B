@@ -14,6 +14,7 @@
 void InitInputCaptureForIRDetection( void );
 void EnableIRInterrupt(void);
 void InputCaptureForIRDetectionResponse( void );
+uint8_t GetIRCode( void );
 
 #endif 
 

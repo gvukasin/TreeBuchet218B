@@ -21,7 +21,6 @@ Events to post:
 #include "driverlib/gpio.h"
 #include "inc/hw_timer.h"
 #include "inc/hw_nvic.h"
-
 #include "ActionService.h"
 #include "MotorActionsModule.h"
 
@@ -29,29 +28,29 @@ Events to post:
 /*----------------------------- Module Defines ----------------------------*/
 #define ALL_BITS (0xff<<2)
 #define TicksPerMS 40000
-#define lab8BeaconFreqHz 1950
 #define BitsPerNibble 4
 #define numbNibblesShifted 6
 #define pinC6Mask 0xf0ffffff
-#define ALIGN_BEACON 0x20 
 
-#define STOP 0x00
+// IR frequency codes
+#define code800us 0x00 // 1250Hz
+#define code690us 0x01 // 1450Hz
+#define code588us 0x02 // 1700Hz
+#define code513us 0x03 // 1950Hz
+#define code455us 0x11 // 2200Hz
+#define codeInvalidIRFreq 0xff
+
+
 /*---------------------------- Module Variables ---------------------------*/
 static uint32_t LastCapture;
-
-static uint32_t LastCapture;
 static uint32_t ThisCapture;
-static uint32_t MeasuredSignalSpeedHz;
-static uint32_t AveragedMeasuredSignalSpeedHz = 0;
-static uint32_t SpeedAddition = 0;
-static uint32_t DesiredFreqLOBoundary;
-static uint32_t DesiredFreqHIBoundary;
 static uint32_t MeasuredSignalPeriod;
-static uint8_t counter = 1;
+static uint32_t MeasuredSignalPeriodAddition = 0;
+static uint32_t IRSignalPeriod;
+static uint8_t counter = 0;
 
-//Initialize freq boundaries for IR beacon
-static uint32_t	DesiredFreqLOBoundary = lab8BeaconFreqHz - 0.2*lab8BeaconFreqHz;
-static uint32_t	DesiredFreqHIBoundary = lab8BeaconFreqHz + 0.2*lab8BeaconFreqHz;
+uint8_t IRSignalPeriod_Tolerance = 10;
+uint16_t ValidIRSignalPeriods[5] = {455,513,588,690,800};
 
 /*------------------------------ Module Code ------------------------------*/
 
@@ -116,8 +115,6 @@ void InitInputCaptureForIRDetection( void )
 	//Make sure interrupts are enabled globally
 	__enable_irq();
 	
-	printf("\r\nGot through IR interrupt init\r\n");
-	
 }
 
 /****************************************************************************
@@ -159,31 +156,62 @@ void InputCaptureForIRDetectionResponse( void )
 	//Grab the captured value 
 	ThisCapture = HWREG(WTIMER1_BASE + TIMER_O_TAR);
 	MeasuredSignalPeriod = ThisCapture - LastCapture;
+	MeasuredSignalPeriod = 1000*MeasuredSignalPeriod/TicksPerMS; // Unit: us
 	
-	//Update LastCapture to prepare for the next edge
+	// Update the module level variable SignalPeriod to be the average of the past ten catches
+	// Update it every 10 interrupts
+	if(counter >= 10){
+		IRSignalPeriod = MeasuredSignalPeriodAddition/10;
+		MeasuredSignalPeriodAddition = 0;
+		counter = 0;
+  }
+  
+	MeasuredSignalPeriodAddition  += MeasuredSignalPeriod;
+	counter ++;
+	
+	// update LastCapture to prepare for the next edge
 	LastCapture = ThisCapture;
-	
-	//Calculate measured signal speed 
-	//and keep count of the addition of the speeds to later calculate the average
-	MeasuredSignalSpeedHz = (1000*TicksPerMS)/MeasuredSignalPeriod;
-	SpeedAddition += MeasuredSignalSpeedHz;
-	
-	//Check to see if we have found the beacon and if we have sent a stop event
-	if((counter>10) && (MeasuredSignalSpeedHz > DesiredFreqLOBoundary) && (MeasuredSignalSpeedHz < DesiredFreqHIBoundary)) //Post STOP event to ActionService
-	{
-		//Disable interrupt
-		HWREG(WTIMER1_BASE + TIMER_O_CTL) &= ~TIMER_CTL_TAEN;
-		//Command to stop
-		stop();
-	}
-	else // keep looking for tape and update averaged measured signal speed
-	{
-		AveragedMeasuredSignalSpeedHz = SpeedAddition/counter;
-		SpeedAddition = 0;
-		ES_Event ThisEvent;
-		ThisEvent.EventType = IR_BEACON_SENSED;
-		ThisEvent.EventParam = ALIGN_BEACON;
-		PostActionService(ThisEvent);
-	}
-	counter = counter + 1;
 }
+
+/****************************************************************************
+ Function
+    GetIRCode
+
+ Parameters
+   None
+
+ Returns
+   uint8_t Code indicating the frequency of IR 
+****************************************************************************/
+uint8_t GetIRCode( void )
+{
+	uint8_t IRFreqCode;
+	
+	if ( (IRSignalPeriod < (ValidIRSignalPeriods[0] + IRSignalPeriod_Tolerance)) && (IRSignalPeriod > (ValidIRSignalPeriods[4] - IRSignalPeriod_Tolerance)) ){
+		if ( (IRSignalPeriod > (ValidIRSignalPeriods[0] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[0] + IRSignalPeriod_Tolerance)) ){
+			IRFreqCode = code455us;
+		}
+
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[1] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[1] + IRSignalPeriod_Tolerance)) ){
+			IRFreqCode = code513us;
+		}
+
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[2] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[2] + IRSignalPeriod_Tolerance)) ){
+			IRFreqCode = code588us;
+		}
+
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[3] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[3] + IRSignalPeriod_Tolerance)) ){
+			IRFreqCode = code690us;
+		}
+
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[4] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[4] + IRSignalPeriod_Tolerance)) ){
+			IRFreqCode = code800us;
+		}
+	}
+	else{
+		IRFreqCode = codeInvalidIRFreq;
+	}
+	
+	return IRFreqCode;
+}
+
