@@ -85,7 +85,7 @@
 #define LEDS_OFF 0
 
 #define Time4FrequencyReport 200
-//#define Time4Transmission
+
 
 #define GAME_STATUS_BIT BIT7HI
 #define RESPONSE_READY 0x0000
@@ -188,18 +188,16 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize PWM hardware to drive the motors
 	InitializePWM();
 	
-	// SEE ME
-	
 	// Initialize RLC hardware 
-	// InitRLCSensor();
+	InitRLCSensor();
 	
 	// Initialize hardware for IR but not kicking the timer off 
-	// InitInputCaptureForIRDetection();
+	InitInputCaptureForIRDetection();
 	
 		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
-//	ES_Timer_SetTimer(Transmission_TIMER, Time4Transmission);
+
   	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -292,7 +290,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				// printf("\r\n run \r\n");
+				printf("\r\n checking in \r\n");
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -445,7 +443,10 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
   // if there is more than 1 state to the top level machine you will need 
   // to initialize the state variable
-  CurrentState = WAITING2START;
+	
+	//SEE ME
+  //CurrentState = WAITING2START;
+	CurrentState = DRIVING2STAGING;
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -501,7 +502,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			}			
 			else 
 			{		
-				// printf("\r\n ask loc again 1\r\n");					
+				//printf("\r\n ask loc again 1\r\n");					
 				//ask LOC for GAME STATUS again (until it says we're ready to start)
 				ES_Event PostEvent;
 				PostEvent.EventType = ROBOT_STATUS;	
@@ -633,8 +634,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			// ONLY DO (1) & (2) ON FIRST ENTRY TO THIS DURING FUNCTION
 			if(DoFirstTimeFlag)
 			{
-			 //(1) Report frequency
-			//printf("\r\n Report freq posted to spi \r\n");
+			//(1) Report frequency
+			printf("\r\n Report freq posted to spi \r\n");
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
 			PostEvent.EventParam = FrequencyCode;
 			PostSPIService(PostEvent);
@@ -648,7 +649,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			
 			/* (3) If there has been a timeout -which means the reporting process 
 						 has had time to be completed- Query until LOC returns a Response Ready */
-			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
+			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequeencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 			{
 				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;

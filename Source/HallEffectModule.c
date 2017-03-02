@@ -53,7 +53,7 @@ Events to post:
 /*---------------------------- Module Variables ---------------------------*/
 //static ES_Event HallEffectEdgeDetected;
 static uint16_t StagingAreaCode;
-static uint8_t StagingAreaPeriod_Tolerance = 10;
+static uint8_t StagingAreaPeriod_Tolerance = 20;
 static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 // For Staging Area Frequency Capture
@@ -270,5 +270,6 @@ uint16_t GetStagingAreaCode( void )
 		StagingAreaCode = codeInvalidStagingArea;
 	}
 	
+	//printf("\r\n code %x",StagingAreaCode);
 	return StagingAreaCode;
 }

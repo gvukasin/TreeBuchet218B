@@ -104,7 +104,7 @@ void ReadRLCSensor(int RLCReading[2])
 
 	RLCReading[0] = CurrentADRead[0];
 	RLCReading[1] = CurrentADRead[1];
-	printf("\r\nLeft = %d,%d,Right = %d,%d\r\n",CurrentADRead[0],RLCReading[0],CurrentADRead[1],RLCReading[1]);
+	//printf("\r\nLeft = %d,%d,Right = %d,%d\r\n",CurrentADRead[0],RLCReading[0],CurrentADRead[1],RLCReading[1]);
 }
 	
 
