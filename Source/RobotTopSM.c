@@ -310,7 +310,11 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case FINISH_STRONG :
 							 NextState = ENDING_STRATEGY;
 							 MakeTransition = true;
-							 break;							 
+							 break;	
+						case START :
+							 NextState = DRIVING2STAGING;
+							 MakeTransition = true;
+							 break;						 
 						 default:
 							 if(ES_ENTRY|ES_EXIT){}
 							 else
@@ -592,9 +596,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
       // Check Ball count  
-			PostEvent.EventType = ROBOT_STATUS;
-			PostSPIService(PostEvent);
-			if (TeamColor == RED)
+//			PostEvent.EventType = ROBOT_STATUS;
+//			PostSPIService(PostEvent);
+//			if (TeamColor == RED)
 			 
 			// Check time		
 			DoFirstTimeFlag = 1;			
@@ -629,7 +633,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
-				//printf("\r\n Robot query end \r\n");	
+				printf("\r\n Robot query end \r\n");	
 			}    
 
 			//(4) Has the LOC received our frequency and is it correct? 
@@ -692,6 +696,9 @@ static ES_Event DuringShooting( ES_Event Event)
     {
         // on exit, give the lower levels a chance to clean up first
         RunShootingSM(Event);   
+			
+			// ASK LOC FOR CURRENT SCORE AND COMPARE TO OLD TO KNOW IF YOU SCORED
+			// POST SCORED TO ROBOT IF YOU DID
 				
 			  // Turn OFF LEDs
 				TurnOnOffYellowLEDs(LEDS_OFF);

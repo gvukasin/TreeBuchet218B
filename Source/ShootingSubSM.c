@@ -335,16 +335,14 @@ static ES_Event DuringLoadingBall( ES_Event Event)
     return(ReturnEvent);
 }
 
-static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
+static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THEN GET OUT OF SUB SM
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-//			//Ask the LOC for the current score
-//			ES_Event Event2Post;
-//			Event2Post.EventType =
+					
       
     }
     else if ( Event.EventType == ES_EXIT )
