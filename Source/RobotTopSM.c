@@ -86,6 +86,16 @@
 
 #define Time4FrequencyReport 200
 
+#define GAME_STATUS_BIT BIT7HI
+#define RESPONSE_READY 0x0000
+#define RESPONSE_NOT_READY 0xAA00
+#define RESPONSE_READY_MASK 0xff00
+#define STATUS_MASK 0x00ff
+#define ACK1_HI BIT15HI
+#define ACK0_HI BIT14HI
+#define ACK1_LO BIT15LO
+#define ACK0_LO BIT14LO
+
 //Magnetic frequency codes
 #define code1333us 0000
 #define code1277us 0001
@@ -143,6 +153,7 @@ static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool ColorMode;
 static bool CheckFlag = 1;
+static uint8_t BallCount = 3; //We will start with 3 balls
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -469,23 +480,21 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     { 
     }
 		
-		// do the 'during' function for this state
-		else 
-    {		
-			
+		else // DURING
+    {				
 			if(Event.EventType == COM_STATUS)
 			{
-				printf("\r\n COM_STATUS event: %x \r\n",Event.EventParam);
+				printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
 								
 				// check game status bit
-				if( ((Event.EventParam & BIT7HI) == BIT7HI) && (Event.EventParam != 0xff))
+				if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
 				{			
 					// change return event to START to begin the game
 					ReturnEvent.EventType = START;
 				}			
 				else 
 				{			
-					//ask LOC if for game status to know if we should start
+					//ask LOC for GAME STATUS again (until it says we're ready to start)
 					ES_Event PostEvent;
 					PostEvent.EventType = ROBOT_STATUS;	
 					PostSPIService(PostEvent);
@@ -512,9 +521,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Initialize stage area frequency reading
-			InitStagingAreaISR();
-			//printf("\r\nStage Sensing ISR initialized in Driving2Staging entry routine\r\n");
-			
+			InitStagingAreaISR();			
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -595,7 +602,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			// ONLY DO (1) & (2) ONCE
+			// ONLY DO (1) & (2) ON FIRST ENTRY TO THIS DURING FUNCTION
 			if(DoFirstTimeFlag)
 			{
 			 //(1) Report frequency
@@ -603,7 +610,6 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
 			PostEvent.EventParam = FrequencyCode;
 			PostSPIService(PostEvent);
-			//printf("\r\n Report freq posted end\r\n");
 										
 			 //(2) Start 200ms timer
 			 ES_Timer_StartTimer(FrequencyReport_TIMER);
@@ -612,10 +618,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				DoFirstTimeFlag = 0;
 			}
 			
-			//HAS THE LOC RECEIVED OUR FREQUNCY? (REPEAT UNTIL LOC RESPONDS IT'S READY)
 			/* (3) If there has been a timeout -which means the reporting process 
 						 has had time to be completed- Query until LOC returns a Response Ready */
-			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
+			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 			{
 				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;
@@ -623,13 +628,41 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				//printf("\r\n Robot query end \r\n");	
 			}    
 
-			//DID WE SEND A VALID FREQUENCY? 
-
-			
-			//MOVE ON TO SHOOTING 
-			PostEvent.EventType = CHECK_IN_SUCCESS;
-			PostRobotTopSM(PostEvent);
-						
+			//(4) Has the LOC received our frequency and is it correct? 
+			if (Event.EventType == COM_QUERY_RESPONSE)
+			{
+				if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY)
+				{
+					PostEvent.EventType = QUERY_AGAIN;
+					PostRobotTopSM(PostEvent);
+				}
+				else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) 
+				{
+					printf("\r\nResponse ready\r\n");
+					
+					// NACK - wrong frequency
+					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
+					{
+						printf("\r\nERROR: You reported the WRONG FREQUENCY!"); // WE SHOULD DO MORE THAN THROW AN ERROR
+					}
+					
+					// INACTIVE - wrong staging area
+					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+					{
+						//Go to DRIVING2STAGING
+						PostEvent.EventType = START;
+						PostRobotTopSM(PostEvent);	
+					}
+					
+					// ACK - all good! 
+					if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+					{
+						//Go to SHOOTING
+						PostEvent.EventType = CHECK_IN_SUCCESS;
+						PostRobotTopSM(PostEvent);	
+					}
+				}
+			}				
     }
 		
     // return either Event, if you don't want to allow the lower level machine
@@ -816,6 +849,5 @@ static void InitializeTeamButtonsHardware(void)
 	printf("\r\n Button: %x \r\n", PinState);
 
 }
-
 
 /*********************************************************  THE END *************************************************************/
