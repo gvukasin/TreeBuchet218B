@@ -265,32 +265,31 @@ typedef enum {  ES_NO_EVENT = 0,
 								/* Robot SM events*/
 								START, 
 								STATION_REACHED,
-								CHECK_IN_FAIL,
-								CHECK_IN_SUCCESS, //15
+								CHECK_IN_SUCCESS, //14
 								FINISH_STRONG, 
 								MISSED_SHOT,
 								NO_BALLS,
 								RELOAD_BALLS,
-								BALLS_AVAILABLE, //20
+								BALLS_AVAILABLE, //19
 								SCORED,
 								GAME_OVER,
 								IR_BEACON_SENSED,
 								HALL_EFFECT_EDGE,
 								/* Robot and LOC com. exchange events */
-								TEAM_COLOR, //25
+								TEAM_COLOR, //24
 								ROBOT_STATUS,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
 								COM_STATUS,
-								COM_FREQ_REPORT, //30
-								COM_QUERY_RESPONSE,
+								//COM_FREQ_REPORT, 
+								COM_QUERY_RESPONSE, //29
 								COM_GAME_READY,
 								/* Shooting SM events */
 								READY2SHOOT,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT,
 								/* Reloading SM events */
-								WAIT4BALL_DELIVERY //35
+								WAIT4BALL_DELIVERY //34
                 } ES_EventTyp_t ;
 
 /****************************************************************************/

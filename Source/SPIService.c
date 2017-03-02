@@ -462,23 +462,26 @@ static void SendData(void){
 	uint16_t Data2Return = 0;
 
 	// send the correct data for the corresponding Command to the RobotSM
-	if(LastEvent.EventType == ROBOT_QUERY){
-		
+	if(LastEvent.EventType == ROBOT_QUERY)
+	{		
 		// set post event type to COM_QUERY_RESPONSE
 		PostEvent.EventType = COM_QUERY_RESPONSE;
 		
 		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
 		Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
-		
-	} else if (LastEvent.EventType == ROBOT_FREQ_RESPONSE) {
-		// set return event type to COM_FREQ_REPORT
-		PostEvent.EventType = COM_FREQ_REPORT;
-		
-		// set ReturnedData to the first two bytes of the total response from the LOC
-		Data2Return = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
-		
-	} else if (LastEvent.EventType == ROBOT_STATUS){
-		
+	}	
+	
+//	else if (LastEvent.EventType == ROBOT_FREQ_RESPONSE) 
+//  {
+//		// set return event type to COM_FREQ_REPORT
+//		PostEvent.EventType = COM_FREQ_REPORT;
+//		
+//		// set ReturnedData to the first two bytes of the total response from the LOC
+//		Data2Return = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
+// 	} 
+	
+	else if (LastEvent.EventType == ROBOT_STATUS)
+	{
 			// set return event type to COM_STATUS
 			PostEvent.EventType = COM_STATUS;
 			
@@ -488,8 +491,7 @@ static void SendData(void){
 			} else {
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]|(BIT7HI & ReceivedLOCData[4]));
 			}
-				
-		}
+	}
 	
 		// Post event to RobotTopSM
 		//printf("\r\n D2R %x \r\n", Data2Return);

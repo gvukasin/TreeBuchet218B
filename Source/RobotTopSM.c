@@ -457,13 +457,10 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				PostEvent.EventType = TEAM_COLOR;			
 			
 				if (ColorMode == RED)
-				{
 					PostEvent.EventParam = 0;
-				}
+			
 				else 
-				{
 					PostEvent.EventParam = 1;
-				}
 				
 				PostSPIService(PostEvent);
 				
