@@ -509,14 +509,6 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				PostSPIService(PostEvent);
 			}
 		}
-//		else if (Event.EventType == ES_TIMEOUT && Event.EventParam == Transmission_TIMER)
-//		{
-//			printf("\r\n ask loc again 2\r\n");					
-//			//ask LOC for GAME STATUS again (until it says we're ready to start)
-//			ES_Event PostEvent;
-//			PostEvent.EventType = ROBOT_STATUS;	
-//			PostSPIService(PostEvent);
-//		}
 		else 
 		{	
 			printf("\r\n ask loc again 2\r\n");					
@@ -649,7 +641,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			
 			/* (3) If there has been a timeout -which means the reporting process 
 						 has had time to be completed- Query until LOC returns a Response Ready */
-			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequeencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
+			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 			{
 				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;
