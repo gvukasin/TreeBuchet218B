@@ -51,11 +51,10 @@ Events to post:
 #define codeInvalidStagingArea 0xff
 
 /*---------------------------- Module Variables ---------------------------*/
-static ES_Event HallEffectEdgeDetected;
-static uint8_t MyPriority;
+//static ES_Event HallEffectEdgeDetected;
 static uint16_t StagingAreaCode;
-uint8_t StagingAreaPeriod_Tolerance = 10;
-uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
+static uint8_t StagingAreaPeriod_Tolerance = 10;
+static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 // For Staging Area Frequency Capture
 static uint32_t LastEdge;
@@ -71,39 +70,6 @@ void InitStagingAreaISR( void );
 void StagingAreaISR( void );
 
 /*------------------------------ Module Code ------------------------------*/
-
-/****************************************************************************
- Function
-     InitHallEffectModule
-
- Parameters
-     uint8_t : the priorty of this service
-
- Returns
-     bool, false if error in initialization, true otherwise
-
- Description
-     Saves away the priority, sets up the initial transition and does any
-     other required initialization for this state machine
- Notes
-
- Author
-     J. Edward Carryer, 10/23/11, 18:55
-****************************************************************************/
-bool InitHallEffectModule ( uint8_t Priority )
-{
-  // initialize priority
-	MyPriority = Priority;
-		
-	// initialize interrupt for hall effect sensor
-	InitStagingAreaISR();
-		
-	// initialize hall effect edge detecting event
-	HallEffectEdgeDetected.EventType = HALL_EFFECT_EDGE;	
-
-	// return true 
-	return true;
-}
 
 /****************************************************************************
  Function

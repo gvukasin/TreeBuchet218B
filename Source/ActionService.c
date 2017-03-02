@@ -198,28 +198,28 @@ ES_Event RunActionService(ES_Event ThisEvent)
 			case CW_90:
 			//	printf("\r\n CW_90 Received\n");
 				SetTimeoutAndStartOneShot(Rotate90Timeout);
-				start2rotate(CW);
+				start2rotate(CW,100);
 				break;
 			
 			//Case 3
 			case CW_45:
 				//printf("\r\n CW_45 Received\n");
 				SetTimeoutAndStartOneShot(Rotate45Timeout);
-				start2rotate(CW);			
+				start2rotate(CW,100);			
 				break;
 			
 			//Case 4
 			case CCW_90:
 				//printf("\r\n CCW_90 Received\n");
 				SetTimeoutAndStartOneShot(Rotate90Timeout);
-				start2rotate(CCW);
+				start2rotate(CCW,100);
 				break;
 			
 			//Case 5
 			case CCW_45:
 				//printf("\r\n CCW_45 Received\n");
 				SetTimeoutAndStartOneShot(Rotate45Timeout);
-				start2rotate(CCW);
+				start2rotate(CCW,100);
 				break;
 			
 			//Case 6

@@ -14,7 +14,7 @@
 #include "ES_Events.h" 
 
 // Public Function Prototypes
-void start2rotate(bool rotationDirection);
+void start2rotate(bool rotationDirection, uint8_t DutyCycle);
 void rotate2beacon(void);
 void drive(uint8_t DutyCycle, bool direction);
 void stop(void);

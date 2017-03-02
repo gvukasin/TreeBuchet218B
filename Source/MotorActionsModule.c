@@ -57,11 +57,9 @@ static bool wheelSide;
 static bool direction;
 
 /*------------------------------ Module Code ------------------------------*/
-void start2rotate(bool rotationDirection)
+void start2rotate(bool rotationDirection, uint8_t DutyCycle)
 {
 	// pick arbitrary DutyCycle, keep for testing
-	uint8_t DutyCycle = 100;
-	
 	if (rotationDirection == CW)
 	{
 		// pick the left wheel and rotate it forward to make robot spin CW
