@@ -558,13 +558,15 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
-			uint16_t stageFreq = GetStagingAreaCode();
-			printf("\r\nstaging area code=%u \r\n",stageFreq);
-			if(stageFreq != codeInvalidStagingArea){
+			FrequencyCode = GetStagingAreaCode();
+			printf("\r\nstaging area code=%u \r\n",FrequencyCode);
+			
+			if(FrequencyCode != codeInvalidStagingArea)
+			{
 				//printf("\r\nstage detected in Driving2Stage during routine\r\n");
 				ES_Event PostEvent;
 			  PostEvent.EventType = STATION_REACHED;
-			  PostRobotTopSM(PostEvent); // Move to the next state
+			  PostRobotTopSM(PostEvent); // Move to the CheckingIn state
 			}
     }
 		else{
