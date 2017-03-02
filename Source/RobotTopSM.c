@@ -255,11 +255,9 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
         break;
 			
 				// CASE 2/8				 
-			 case DRIVING2STAGING:   //USE TEAMOPTION VARIABLE FOR DIFFERENT DRIVING
-			 
+			 case DRIVING2STAGING:   //USE TEAMOPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 
 			 // Process events			 
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
@@ -275,37 +273,40 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-				 break;
+				break;
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
 				// printf("\r\n run \r\n");
 			 // During function
-       CurrentEvent = DuringCheckIn(CurrentEvent);
-			 
+       CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
 			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-         {
-					 
-            switch (CurrentEvent.EventType)
-            {
-               case CHECK_IN_SUCCESS : 
-                  NextState = SHOOTING;
-                  MakeTransition = true; 
-                  break;
-               //case CHECK_IN_FAIL :
-							 case ES_TIMEOUT:
-								  NextState = CHECKING_IN; // Internal Self transition
-                  break;
-							 case FINISH_STRONG :
-								 NextState = ENDING_STRATEGY;
-								 MakeTransition = true;
-								 break;							 
-							 default:
-								 printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
-            }
+       {				 
+					switch (CurrentEvent.EventType)
+					{
+						 case CHECK_IN_SUCCESS : 
+								NextState = SHOOTING;
+								MakeTransition = true; 
+								break;
+						 case ES_TIMEOUT:
+								if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == FrequencyReport_TIMER))
+									NextState = CHECKING_IN; // Internal Self transition
+								break;
+						 case COM_QUERY_RESPONSE:
+								NextState = CHECKING_IN; // Internal Self transition
+								break;
+						 case FINISH_STRONG :
+							 NextState = ENDING_STRATEGY;
+							 MakeTransition = true;
+							 break;							 
+						 default:
+							 if(ES_ENTRY|ES_EXIT){}
+							 else
+								printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
 					}
-				 break;
+				}
+				break;
 
 			 // CASE 4/8				 
 			 case SHOOTING:
@@ -313,30 +314,32 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
        CurrentEvent = DuringShooting(CurrentEvent);
 			 // Process events			 
 			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-         {
-            switch (CurrentEvent.EventType)
-            {
-               case SCORED : 
-                  NextState = DRIVING2STAGING;
-                  MakeTransition = true; 
-                  break;
-               case MISSED_SHOT :
-								  NextState = SHOOTING; // Self transition
-                  MakeTransition = true; 
-                  break;
-							 case NO_BALLS :
-								  NextState = DRIVING2RELOAD; 
-                  MakeTransition = true; 
-                  break;
-							 case FINISH_STRONG :
-								 NextState = ENDING_STRATEGY;
-								 MakeTransition = true;
-								 break;
-							 default:
-								 printf("\r\nERROR: Robot is in SHOOTING and the event received is NOT VALID\n");
-            }
+       {
+					switch (CurrentEvent.EventType)
+					{
+						 case SCORED : 
+								NextState = DRIVING2STAGING;
+								MakeTransition = true; 
+								break;
+						 case MISSED_SHOT :
+								NextState = SHOOTING; // Self transition
+								MakeTransition = true; 
+								break;
+						 case NO_BALLS :
+								NextState = DRIVING2RELOAD; 
+								MakeTransition = true; 
+								break;
+						 case FINISH_STRONG :
+							 NextState = ENDING_STRATEGY;
+							 MakeTransition = true;
+							 break;
+						 default:
+							 if(ES_ENTRY|ES_EXIT){}
+							 else
+								printf("\r\nERROR: Robot is in SHOOTING and the event received is NOT VALID\n");
 					}
-				 break;
+			 }
+			 break;
 
 			 // CASE 5/8				 
 			 case DRIVING2RELOAD:
@@ -349,7 +352,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}				 
-				 break;
+			 break;
 				
 			 // CASE 6/8				 
 			 case RELOADING:
@@ -362,7 +365,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}							 
-				 break;
+			 break;
 				
 			 // CASE 7/8				 			 
 			 case ENDING_STRATEGY:
@@ -375,13 +378,12 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}							 
-				 break;	
+			 break;	
 			
 			 // CASE 8/8				 			 
 			 case STOP:
-			 // During function
        CurrentEvent = DuringStop(CurrentEvent);	
-				 break;				 
+			 break;				 
 		}
  	 
     //   If we are making a state transition
@@ -483,14 +485,14 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				{			
 					// change return event to START to begin the game
 					ReturnEvent.EventType = START;
+				}			
+				else 
+				{			
+					//ask LOC if for game status to know if we should start
+					ES_Event PostEvent;
+					PostEvent.EventType = ROBOT_STATUS;	
+					PostSPIService(PostEvent);
 				}
-			} 
-			else 
-			{			
-				//ask LOC if for game status to know if we should start
-				ES_Event PostEvent;
-				PostEvent.EventType = ROBOT_STATUS;	
-				PostSPIService(PostEvent);
 			}
     }
     // return either Event, if you don't want to allow the lower level machine
@@ -538,13 +540,13 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			//Clamp the value to 0-100
 			if(PWMLeft < 0){
 				PWMLeft = 0;
-			 }else if(PWMLeft > 100){
+			}else if(PWMLeft > 100){
 				PWMLeft = 100;
 			}
 				
 			if(PWMRight < 0){
 				PWMRight = 0;
-			 }else if(PWMRight > 100){
+			}else if(PWMRight > 100){
 				PWMRight = 100;
 			}
 			 
@@ -613,7 +615,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				DoFirstTimeFlag = 0;
 			}
 			
-			//REPEAT UNTIL LOC RESPONDS IT'S READY
+			//HAS THE LOC RECEIVED OUR FREQUNCY? (REPEAT UNTIL LOC RESPONDS IT'S READY)
 			/* (3) If there has been a timeout -which means the reporting process 
 						 has had time to be completed- Query until LOC returns a Response Ready */
 			if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER))
@@ -621,8 +623,16 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				printf("\r\n ROBOT_QUERY to SPI\r\n");
 				PostEvent.EventType = ROBOT_QUERY;
 			  PostSPIService(PostEvent);
-				//printf("\r\n Robot query end \r\n");				
-			}     
+				//printf("\r\n Robot query end \r\n");	
+			}    
+
+			//DID WE SEND A VALID FREQUENCY? 
+
+			
+			//MOVE ON TO SHOOTING 
+			PostEvent.EventType = CHECK_IN_SUCCESS;
+			PostRobotTopSM(PostEvent);
+						
     }
 		
     // return either Event, if you don't want to allow the lower level machine
