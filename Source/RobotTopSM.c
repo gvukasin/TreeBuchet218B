@@ -90,7 +90,6 @@
 #define RESPONSE_READY 0x0000
 #define RESPONSE_NOT_READY 0xAA00
 #define RESPONSE_READY_MASK 0xff00
-#define STATUS_MASK 0x00ff
 #define ACK1_HI BIT15HI
 #define ACK0_HI BIT14HI
 #define ACK1_LO BIT15LO
@@ -151,9 +150,10 @@ static int PositionDifference;
 static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
-static bool ColorMode;
+static bool TeamColor;
 static bool CheckFlag = 1;
 static uint8_t BallCount = 3; //We will start with 3 balls
+static uint8_t PreviousScore = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -266,7 +266,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
         break;
 			
 				// CASE 2/8				 
-			 case DRIVING2STAGING:   //USE TEAMOPTION VARIABLE FOR DIFFERENT DRIVING			 	 
+			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
 			 // Process events			 
@@ -467,7 +467,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				ES_Event PostEvent;
 				PostEvent.EventType = TEAM_COLOR;			
 			
-				if (ColorMode == RED)
+				if (TeamColor == RED)
 					PostEvent.EventParam = 0;
 			
 				else 
@@ -591,8 +591,12 @@ static ES_Event DuringCheckIn( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-       // Check Ball count  
-			 // Check time		
+      // Check Ball count  
+			PostEvent.EventType = ROBOT_STATUS;
+			PostSPIService(PostEvent);
+			if (TeamColor == RED)
+			 
+			// Check time		
 			DoFirstTimeFlag = 1;			
     }
     else if ( Event.EventType == ES_EXIT)
@@ -643,7 +647,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 					// NACK - wrong frequency
 					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
 					{
-						printf("\r\nERROR: You reported the WRONG FREQUENCY!"); // WE SHOULD DO MORE THAN THROW AN ERROR
+						printf("\r\nERROR: Reported the WRONG FREQUENCY!"); // WE SHOULD DO MORE THAN THROW AN ERROR
 					}
 					
 					// INACTIVE - wrong staging area
@@ -667,8 +671,6 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
-		//		printf("\n\rReturnEvent.EventType = %d\n\r",ReturnEvent.EventType);
-		//		printf("\n\rReturnEvent.EventParam = %d\n\r",ReturnEvent.EventParam);
     return(ReturnEvent);
 }
 
@@ -844,7 +846,7 @@ static void InitializeTeamButtonsHardware(void)
 	// read state of button and set team color accordingly (RED = 0, GREEN = 1)
 	uint16_t PinState;
 	PinState = HWREG(GPIO_PORTF_BASE + (GPIO_O_DATA + ALL_BITS)) & RED_BUTTON;
-	ColorMode = PinState;
+	TeamColor = PinState;
 
 	printf("\r\n Button: %x \r\n", PinState);
 
