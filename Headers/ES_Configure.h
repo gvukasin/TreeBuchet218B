@@ -290,7 +290,8 @@ typedef enum {  ES_NO_EVENT = 0,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT,
 								/* Reloading SM events */
-								WAIT4BALL_DELIVERY //35
+								WAIT4BALL_DELIVERY, //35
+								EOTEvent,
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
@@ -342,7 +343,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER1_RESP_FUNC PostRobotTopSM
 #define TIMER2_RESP_FUNC PostRobotTopSM
 #define TIMER3_RESP_FUNC PostRobotTopSM
-#define TIMER4_RESP_FUNC TIMER_UNUSED
+#define TIMER4_RESP_FUNC PostRobotTopSM
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
 #define TIMER7_RESP_FUNC TIMER_UNUSED
@@ -366,5 +367,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define WireFollow_TIMER 1
 #define FrequencyReport_TIMER 2
 #define Looking4Beacon_TIMER 3
+#define Transmission_TIMER 4 //timer for SPI transmission to slow down queries
 
 #endif /* CONFIGURE_H */

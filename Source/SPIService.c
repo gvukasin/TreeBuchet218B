@@ -58,13 +58,10 @@
 #define CPSDVSR 0x28
 
 // SCR divisor for SSI clock rate (99)
-//#define SCR 0x63
-#define SCR 0x78
+#define SCR 0x63
 
-// SPI period (4ms b/c need a minimum of 2ms)
-// these times assume a 1.000mS/tick timing
-#define TicksPerSec 976
-#define SPIPeriod (TicksPerSec/250)
+// SPI period 
+#define SPIPeriod 2 //2ms
 
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
@@ -87,6 +84,7 @@
 
 // Number of bits to shift 8 bit number to the top of a 16 bit number
 #define NumResponseBits 8
+
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
@@ -123,6 +121,9 @@ static uint8_t TeamColor;
 // variable defining byte count of each transmission
 static uint8_t ByteCount = 0;
 
+// create a local variable for data to return
+	uint16_t Data2Return = 0;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -150,7 +151,7 @@ bool InitSPIService ( uint8_t Priority )
 	 InitSerialHardware();
 	 
 	// Initialize shorttimer 
-	ES_Timer_SetTimer(SPI_TIMER,SPIPeriod);
+	//ES_Timer_SetTimer(SPI_TIMER,SPIPeriod);
 	
 	// Initialize team color as red
 	TeamColor = RED;
@@ -191,7 +192,7 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
   if(CurrentState == WAITING2TRANSMIT)
   {
 		// change state to WAITING4TIMEOUT
-		CurrentState = WAITING4TIMEOUT;
+		//CurrentState = WAITING4TIMEOUT;
 
 			if(CurrentEvent.EventType == TEAM_COLOR){
 			
@@ -237,6 +238,16 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				
 				// send data to LOC
 				Transmit2LOC( StatusCommand );
+				
+			} else if(CurrentEvent.EventType == EOTEvent) {
+				// Change State to WAITING4TIMEOUT
+				CurrentState = WAITING4TIMEOUT;
+					for(int i=0; i<5;i++){
+						ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
+						}
+	
+			// reset timer 
+			ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 			}
 			
 		//WAITING4TIMEOUT State
@@ -244,6 +255,9 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 		
 			if(CurrentEvent.EventType == ES_TIMEOUT){
 			
+				// Send data to RobotSM
+				SendData();
+				
 				// Change state to WAITING2TRANSMIT
 				CurrentState = WAITING2TRANSMIT;
 			
@@ -297,20 +311,16 @@ void SPI_InterruptResponse( void )
 	HWREG(SSI0_BASE + SSI_O_IM) &= (~SSI_IM_TXIM);
 
 	// read command and store response from data register
-	for(int i=0; i<5;i++){
-	ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
-	}
+//	for(int i=0; i<5;i++){
+//	ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
+//	}
 
-	// Change State to WAITING4TIMEOUT
-	CurrentState = WAITING4TIMEOUT;
+	// post eot event
+	ES_Event Event2Post;
+	Event2Post.EventType = EOTEvent;
+	PostSPIService(Event2Post);
 	
-	// Send data to RobotSM
-	SendData();
-	
-	// reset timer 
-	ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 }
-
 
 /*----------------------------------------------------------------------------
 private functions
@@ -457,16 +467,13 @@ static void SendData(void){
 	// define event to post to RobotSM 
 	ES_Event PostEvent;
 	PostEvent.EventType = ES_ERROR; // incase of error 
-		
-	// create a local variable for data to return
-	uint16_t Data2Return = 0;
 
 	// send the correct data for the corresponding Command to the RobotSM
 	if(LastEvent.EventType == ROBOT_QUERY)
 	{		
 		// set post event type to COM_QUERY_RESPONSE
 		PostEvent.EventType = COM_QUERY_RESPONSE;
-		
+		printf("com query response\n\r");
 		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
 		Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
 	}	
@@ -482,14 +489,17 @@ static void SendData(void){
 	
 	else if (LastEvent.EventType == ROBOT_STATUS)
 	{
+			// printf("\r\nCOM_STATUS set\r\n");
 			// set return event type to COM_STATUS
 			PostEvent.EventType = COM_STATUS;
 			
 			// set ReturnedData to SB1 byte (bit shifted by 8) and SB2 or SB3 depending on red or green team
 			if(TeamColor == RED){	
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[4]);
+				//printf("com status response %d\n\r", Data2Return);
 			} else {
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]|(BIT7HI & ReceivedLOCData[4]));
+				//printf("com status response %d\n\r", Data2Return);
 			}
 	}
 	

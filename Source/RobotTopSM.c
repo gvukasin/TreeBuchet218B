@@ -85,6 +85,7 @@
 #define LEDS_OFF 0
 
 #define Time4FrequencyReport 200
+//#define Time4Transmission
 
 #define GAME_STATUS_BIT BIT7HI
 #define RESPONSE_READY 0x0000
@@ -187,15 +188,18 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize PWM hardware to drive the motors
 	InitializePWM();
 	
+	// SEE ME
+	
 	// Initialize RLC hardware 
-	InitRLCSensor();
+	// InitRLCSensor();
 	
 	// Initialize hardware for IR but not kicking the timer off 
-	InitInputCaptureForIRDetection();
+	// InitInputCaptureForIRDetection();
 	
 		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
+//	ES_Timer_SetTimer(Transmission_TIMER, Time4Transmission);
   	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -484,27 +488,43 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     { 
     }
 		
-		else // DURING
-    {				
-			if(Event.EventType == COM_STATUS)
-			{
-				printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
-								
-				// check game status bit
-				if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
-				{			
-					// change return event to START to begin the game
-					ReturnEvent.EventType = START;
-				}			
-				else 
-				{			
-					//ask LOC for GAME STATUS again (until it says we're ready to start)
-					ES_Event PostEvent;
-					PostEvent.EventType = ROBOT_STATUS;	
-					PostSPIService(PostEvent);
-				}
+		else if(Event.EventType == COM_STATUS)
+		{
+			// printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
+							
+			// check game status bit
+			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
+			{			
+				printf("\r\n start \r\n");
+				// change return event to START to begin the game
+				ReturnEvent.EventType = START;
+			}			
+			else 
+			{		
+				// printf("\r\n ask loc again 1\r\n");					
+				//ask LOC for GAME STATUS again (until it says we're ready to start)
+				ES_Event PostEvent;
+				PostEvent.EventType = ROBOT_STATUS;	
+				PostSPIService(PostEvent);
 			}
-    }
+		}
+//		else if (Event.EventType == ES_TIMEOUT && Event.EventParam == Transmission_TIMER)
+//		{
+//			printf("\r\n ask loc again 2\r\n");					
+//			//ask LOC for GAME STATUS again (until it says we're ready to start)
+//			ES_Event PostEvent;
+//			PostEvent.EventType = ROBOT_STATUS;	
+//			PostSPIService(PostEvent);
+//		}
+		else 
+		{	
+			printf("\r\n ask loc again 2\r\n");					
+			//ask LOC for GAME STATUS again (until it says we're ready to start)
+			ES_Event PostEvent;
+			PostEvent.EventType = ROBOT_STATUS;	
+			PostSPIService(PostEvent);
+		}
+		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
