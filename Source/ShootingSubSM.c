@@ -80,6 +80,8 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
 static ShootingState_t CurrentState;
+static uint8_t BallCount;
+static uint8_t MyScore;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -229,6 +231,19 @@ ShootingState_t QueryShootingSM ( void )
    return(CurrentState);
 }
 
+/****************************************************************************
+Getters needed by the RobotTopSM
+****************************************************************************/
+
+uint8_t GetBallCount()
+{
+	return BallCount;
+}
+
+uint8_t GetMyScore()
+{
+	return MyScore;
+}
 /***************************************************************************
  private functions
  ***************************************************************************/
