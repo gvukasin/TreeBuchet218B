@@ -14,6 +14,7 @@
 bool InitHallEffectModule ( uint8_t Priority );
 void InitStagingAreaISR( void );
 void EnableStagingAreaISR( void );
+void StagingAreaISR( void );
 uint16_t GetStagingAreaCode( void );
 
 #endif /* HallEffectModule_H */

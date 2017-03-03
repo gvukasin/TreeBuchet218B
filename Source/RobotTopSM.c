@@ -108,23 +108,23 @@
 #define R3 (BIT8HI | BIT9HI)
 #define R_ALL_GOALS BIT10HI
 
-//Magnetic frequency codes
-#define code1333us 0000
-#define code1277us 0001
-#define code1222us 0010
-#define code1166us 0011
-#define code1111us 0100
-#define code1055us 0101
-#define code1000us 0110
-#define code944us 0111
-#define code889us 1000
-#define code833us 1001
-#define code778us 1010
-#define code722us 1011
-#define code667us 1100
-#define code611us 1101
-#define code556us 1110
-#define code500us 1111
+// staging area frequency codes
+#define code1333us 0 //0000
+#define code1277us (BIT0HI) //0001;
+#define code1222us (BIT1HI) //0010;
+#define code1166us (BIT1HI|BIT0HI) //0011;
+#define code1111us (BIT2HI) //0100;
+#define code1055us (BIT2HI|BIT0HI) //0101;
+#define code1000us (BIT2HI|BIT1HI) //0110;
+#define code944us (BIT2HI|BIT1HI|BIT0HI) //0111;
+#define code889us BIT3HI //1000;
+#define code833us (BIT3HI|BIT0HI) //1001;
+#define code778us (BIT3HI|BIT1HI) // 1010;
+#define code722us (BIT3HI|BIT1HI|BIT0HI) //1011;
+#define code667us (BIT3HI|BIT2HI) //1100;
+#define code611us (BIT3HI|BIT2HI|BIT0HI) //1101;
+#define code556us (BIT3HI|BIT2HI|BIT1HI) //1110;
+#define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
 #define codeInvalidStagingArea 0xff
 
 // Wire Following Control Defines
@@ -424,7 +424,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
     //   If we are making a state transition
     if (MakeTransition == true)
     {
-			 printf("\r\nState Transition Made\r\n");
+			 printf("\r\n T %i\r\n",CurrentState);
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunRobotTopSM(CurrentEvent);
@@ -588,7 +588,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
+			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -599,7 +599,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			FrequencyCode = GetStagingAreaCode();
-			printf("\r\nstaging area code=%x \r\n",FrequencyCode);
+			// printf("\r\nstaging area code=%x \r\n",FrequencyCode);
 			
 			if(FrequencyCode != codeInvalidStagingArea)
 			{
