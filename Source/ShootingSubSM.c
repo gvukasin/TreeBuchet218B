@@ -1,4 +1,4 @@
-/****************************************************************************
+ /****************************************************************************
  Module
    ShootingSubSM.c
 
@@ -54,11 +54,19 @@
 #include "ShootingSubSM.h"
 #include "SPIService.h"
 #include "RobotTopSM.h"
+#include "MotorActionsModule.h"
+#include "IRBeaconModule.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
 
+// these times assume a 1.000mS/tick timing
+#define ONE_SEC 976
+#define Looking4Beacon_TIME ONE_SEC/100 
+
+#define CW 1
+#define CCW 0
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -72,6 +80,8 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
 static ShootingState_t CurrentState;
+static uint8_t BallCount;
+static uint8_t MyScore;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -107,20 +117,25 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          //process any events
          if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == READY2SHOOT )) //If an event is active and it's the correct one
          {       
-                  NextState = LOADING_BALL;//Decide what the next state will be
-                  MakeTransition = true; //mark that we are taking a transition
-                  // if transitioning to a state with history change kind of entry
-                  //EntryEventKind.EventType = ES_ENTRY_HISTORY;
-                  ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-                  break;
+            NextState = LOADING_BALL;//Decide what the next state will be
+            MakeTransition = true; //mark that we are taking a transition
+            // if transitioning to a state with history change kind of entry
+            //EntryEventKind.EventType = ES_ENTRY_HISTORY;
+            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+            break;
           }
+				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER)) // Self Transition
+				 {
+						NextState = CALIBRATING;
+						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+				 }
 				 else if ( CurrentEvent.EventType == ES_NO_EVENT )// Current Event is now ES_NO_EVENT. Correction 2/20/17 
          {     																						//Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
 				 else
 				 {
-					 printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
+						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
 				 }
        break;
       
@@ -216,6 +231,19 @@ ShootingState_t QueryShootingSM ( void )
    return(CurrentState);
 }
 
+/****************************************************************************
+Getters needed by the RobotTopSM
+****************************************************************************/
+
+uint8_t GetBallCount()
+{
+	return BallCount;
+}
+
+uint8_t GetMyScore()
+{
+	return MyScore;
+}
 /***************************************************************************
  private functions
  ***************************************************************************/
@@ -228,30 +256,44 @@ static ES_Event DuringCalibrating( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) ||
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        // Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+			  EnableIRInterrupt();
+			
+			  // Start Rotating
+			  start2rotate(CCW,80);
+			
+			  // Start the timer to periodically check the IR frequency
+        ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        // Stop Rotating
+			  stop();      
     }
-		else // do the 'during' function for this state
+		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        // Read the detected IR frequency
+			  uint8_t IRFreqCode = GetIRCode();
+			  // If detected the frequency we are looking for, post READY2SHOOT event
+			  if(IRFreqCode == 0xff)                                  // !!!!!!!!!!!!!!!!!!!!!!Need to change!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+															                                  // !!!!!!!!!!!!!!!!!Valid Code should be from LOC!!!!!!!!!!!!!!!!!!!
+				{
+					ES_Event Event2Post;
+					Event2Post.EventType = READY2SHOOT;
+					Event2Post.EventParam = IRFreqCode;
+					PostRobotTopSM(Event2Post);
+				}
+			  // Else, restart the timer
+				else
+				{
+					ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+				}					
+				
     }
+		else
+		{
+			
+		}
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
@@ -293,36 +335,23 @@ static ES_Event DuringLoadingBall( ES_Event Event)
     return(ReturnEvent);
 }
 
-static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
+static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THEN GET OUT OF SUB SM
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+					
+      
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        
     }
 		else // do the 'during' function for this state
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

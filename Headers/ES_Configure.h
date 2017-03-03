@@ -265,32 +265,33 @@ typedef enum {  ES_NO_EVENT = 0,
 								/* Robot SM events*/
 								START, 
 								STATION_REACHED,
-								CHECK_IN_FAIL,
-								CHECK_IN_SUCCESS, //15
+								CHECK_IN_SUCCESS, //14
 								FINISH_STRONG, 
 								MISSED_SHOT,
 								NO_BALLS,
 								RELOAD_BALLS,
-								BALLS_AVAILABLE, //20
+								BALLS_AVAILABLE, //19
 								SCORED,
 								GAME_OVER,
 								IR_BEACON_SENSED,
 								HALL_EFFECT_EDGE,
+								QUERY_AGAIN,
 								/* Robot and LOC com. exchange events */
 								TEAM_COLOR, //25
 								ROBOT_STATUS,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
 								COM_STATUS,
-								COM_FREQ_REPORT, //30
-								COM_QUERY_RESPONSE,
+								//COM_FREQ_REPORT, 
+								COM_QUERY_RESPONSE, //30
 								COM_GAME_READY,
 								/* Shooting SM events */
 								READY2SHOOT,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT,
 								/* Reloading SM events */
-								WAIT4BALL_DELIVERY //35
+								WAIT4BALL_DELIVERY, //35
+								EOTEvent,
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
@@ -341,8 +342,8 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER0_RESP_FUNC PostSPIService
 #define TIMER1_RESP_FUNC PostRobotTopSM
 #define TIMER2_RESP_FUNC PostRobotTopSM
-#define TIMER3_RESP_FUNC TIMER_UNUSED
-#define TIMER4_RESP_FUNC TIMER_UNUSED
+#define TIMER3_RESP_FUNC PostRobotTopSM
+#define TIMER4_RESP_FUNC PostRobotTopSM
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
 #define TIMER7_RESP_FUNC TIMER_UNUSED
@@ -365,5 +366,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define SPI_TIMER 0
 #define WireFollow_TIMER 1
 #define FrequencyReport_TIMER 2
+#define Looking4Beacon_TIMER 3
+#define Transmission_TIMER 4 //timer for SPI transmission to slow down queries
 
 #endif /* CONFIGURE_H */

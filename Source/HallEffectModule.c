@@ -31,31 +31,11 @@ Events to post:
 #define BitsPerNibble 4
 #define TicksPerMS 40000
 
-// staging area frequency codes
-#define code1333us 0000
-#define code1277us 0001
-#define code1222us 0010
-#define code1166us 0011
-#define code1111us 0100
-#define code1055us 0101
-#define code1000us 0110
-#define code944us 0111
-#define code889us 1000
-#define code833us 1001
-#define code778us 1010
-#define code722us 1011
-#define code667us 1100
-#define code611us 1101
-#define code556us 1110
-#define code500us 1111
-#define codeInvalidStagingArea 0xff
-
 /*---------------------------- Module Variables ---------------------------*/
-static ES_Event HallEffectEdgeDetected;
-static uint8_t MyPriority;
+//static ES_Event HallEffectEdgeDetected;
 static uint16_t StagingAreaCode;
-uint8_t StagingAreaPeriod_Tolerance = 10;
-uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
+static uint8_t StagingAreaPeriod_Tolerance = 5;
+static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 // For Staging Area Frequency Capture
 static uint32_t LastEdge;
@@ -65,45 +45,32 @@ static uint8_t counter = 0;
 static int StagingAreaPeriod = 0;
 static int StagingAreaPeriodAddition = 0;
 
+// staging area frequency codes
+#define code1333us 0 //0000
+#define code1277us (BIT0HI) //0001;
+#define code1222us (BIT1HI) //0010;
+#define code1166us (BIT1HI|BIT0HI) //0011;
+#define code1111us (BIT2HI) //0100;
+#define code1055us (BIT2HI|BIT0HI) //0101;
+#define code1000us (BIT2HI|BIT1HI) //0110;
+#define code944us (BIT2HI|BIT1HI|BIT0HI) //0111;
+#define code889us BIT3HI //1000;
+#define code833us (BIT3HI|BIT0HI) //1001;
+#define code778us (BIT3HI|BIT1HI) // 1010;
+#define code722us (BIT3HI|BIT1HI|BIT0HI) //1011;
+#define code667us (BIT3HI|BIT2HI) //1100;
+#define code611us (BIT3HI|BIT2HI|BIT0HI) //1101;
+#define code556us (BIT3HI|BIT2HI|BIT1HI) //1110;
+#define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
+#define codeInvalidStagingArea 0xff
+
 
 /*---------------------------- Module Functions ---------------------------*/
 void InitStagingAreaISR( void );
+void EnableStagingAreaISR( void );
 void StagingAreaISR( void );
 
 /*------------------------------ Module Code ------------------------------*/
-
-/****************************************************************************
- Function
-     InitHallEffectModule
-
- Parameters
-     uint8_t : the priorty of this service
-
- Returns
-     bool, false if error in initialization, true otherwise
-
- Description
-     Saves away the priority, sets up the initial transition and does any
-     other required initialization for this state machine
- Notes
-
- Author
-     J. Edward Carryer, 10/23/11, 18:55
-****************************************************************************/
-bool InitHallEffectModule ( uint8_t Priority )
-{
-  // initialize priority
-	MyPriority = Priority;
-		
-	// initialize interrupt for hall effect sensor
-	InitStagingAreaISR();
-		
-	// initialize hall effect edge detecting event
-	HallEffectEdgeDetected.EventType = HALL_EFFECT_EDGE;	
-
-	// return true 
-	return true;
-}
 
 /****************************************************************************
  Function
@@ -169,6 +136,29 @@ void InitStagingAreaISR( void )
 	// ensure interrupts are enabled globally
 	__enable_irq();
 	
+	// enable timer and enable timer to stall when program stopped by the debugger
+	// HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+}
+
+/****************************************************************************
+ Function
+    EnableStagingAreaISR
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+void EnableStagingAreaISR( void )
+{
 	// enable timer and enable timer to stall when program stopped by the debugger
 	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
 }
@@ -238,71 +228,89 @@ uint16_t GetStagingAreaCode( void )
 	if ( (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
 		if ( (StagingAreaPeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1333us;
+			printf("\r\n code1333 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1277us;
+			printf("\r\n code1277 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1222us;
+			printf("\r\n code1222 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1166us;
+			printf("\r\n code1166 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1111us;
+			printf("\r\n code1111 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1055us;
+			printf("\r\n code1055 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1000us;
+			printf("\r\n code1000 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code944us;
+			printf("\r\n code944 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code889us;
+			printf("\r\n code889 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code833us;
+			printf("\r\n code833 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code778us;
+			printf("\r\n code778 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code722us;
+			printf("\r\n code722 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code667us;
+			printf("\r\n code667 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code611us;
+			printf("\r\n code611 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code556us;
+			printf("\r\n code566 %x",StagingAreaCode);
 		}
 
 		else if ( (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code500us;
+			printf("\r\n code500 %x",StagingAreaCode);
 		}
 	}
 	else{
 		StagingAreaCode = codeInvalidStagingArea;
+		printf("\r\n code70 %x",StagingAreaCode);
 	}
 	
+	// printf("\r\n code %x",StagingAreaCode);
 	return StagingAreaCode;
 }

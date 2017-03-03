@@ -21,5 +21,7 @@ typedef enum { CALIBRATING, LOADING_BALL, WATING4SHOT_COMPLETE } ShootingState_t
 ES_Event RunShootingSM( ES_Event CurrentEvent );
 void StartShootingSM ( ES_Event CurrentEvent );
 ShootingState_t QueryShootingSM ( void );
+uint8_t GetBallCount( void );
+uint8_t GetMyScore( void );
 
 #endif /*ShootingSubSM_H */
