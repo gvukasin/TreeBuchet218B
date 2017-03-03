@@ -599,7 +599,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			FrequencyCode = GetStagingAreaCode();
-			printf("\r\nstaging area code=%u \r\n",FrequencyCode);
+			printf("\r\nstaging area code=%x \r\n",FrequencyCode);
 			
 			if(FrequencyCode != codeInvalidStagingArea)
 			{
