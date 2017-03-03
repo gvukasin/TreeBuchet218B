@@ -210,11 +210,13 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize hardware for IR but not kicking the timer off 
 	InitInputCaptureForIRDetection();
 	
+	// Initialize stage area frequency reading
+	InitStagingAreaISR();
+	
 		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
 
-  	
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
 
@@ -553,8 +555,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
-			// Initialize stage area frequency reading
-			InitStagingAreaISR();
+			EnableStagingAreaISR();
     }
     else if ( Event.EventType == ES_EXIT )
     {

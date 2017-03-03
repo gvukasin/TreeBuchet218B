@@ -67,6 +67,7 @@ static int StagingAreaPeriodAddition = 0;
 
 /*---------------------------- Module Functions ---------------------------*/
 void InitStagingAreaISR( void );
+void EnableStagingAreaISR( void );
 void StagingAreaISR( void );
 
 /*------------------------------ Module Code ------------------------------*/
@@ -135,6 +136,29 @@ void InitStagingAreaISR( void )
 	// ensure interrupts are enabled globally
 	__enable_irq();
 	
+	// enable timer and enable timer to stall when program stopped by the debugger
+	// HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+}
+
+/****************************************************************************
+ Function
+    EnableStagingAreaISR
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+void EnableStagingAreaISR( void )
+{
 	// enable timer and enable timer to stall when program stopped by the debugger
 	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
 }
@@ -270,6 +294,6 @@ uint16_t GetStagingAreaCode( void )
 		StagingAreaCode = codeInvalidStagingArea;
 	}
 	
-	//printf("\r\n code %x",StagingAreaCode);
+	printf("\r\n code %x",StagingAreaCode);
 	return StagingAreaCode;
 }
