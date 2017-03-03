@@ -461,8 +461,8 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
   // to initialize the state variable
 	
 	//SEE ME
-  //CurrentState = WAITING2START;
-	CurrentState = DRIVING2STAGING;
+  CurrentState = WAITING2START;
+	// CurrentState = DRIVING2STAGING;
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -554,7 +554,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Initialize stage area frequency reading
-			InitStagingAreaISR();			
+			InitStagingAreaISR();
     }
     else if ( Event.EventType == ES_EXIT )
     {
