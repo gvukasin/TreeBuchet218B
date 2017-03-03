@@ -31,25 +31,6 @@ Events to post:
 #define BitsPerNibble 4
 #define TicksPerMS 40000
 
-// staging area frequency codes
-#define code1333us 0000
-#define code1277us 0001
-#define code1222us 0010
-#define code1166us 0011
-#define code1111us 0100
-#define code1055us 0101
-#define code1000us 0110
-#define code944us 0111
-#define code889us 1000
-#define code833us 1001
-#define code778us 1010
-#define code722us 1011
-#define code667us 1100
-#define code611us 1101
-#define code556us 1110
-#define code500us 1111
-#define codeInvalidStagingArea 0xff
-
 /*---------------------------- Module Variables ---------------------------*/
 //static ES_Event HallEffectEdgeDetected;
 static uint16_t StagingAreaCode;
@@ -63,6 +44,25 @@ static uint32_t MeasuredStagingAreaPeriod;
 static uint8_t counter = 0;
 static int StagingAreaPeriod = 0;
 static int StagingAreaPeriodAddition = 0;
+
+// staging area frequency codes
+uint16_t code1333us = 0000;
+uint16_t code1277us = 0001;
+uint16_t code1222us = 0010;
+uint16_t code1166us = 0011;
+uint16_t code1111us = 0100;
+uint16_t code1055us = 0101;
+uint16_t code1000us = 0110;
+uint16_t code944us = 0111;
+uint16_t code889us = 1000;
+uint16_t code833us = 1001;
+uint16_t code778us = 1010;
+uint16_t code722us = 1011;
+uint16_t code667us = 1100;
+uint16_t code611us = 1101;
+uint16_t code556us = 1110;
+uint16_t code500us = 1111;
+uint16_t codeInvalidStagingArea = 0xff;
 
 
 /*---------------------------- Module Functions ---------------------------*/
