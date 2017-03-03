@@ -698,6 +698,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 					// ACK - all good! 
 					if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 					{
+						// record current driving stage (SEE ME: might set the next staging area as the current staging area)
+						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+						
 						//Go to SHOOTING
 						PostEvent.EventType = CHECK_IN_SUCCESS;
 						PostRobotTopSM(PostEvent);	
