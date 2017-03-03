@@ -151,7 +151,7 @@
           <Type>0</Type>
           <LineNumber>557</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>2554</Address>
+          <Address>2552</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -161,22 +161,6 @@
           <Filename>.\Source\RobotTopSM.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression>\\BaseTarget\Source/RobotTopSM.c\557</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>554</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>2546</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>.\Source\RobotTopSM.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\BaseTarget\Source/RobotTopSM.c\554</Expression>
         </Bp>
       </Breakpoint>
       <Tracepoint>

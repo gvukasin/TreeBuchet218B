@@ -460,9 +460,9 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
   // if there is more than 1 state to the top level machine you will need 
   // to initialize the state variable
 	
-	//SEE ME
-  CurrentState = WAITING2START;
-	// CurrentState = DRIVING2STAGING;
+	// SEE ME
+	//CurrentState = WAITING2START;
+	CurrentState = DRIVING2STAGING;
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -543,7 +543,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 {
 
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
+	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
@@ -587,7 +587,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
+			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
