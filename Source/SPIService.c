@@ -489,17 +489,16 @@ static void SendData(void){
 	
 	else if (LastEvent.EventType == ROBOT_STATUS)
 	{
-			// printf("\r\nCOM_STATUS set\r\n");
 			// set return event type to COM_STATUS
 			PostEvent.EventType = COM_STATUS;
 			
 			// set ReturnedData to SB1 byte (bit shifted by 8) and SB2 or SB3 depending on red or green team
 			if(TeamColor == RED){	
+				
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[4]);
-				//printf("com status response %d\n\r", Data2Return);
 			} else {
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]|(BIT7HI & ReceivedLOCData[4]));
-				//printf("com status response %d\n\r", Data2Return);
+
 			}
 	}
 	

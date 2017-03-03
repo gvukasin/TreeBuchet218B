@@ -86,15 +86,27 @@
 
 #define Time4FrequencyReport 200
 
-
+// query byte masks
 #define GAME_STATUS_BIT BIT7HI
 #define RESPONSE_READY 0x0000
 #define RESPONSE_NOT_READY 0xAA00
 #define RESPONSE_READY_MASK 0xff00
+
+// status byte 2 and 3 masks
 #define ACK1_HI BIT15HI
 #define ACK0_HI BIT14HI
 #define ACK1_LO BIT15LO
 #define ACK0_LO BIT14LO
+
+// status byte 1 masks
+#define G1 BIT12HI
+#define G2 BIT13HI
+#define G3 (BIT12HI | BIT13HI)
+#define G_ALL_GOALS BIT14HI
+#define R1 BIT8HI
+#define R2 BIT9HI
+#define R3 (BIT8HI | BIT9HI)
+#define R_ALL_GOALS BIT10HI
 
 //Magnetic frequency codes
 #define code1333us 0000
@@ -136,7 +148,9 @@ static ES_Event DuringReloading( ES_Event Event);
 static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
+
 static void InitializeTeamButtonsHardware(void);
+static uint16_t SaveCurrentPosition( uint16_t );
 
 
 /*---------------------------- Module Variables ---------------------------*/
@@ -155,6 +169,8 @@ static bool TeamColor;
 static bool CheckFlag = 1;
 static uint8_t BallCount = 3; //We will start with 3 balls
 static uint8_t PreviousScore = 0;
+static uint8_t CurrentStagingArea;
+static uint8_t NextStagingArea;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -670,6 +686,10 @@ static ES_Event DuringCheckIn( ES_Event Event)
 					// INACTIVE - wrong staging area
 					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 					{
+						
+						// record current driving stage 
+						CurrentStagingArea = SaveCurrentPosition(Event.EventParam);
+						
 						//Go to DRIVING2STAGING
 						PostEvent.EventType = START;
 						PostRobotTopSM(PostEvent);	
@@ -870,6 +890,46 @@ static void InitializeTeamButtonsHardware(void)
 
 	printf("\r\n Button: %x \r\n", PinState);
 
+}
+
+static uint16_t SaveCurrentPosition( uint16_t StatusResponse ){
+	// set staging area variable from status bytes if we are Red team
+	uint16_t TheGoal = 0;
+	
+						if(TeamColor == RED){
+							if((StatusResponse & R1) == R1){
+								// set current staging area variable to R1	
+								TheGoal = 1;
+								
+							} else if (StatusResponse & R2){
+								
+								// set current staging area variable to R2
+								TheGoal = 2;
+								
+							} else if (StatusResponse & R3) {
+								
+								// set current staging area variable to R3
+								TheGoal = 3;
+							}
+							
+						// set staging area variable from status bytes if we are Green team
+						} else {
+							if((StatusResponse & G1) == G1){
+								// set current staging area variable to G1	
+								TheGoal = 1;
+								
+							} else if (StatusResponse & G2){
+								
+								// set current staging area variable to G2
+								TheGoal = 2;
+								
+							} else if (StatusResponse & G3) {
+								
+								// set current staging area variable to G3
+								TheGoal = 3;
+							}
+						}
+						return TheGoal;
 }
 
 /*********************************************************  THE END *************************************************************/
