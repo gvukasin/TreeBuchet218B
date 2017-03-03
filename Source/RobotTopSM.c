@@ -150,7 +150,7 @@ static ES_Event DuringStop( ES_Event Event);
 
 
 static void InitializeTeamButtonsHardware(void);
-static uint16_t SaveCurrentPosition( uint16_t );
+static uint16_t SaveStagingPosition( uint16_t );
 
 
 /*---------------------------- Module Variables ---------------------------*/
@@ -688,7 +688,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 					{
 						
 						// record current driving stage 
-						CurrentStagingArea = SaveCurrentPosition(Event.EventParam);
+						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
 						
 						//Go to DRIVING2STAGING
 						PostEvent.EventType = START;
@@ -892,7 +892,7 @@ static void InitializeTeamButtonsHardware(void)
 
 }
 
-static uint16_t SaveCurrentPosition( uint16_t StatusResponse ){
+static uint16_t SaveStagingPosition( uint16_t StatusResponse ){
 	// set staging area variable from status bytes if we are Red team
 	uint16_t TheGoal = 0;
 	
