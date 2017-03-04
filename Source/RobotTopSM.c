@@ -171,6 +171,9 @@ static uint8_t BallCount = 3; //We will start with 3 balls
 static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
 static uint8_t NextStagingArea;
+static uint16_t LastPeriodCode = 0xff;
+static uint8_t PeriodCodeCounter = 0;
+static uint8_t MaxPeriodCodeCount = 5;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -288,6 +291,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
+			 printf("\r\n current event: %i",CurrentEvent.EventType);
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
 			 // Process events			 
 			 if (CurrentEvent.EventType == STATION_REACHED)
@@ -599,14 +603,23 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			FrequencyCode = GetStagingAreaCode();
-			// printf("\r\nstaging area code=%x \r\n",FrequencyCode);
+			//printf("\r\nstaging area code=%x \r\n",FrequencyCode);
 			
-			if(FrequencyCode != codeInvalidStagingArea)
+			if((FrequencyCode != codeInvalidStagingArea)&&(FrequencyCode == LastPeriodCode))
 			{
-				//printf("\r\nstage detected in Driving2Stage during routine\r\n");
-				ES_Event PostEvent;
-			  PostEvent.EventType = STATION_REACHED;
-			  PostRobotTopSM(PostEvent); // Move to the CheckingIn state
+				if(PeriodCodeCounter >= MaxPeriodCodeCount){
+					// set current frequency code to last code variable 
+					LastPeriodCode = FrequencyCode;
+					PeriodCodeCounter = 0;
+					
+					//printf("\r\nstage detected in Driving2Stage during routine\r\n");
+					ES_Event PostEvent;
+					PostEvent.EventType = STATION_REACHED;
+					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
+				} else {
+					// increment counter 
+					PeriodCodeCounter ++;
+				}
 			}
     }
 		else{

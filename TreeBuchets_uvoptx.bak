@@ -13,7 +13,6 @@
     <tExt>*.txt; *.h; *.inc</tExt>
     <pExt>*.plm</pExt>
     <CppX>*.cpp</CppX>
-    <nMigrate>0</nMigrate>
   </Extensions>
 
   <DaveTm>
@@ -32,7 +31,6 @@
         <BeepAtEnd>1</BeepAtEnd>
         <RunSim>0</RunSim>
         <RunTarget>1</RunTarget>
-        <RunAbUc>0</RunAbUc>
       </OPTTT>
       <OPTHX>
         <HexSelection>1</HexSelection>
@@ -98,10 +96,10 @@
         <tRtrace>1</tRtrace>
         <sRSysVw>1</sRSysVw>
         <tRSysVw>1</tRSysVw>
+        <tPdscDbg>1</tPdscDbg>
         <sRunDeb>0</sRunDeb>
         <sLrtime>0</sLrtime>
-        <bEvRecOn>1</bEvRecOn>
-        <nTsel>8</nTsel>
+        <nTsel>3</nTsel>
         <sDll></sDll>
         <sDllPa></sDllPa>
         <sDlgDll></sDlgDll>
@@ -117,6 +115,16 @@
       <TargetDriverDllRegistry>
         <SetRegEntry>
           <Number>0</Number>
+          <Key>lmidk-agdi</Key>
+          <Name>-U0E21041C -O4622 -S3 -FO29</Name>
+        </SetRegEntry>
+        <SetRegEntry>
+          <Number>0</Number>
+          <Key>ARMRTXEVENTFLAGS</Key>
+          <Name>-L70 -Z18 -C0 -M0 -T1</Name>
+        </SetRegEntry>
+        <SetRegEntry>
+          <Number>0</Number>
           <Key>DLGTARM</Key>
           <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=-1,-1,-1,-1,0)(1009=-1,-1,-1,-1,0)(1012=-1,-1,-1,-1,0)</Name>
         </SetRegEntry>
@@ -127,16 +135,28 @@
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
-          <Key>lmidk-agdi</Key>
-          <Name>-U0E21041C -O4622 -S3 -FO29</Name>
-        </SetRegEntry>
-        <SetRegEntry>
-          <Number>0</Number>
           <Key>UL2CM3</Key>
           <Name>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN1 -FF0TM4C123_256 -FS00 -FL040000 -FP0($$Device:TM4C123GH6PM$Flash\TM4C123_256.FLM))</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
-      <Breakpoint/>
+      <Breakpoint>
+        <Bp>
+          <Number>0</Number>
+          <Type>0</Type>
+          <LineNumber>291</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>6234</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\Source\RobotTopSM.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+      </Breakpoint>
       <Tracepoint>
         <THDelay>0</THDelay>
       </Tracepoint>
@@ -168,13 +188,6 @@
       </DebugFlag>
       <LintExecutable></LintExecutable>
       <LintConfigFile></LintConfigFile>
-      <bLintAuto>0</bLintAuto>
-      <bAutoGenD>0</bAutoGenD>
-      <LntExFlags>0</LntExFlags>
-      <pMisraName></pMisraName>
-      <pszMrule></pszMrule>
-      <pSingCmds></pSingCmds>
-      <pMultCmds></pMultCmds>
     </TargetOption>
   </Target>
 
@@ -189,7 +202,6 @@
         <BeepAtEnd>1</BeepAtEnd>
         <RunSim>1</RunSim>
         <RunTarget>0</RunTarget>
-        <RunAbUc>0</RunAbUc>
       </OPTTT>
       <OPTHX>
         <HexSelection>1</HexSelection>
@@ -255,9 +267,9 @@
         <tRtrace>1</tRtrace>
         <sRSysVw>1</sRSysVw>
         <tRSysVw>1</tRSysVw>
+        <tPdscDbg>1</tPdscDbg>
         <sRunDeb>0</sRunDeb>
         <sLrtime>0</sLrtime>
-        <bEvRecOn>1</bEvRecOn>
         <nTsel>-1</nTsel>
         <sDll></sDll>
         <sDllPa></sDllPa>
@@ -291,7 +303,7 @@
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>477</LineNumber>
+          <LineNumber>489</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -307,7 +319,71 @@
         <Bp>
           <Number>2</Number>
           <Type>0</Type>
-          <LineNumber>493</LineNumber>
+          <LineNumber>554</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Source\RobotTopSM.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+        <Bp>
+          <Number>3</Number>
+          <Type>0</Type>
+          <LineNumber>557</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Source\RobotTopSM.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+        <Bp>
+          <Number>4</Number>
+          <Type>0</Type>
+          <LineNumber>576</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Source\RobotTopSM.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+        <Bp>
+          <Number>5</Number>
+          <Type>0</Type>
+          <LineNumber>538</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Source\RobotTopSM.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+        <Bp>
+          <Number>6</Number>
+          <Type>0</Type>
+          <LineNumber>291</LineNumber>
           <EnabledFlag>1</EnabledFlag>
           <Address>0</Address>
           <ByteObject>0</ByteObject>
@@ -352,13 +428,6 @@
       </DebugFlag>
       <LintExecutable></LintExecutable>
       <LintConfigFile></LintConfigFile>
-      <bLintAuto>0</bLintAuto>
-      <bAutoGenD>0</bAutoGenD>
-      <LntExFlags>0</LntExFlags>
-      <pMisraName></pMisraName>
-      <pszMrule></pszMrule>
-      <pSingCmds></pSingCmds>
-      <pMultCmds></pMultCmds>
     </TargetOption>
   </Target>
 
@@ -373,6 +442,7 @@
       <FileNumber>1</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\main.c</PathWithFileName>
@@ -393,6 +463,7 @@
       <FileNumber>2</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\EventCheckers.c</PathWithFileName>
@@ -405,6 +476,7 @@
       <FileNumber>3</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\PWMmodule.c</PathWithFileName>
@@ -417,6 +489,7 @@
       <FileNumber>4</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\SPIService.c</PathWithFileName>
@@ -429,6 +502,7 @@
       <FileNumber>5</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ActionService.c</PathWithFileName>
@@ -441,6 +515,7 @@
       <FileNumber>6</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\MotorActionsModule.c</PathWithFileName>
@@ -453,6 +528,7 @@
       <FileNumber>7</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\RobotTopSM.c</PathWithFileName>
@@ -465,6 +541,7 @@
       <FileNumber>8</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ShootingSubSM.c</PathWithFileName>
@@ -477,6 +554,7 @@
       <FileNumber>9</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\DrivingModule.c</PathWithFileName>
@@ -489,6 +567,7 @@
       <FileNumber>10</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ADMulti.c</PathWithFileName>
@@ -501,6 +580,7 @@
       <FileNumber>11</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\IRBeaconModule.c</PathWithFileName>
@@ -513,6 +593,7 @@
       <FileNumber>12</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\LEDModule.c</PathWithFileName>
@@ -525,6 +606,7 @@
       <FileNumber>13</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ReloadingSubSM.c</PathWithFileName>
@@ -537,6 +619,7 @@
       <FileNumber>14</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\WireSensingModule.c</PathWithFileName>
@@ -549,6 +632,7 @@
       <FileNumber>15</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\HallEffectModule.c</PathWithFileName>
@@ -569,6 +653,7 @@
       <FileNumber>16</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\uartstdio.h</PathWithFileName>
@@ -581,6 +666,7 @@
       <FileNumber>17</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\Bin_Const.h</PathWithFileName>
@@ -593,6 +679,7 @@
       <FileNumber>18</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\BITDEFS.H</PathWithFileName>
@@ -605,6 +692,7 @@
       <FileNumber>19</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_CheckEvents.h</PathWithFileName>
@@ -617,6 +705,7 @@
       <FileNumber>20</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Configure.h</PathWithFileName>
@@ -629,6 +718,7 @@
       <FileNumber>21</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_DeferRecall.h</PathWithFileName>
@@ -641,6 +731,7 @@
       <FileNumber>22</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Events.h</PathWithFileName>
@@ -653,6 +744,7 @@
       <FileNumber>23</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Framework.h</PathWithFileName>
@@ -665,6 +757,7 @@
       <FileNumber>24</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_General.h</PathWithFileName>
@@ -677,6 +770,7 @@
       <FileNumber>25</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_LookupTables.h</PathWithFileName>
@@ -689,6 +783,7 @@
       <FileNumber>26</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Port.h</PathWithFileName>
@@ -701,6 +796,7 @@
       <FileNumber>27</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_PostList.h</PathWithFileName>
@@ -713,6 +809,7 @@
       <FileNumber>28</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_PriorTables.h</PathWithFileName>
@@ -725,6 +822,7 @@
       <FileNumber>29</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Queue.h</PathWithFileName>
@@ -737,6 +835,7 @@
       <FileNumber>30</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_ServiceHeaders.h</PathWithFileName>
@@ -749,6 +848,7 @@
       <FileNumber>31</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Timers.h</PathWithFileName>
@@ -761,6 +861,7 @@
       <FileNumber>32</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_Types.h</PathWithFileName>
@@ -773,6 +874,7 @@
       <FileNumber>33</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\EventCheckers.h</PathWithFileName>
@@ -785,6 +887,7 @@
       <FileNumber>34</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\termio.h</PathWithFileName>
@@ -797,6 +900,7 @@
       <FileNumber>35</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ES_ShortTimer.h</PathWithFileName>
@@ -809,6 +913,7 @@
       <FileNumber>36</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\PWMmodule.h</PathWithFileName>
@@ -821,6 +926,7 @@
       <FileNumber>37</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ActionService.h</PathWithFileName>
@@ -833,6 +939,7 @@
       <FileNumber>38</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\MotorActionsModule.h</PathWithFileName>
@@ -845,6 +952,7 @@
       <FileNumber>39</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\RobotTopSM.h</PathWithFileName>
@@ -857,6 +965,7 @@
       <FileNumber>40</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ADMulti.h</PathWithFileName>
@@ -869,6 +978,7 @@
       <FileNumber>41</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\DrivingModule.h</PathWithFileName>
@@ -881,6 +991,7 @@
       <FileNumber>42</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\IRBeaconModule.h</PathWithFileName>
@@ -893,6 +1004,7 @@
       <FileNumber>43</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\LEDModule.h</PathWithFileName>
@@ -905,6 +1017,7 @@
       <FileNumber>44</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ReloadingSubSM.h</PathWithFileName>
@@ -917,6 +1030,7 @@
       <FileNumber>45</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\ShootingSubSM.h</PathWithFileName>
@@ -929,6 +1043,7 @@
       <FileNumber>46</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\WireSensingModule.h</PathWithFileName>
@@ -941,6 +1056,7 @@
       <FileNumber>47</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\SPIService.h</PathWithFileName>
@@ -953,6 +1069,7 @@
       <FileNumber>48</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Headers\HallEffectModule.h</PathWithFileName>
@@ -973,6 +1090,7 @@
       <FileNumber>49</FileNumber>
       <FileType>4</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</PathWithFileName>
@@ -993,6 +1111,7 @@
       <FileNumber>50</FileNumber>
       <FileType>2</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\StartUp\startup_rvmdk.S</PathWithFileName>
@@ -1004,7 +1123,7 @@
 
   <Group>
     <GroupName>Framework</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -1013,6 +1132,7 @@
       <FileNumber>51</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_CheckEvents.c</PathWithFileName>
@@ -1025,6 +1145,7 @@
       <FileNumber>52</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_DeferRecall.c</PathWithFileName>
@@ -1037,6 +1158,7 @@
       <FileNumber>53</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_Framework.c</PathWithFileName>
@@ -1049,6 +1171,7 @@
       <FileNumber>54</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_LookupTables.c</PathWithFileName>
@@ -1061,6 +1184,7 @@
       <FileNumber>55</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_Port.c</PathWithFileName>
@@ -1073,6 +1197,7 @@
       <FileNumber>56</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_PostList.c</PathWithFileName>
@@ -1085,6 +1210,7 @@
       <FileNumber>57</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_Queue.c</PathWithFileName>
@@ -1097,6 +1223,7 @@
       <FileNumber>58</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_Timers.c</PathWithFileName>
@@ -1109,6 +1236,7 @@
       <FileNumber>59</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\retarget.c</PathWithFileName>
@@ -1121,6 +1249,7 @@
       <FileNumber>60</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\termio.c</PathWithFileName>
@@ -1133,6 +1262,7 @@
       <FileNumber>61</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\uartstdio.c</PathWithFileName>
@@ -1145,6 +1275,7 @@
       <FileNumber>62</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
+      <Focus>1</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Source\ES_ShortTimer.c</PathWithFileName>
