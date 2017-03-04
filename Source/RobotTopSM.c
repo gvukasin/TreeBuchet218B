@@ -131,8 +131,8 @@
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
 #define WireFollow_TIME ONE_SEC/10
-#define PWMOffset 80
-#define PWMProportionalGain 0.05
+#define PWMOffset 70
+#define PWMProportionalGain 0.08
 
 // MotorActionDefines
 #define FORWARD 1
@@ -602,29 +602,40 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
-			PeriodCode = GetStagingAreaCode();
-			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
+			PeriodCode = GetStagingAreaCodeArray();
+			printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
-			{
-				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
-				if(PeriodCodeCounter >= MaxPeriodCodeCount){
-					// set current frequency code to last code variable 
-					LastPeriodCode = PeriodCode;
-					PeriodCodeCounter = 0;
-					
-					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
-					ES_Event PostEvent;
-					PostEvent.EventType = STATION_REACHED;
-					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
-				} else {
-					// increment counter 
-					PeriodCodeCounter ++;
-				}
+			if(PeriodCode != codeInvalidStagingArea){ ////Need to be changed!!!!!!!!!!!!!!!!!!!!!!!!
+				ES_Event Event2Post;
+				Event2Post.EventType = STATION_REACHED;
+				Event2Post.EventParam = PeriodCode;
+				PostRobotTopSM(Event2Post);
 			}
-			else{
-				PeriodCodeCounter = 0;
-			}
+			
+//			// Check if a staging area has been reached
+//			PeriodCode = GetStagingAreaCode();
+//			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
+//			
+//			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
+//			{
+//				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
+//				if(PeriodCodeCounter >= MaxPeriodCodeCount){
+//					// set current frequency code to last code variable 
+//					LastPeriodCode = PeriodCode;
+//					PeriodCodeCounter = 0;
+//					
+//					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
+//					ES_Event PostEvent;
+//					PostEvent.EventType = STATION_REACHED;
+//					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
+//				} else {
+//					// increment counter 
+//					PeriodCodeCounter ++;
+//				}
+//			}
+//			else{
+//				PeriodCodeCounter = 0;
+//			}
     }
 		else{
 			
