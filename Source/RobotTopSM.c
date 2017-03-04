@@ -159,7 +159,7 @@ static uint16_t SaveStagingPosition( uint16_t );
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
-static uint8_t FrequencyCode;
+static uint8_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 static int PositionDifference;
 static bool DoFirstTimeFlag;
@@ -291,7 +291,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 printf("\r\n current event: %i",CurrentEvent.EventType);
+			 // printf("\r\n current event: %i",CurrentEvent.EventType);
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
 			 // Process events			 
 			 if (CurrentEvent.EventType == STATION_REACHED)
@@ -602,17 +602,18 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
-			FrequencyCode = GetStagingAreaCode();
-			//printf("\r\nstaging area code=%x \r\n",FrequencyCode);
+			PeriodCode = GetStagingAreaCode();
+			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
 			
-			if((FrequencyCode != codeInvalidStagingArea)&&(FrequencyCode == LastPeriodCode))
+			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
 			{
+				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
 				if(PeriodCodeCounter >= MaxPeriodCodeCount){
 					// set current frequency code to last code variable 
-					LastPeriodCode = FrequencyCode;
+					LastPeriodCode = PeriodCode;
 					PeriodCodeCounter = 0;
 					
-					//printf("\r\nstage detected in Driving2Stage during routine\r\n");
+					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
 					ES_Event PostEvent;
 					PostEvent.EventType = STATION_REACHED;
 					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
@@ -621,12 +622,16 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 					PeriodCodeCounter ++;
 				}
 			}
+			else{
+				PeriodCodeCounter = 0;
+			}
     }
 		else{
 			
 	  }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
+		LastPeriodCode = PeriodCode;
     return(ReturnEvent);
 }
 
@@ -659,7 +664,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			//(1) Report frequency
 			printf("\r\n Report freq posted to spi \r\n");
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-			PostEvent.EventParam = FrequencyCode;
+			PostEvent.EventParam = PeriodCode;
 			PostSPIService(PostEvent);
 										
 			 //(2) Start 200ms timer
