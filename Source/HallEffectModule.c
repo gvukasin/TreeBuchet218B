@@ -53,7 +53,7 @@ Events to post:
 /*---------------------------- Module Variables ---------------------------*/
 //static ES_Event HallEffectEdgeDetected;
 static uint16_t StagingAreaCode;
-static uint8_t StagingAreaPeriod_Tolerance = 4;
+static uint16_t StagingAreaPeriod_Tolerance = 3;
 static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 // For Staging Area Frequency Capture
@@ -87,7 +87,7 @@ static uint16_t SampleSize = 10;
    J. Edward Carryer, 01/15/12, 15:23
 ****************************************************************************/
 void InitStagingAreaISR ( void )
-{
+{	
 	// enable Wide Timer 0 
 	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R0;
 	
@@ -190,15 +190,16 @@ void StagingAreaISR( void )
 	
 	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
 	// Update it every 10 interrupts
-	if(counter >= SampleSize){
-		StagingAreaPeriod = StagingAreaPeriodAddition/SampleSize;
+//	if(counter >= SampleSize){
+//		StagingAreaPeriod = StagingAreaPeriodAddition/SampleSize;
 
-		StagingAreaPeriodAddition = 0;
-		counter = 0;
-  }
-  
-	StagingAreaPeriodAddition  += MeasuredStagingAreaPeriod;
-	counter ++;
+//		StagingAreaPeriodAddition = 0;
+//		counter = 0;
+//  }
+	
+	StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
+	StagingAreaPeriod = StagingAreaPeriodAddition;
+	// counter ++;
 	
 	// update LastCapture to prepare for the next edge
 	LastEdge = CurrentEdge;
@@ -223,91 +224,92 @@ void StagingAreaISR( void )
 ****************************************************************************/
 uint16_t GetStagingAreaCode( void )
 {
-	printf("\r\n stag per %i",StagingAreaPeriod);
-	if ( (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
-		if ( (StagingAreaPeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
+	uint16_t thePeriod = StagingAreaPeriod;
+	printf("\r\n stag per %i",thePeriod);
+	if( (thePeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (thePeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
+		if ( (thePeriod > (StagingAreaPeriods[0] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1333us;
-			//printf("\r\n code1333 %x",StagingAreaCode);
+			printf("\r\n code1333 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[1] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[1] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1277us;
-			//printf("\r\n code1277 %x",StagingAreaCode);
+			printf("\r\n code1277 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[2] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[2] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1222us;
-			//printf("\r\n code1222 %x",StagingAreaCode);
+			printf("\r\n code1222 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[3] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[3] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1166us;
-			//printf("\r\n code1166 %x",StagingAreaCode);
+			printf("\r\n code1166 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[4] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[4] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1111us;
-			//printf("\r\n code1111 %x",StagingAreaCode);
+			printf("\r\n code1111 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[5] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[5] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1055us;
-			//printf("\r\n code1055 %x",StagingAreaCode);
+			printf("\r\n code1055 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[6] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[6] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code1000us;
-			//printf("\r\n code1000 %x",StagingAreaCode);
+			printf("\r\n code1000 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[7] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[7] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code944us;
-			//printf("\r\n code944 %x",StagingAreaCode);
+			printf("\r\n code944 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[8] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[8] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code889us;
-			//printf("\r\n code889 %x",StagingAreaCode);
+			printf("\r\n code889 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[9] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[9] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code833us;
-			//printf("\r\n code833 %x",StagingAreaCode);
+			printf("\r\n code833 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[10] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[10] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code778us;
-			//printf("\r\n code778 %x",StagingAreaCode);
+			printf("\r\n code778 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[11] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[11] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code722us;
-			//printf("\r\n code722 %x",StagingAreaCode);
+			printf("\r\n code722 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[12] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[12] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code667us;
-			//printf("\r\n code667 %x",StagingAreaCode);
+			printf("\r\n code667 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[13] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[13] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code611us;
-			//printf("\r\n code611 %x",StagingAreaCode);
+			printf("\r\n code611 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[14] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[14] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code556us;
-			//printf("\r\n code566 %x",StagingAreaCode);
+			printf("\r\n code566 %x",StagingAreaCode);
 		}
 
-		else if ( (StagingAreaPeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (StagingAreaPeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
+		else if ( (thePeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) && (thePeriod < (StagingAreaPeriods[15] + StagingAreaPeriod_Tolerance)) ){
 			StagingAreaCode = code500us;
-			//printf("\r\n code500 %x",StagingAreaCode);
+			printf("\r\n code500 %x",StagingAreaCode);
 		}
 	}
 	else{
 		StagingAreaCode = codeInvalidStagingArea;
-		//printf("\r\n code70 %x",StagingAreaCode);
+		printf("\r\n code70 %x",StagingAreaCode);
 	}
 	
 	//printf("\r\n code %x",StagingAreaCode);
