@@ -170,7 +170,7 @@ I (C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\pin_map.h)(0x541C60B5)
 I (C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\gpio.h)(0x58099809)
 I (C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\timer.h)(0x58153CE4)
 I (C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\interrupt.h)(0x541C60B5)
-F (.\Source\RobotTopSM.c)(0x58BA2435)(-c --cpu Cortex-M4.fp -g -O2 --apcs=interwork --split_sections -IC:\ti\TivaWare_C_Series-2.1.0.12573 -I.\Headers --c99-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.1.0\CMSIS\Include-I Device\Include\TM4C123-Drvmdk -DPART_TM4C123GH6PM -DTARGET_IS_TM4C123_RB1-o .\outputs\robottopsm.o --omf_browse .\outputs\robottopsm.crf --depend .\outputs\robottopsm.d)
+F (.\Source\RobotTopSM.c)(0x58BA64B1)(-c --cpu Cortex-M4.fp -g -O2 --apcs=interwork --split_sections -IC:\ti\TivaWare_C_Series-2.1.0.12573 -I.\Headers --c99-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.1.0\CMSIS\Include-I Device\Include\TM4C123-Drvmdk -DPART_TM4C123GH6PM -DTARGET_IS_TM4C123_RB1-o .\outputs\robottopsm.o --omf_browse .\outputs\robottopsm.crf --depend .\outputs\robottopsm.d)
 I (.\Headers\ES_Configure.h)(0x58BA0066)
 I (.\Headers\ES_Framework.h)(0x58A55BFD)
 I (.\Headers\ES_Port.h)(0x58A55BFD)
@@ -389,7 +389,7 @@ I (.\Headers\ADMulti.h)(0x58AE8179)
 I (.\Headers\ActionService.h)(0x58A55BFD)
 I (.\Headers\MotorActionsModule.h)(0x58BA0066)
 I (.\Headers\HallEffectModule.h)(0x58BA1E12)
-F (.\Source\HallEffectModule.c)(0x58BA1F80)(-c --cpu Cortex-M4.fp -g -O2 --apcs=interwork --split_sections -IC:\ti\TivaWare_C_Series-2.1.0.12573 -I.\Headers --c99-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.1.0\CMSIS\Include-I Device\Include\TM4C123-Drvmdk -DPART_TM4C123GH6PM -DTARGET_IS_TM4C123_RB1-o .\outputs\halleffectmodule.o --omf_browse .\outputs\halleffectmodule.crf --depend .\outputs\halleffectmodule.d)
+F (.\Source\HallEffectModule.c)(0x58BA64B1)(-c --cpu Cortex-M4.fp -g -O2 --apcs=interwork --split_sections -IC:\ti\TivaWare_C_Series-2.1.0.12573 -I.\Headers --c99-I C:\Keil_v5\ARM\RV31\INC-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\4.1.0\CMSIS\Include-I Device\Include\TM4C123-Drvmdk -DPART_TM4C123GH6PM -DTARGET_IS_TM4C123_RB1-o .\outputs\halleffectmodule.o --omf_browse .\outputs\halleffectmodule.crf --depend .\outputs\halleffectmodule.d)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5346FF24)
 I (.\Headers\ES_Configure.h)(0x58BA0066)
 I (.\Headers\ES_Framework.h)(0x58A55BFD)
