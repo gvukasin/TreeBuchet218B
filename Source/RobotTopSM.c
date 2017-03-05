@@ -92,18 +92,18 @@
 #define RESPONSE_NOT_READY 0xAA00
 #define RESPONSE_READY_MASK 0xff00
 
-// status byte 2 and 3 masks
+// report status byte masks
 #define ACK1_HI BIT15HI
 #define ACK0_HI BIT14HI
 #define ACK1_LO BIT15LO
 #define ACK0_LO BIT14LO
 
 // status byte 1 masks
-#define G1 BIT12HI
+#define G1 BIT12HI //GREEN goal #i
 #define G2 BIT13HI
 #define G3 (BIT12HI | BIT13HI)
 #define G_ALL_GOALS BIT14HI
-#define R1 BIT8HI
+#define R1 BIT8HI //RED goal #i
 #define R2 BIT9HI
 #define R3 (BIT8HI | BIT9HI)
 #define R_ALL_GOALS BIT10HI
@@ -167,7 +167,6 @@ static int PositionDifference;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
-static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -178,7 +177,7 @@ static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
 static uint16_t PeriodCodeCounter = 0;
 static uint16_t MaxPeriodCodeCount = 5;
-static uint8_t NumberOfReports = 0;
+static uint8_t NumberOfCorrectReports = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -342,9 +341,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						case START :
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
-							 break;						 
+							 break;		
+						case REPORT_SECOND_TIME: // External self transition
+							 NextState = CHECKING_IN;
+							 MakeTransition = true;
+							 break;	
 						 default:
-							 if(ES_ENTRY|ES_EXIT){}
+							 if(ES_ENTRY|ES_EXIT){} //SEE ME: This might actually throw an error (Elena). And it's in other states too
 							 else
 								printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
 					}
@@ -473,6 +476,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	// SEE ME
 	//CurrentState = WAITING2START;
 	CurrentState = DRIVING2STAGING;
+	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -676,14 +680,17 @@ static ES_Event DuringCheckIn( ES_Event Event)
 	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-      // Check Ball count  
-			//			PostEvent.EventType = ROBOT_STATUS;
-			//			PostSPIService(PostEvent);
-			//			if (TeamColor == RED)
-			 
-			// Do we want to just query again or also report the frequency?		
-			DoFirstTimeFlag = 1;			
+    { 
+			// This won't be run if we just want to query again about the same report
+		
+			//(1) Report frequency
+			printf("\r\n Report freq posted to spi \r\n");
+			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+			PostEvent.EventParam = PeriodCode;
+			PostSPIService(PostEvent);
+										
+			 //(2) Start 200ms timer
+			 ES_Timer_StartTimer(FrequencyReport_TIMER);							
     }
     else if ( Event.EventType == ES_EXIT)
     {
@@ -692,24 +699,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			if (NumberOfReports < 2)
+			if (NumberOfCorrectReports < 2)
 			{
-				// DO (1) & (2) ONLY ONCE PER REPORT
-				if(DoFirstTimeFlag)
-				{			
-					//(1) Report frequency
-					printf("\r\n Report freq posted to spi \r\n");
-					PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-					PostEvent.EventParam = PeriodCode;
-					PostSPIService(PostEvent);
-												
-					 //(2) Start 200ms timer
-					 ES_Timer_StartTimer(FrequencyReport_TIMER);
-						
-					// reset flag
-						DoFirstTimeFlag = 0;
-				}
-				
+							
 				/* (3) If there has been a timeout -which means the reporting process 
 							 has had time to be completed- Query until LOC returns a Response Ready */
 				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
@@ -739,16 +731,13 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							//Try reporting again
 							PostEvent.EventType = STATION_REACHED;
 							PostRobotTopSM(PostEvent);
-							
-							//We need 2 consecutive correct reports so reset report count
-							NumberOfReports = 0;
 						}
 						
 						// INACTIVE - wrong staging area
 						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 						{
 							
-							// record current driving stage 
+							// record current driving stage (we will need next staging area too to know which direction to drive in!)
 							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
 							
 							//Go to DRIVING2STAGING
@@ -759,12 +748,26 @@ static ES_Event DuringCheckIn( ES_Event Event)
 						// ACK - all good! 
 						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 						{
+							// Add 1 to number of correct reports
+							NumberOfCorrectReports++;
+							
 							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
 							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
 							
-							//Go to SHOOTING
-							PostEvent.EventType = CHECK_IN_SUCCESS;
-							PostRobotTopSM(PostEvent);	
+							if (NumberOfCorrectReports == 2)
+							{	//Go to SHOOTING
+								PostEvent.EventType = CHECK_IN_SUCCESS;
+								PostRobotTopSM(PostEvent);	
+							}
+							else if (NumberOfCorrectReports == 1)
+							{ //Report again --> repeat CHECKING IN
+								PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
+								PostRobotTopSM(PostEvent);
+							}
+							else
+							{
+								printf("\r\nWARNING: The number of correct reports is %i", NumberOfCorrectReports);
+							}
 						}
 					}
 				}
