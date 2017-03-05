@@ -159,7 +159,7 @@ static uint16_t SaveStagingPosition( uint16_t );
 // away without it
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
-static uint8_t PeriodCode;
+static uint16_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 static int PositionDifference;
 static bool DoFirstTimeFlag;
@@ -172,8 +172,8 @@ static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
 static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
-static uint8_t PeriodCodeCounter = 0;
-static uint8_t MaxPeriodCodeCount = 5;
+static uint16_t PeriodCodeCounter = 0;
+static uint16_t MaxPeriodCodeCount = 5;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
