@@ -62,7 +62,7 @@
 #define R_CW_MOTOR_PIN BIT6HI
 #define R_CCW_MOTOR_PIN BIT7HI
 #define ServoMotorPin BIT4HI //PE4, alt function 5
-#define FlyWheelMotorPin BIT5HI //PE5
+#define FlyWheelMotorPin BIT5HI //PE5```````s
 #define IRPin BIT1HI //PF1
 #define ExtraPWMPin BIT0HI //PF0
 
@@ -462,7 +462,7 @@ int main(void){
 	InitializeAltPWM();
 	EmitIR( 0 );
 	SetFlyDuty(50);
-	SetServoDuty(75);
+	SetServoDuty(60); 
 	
 }
 #endif
