@@ -68,6 +68,8 @@
 #define CW 1
 #define CCW 0
 
+#define Wait4ShotTime 10000 //10sec
+
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
    functions, entry & exit functions.They should be functions relevant to the
@@ -133,10 +135,10 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          {     																						//Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
-				 else
-				 {
-						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
-				 }
+//				 else
+//				 {
+//						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
+//				 }
        break;
       
 				 // CASE 2/3				 
@@ -342,8 +344,8 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-					
-      
+				// start 10sec timer
+				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);		     
     }
     else if ( Event.EventType == ES_EXIT )
     {

@@ -131,8 +131,11 @@
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
 #define WireFollow_TIME ONE_SEC/10
-#define PWMOffset 80
-#define PWMProportionalGain 0.05
+#define PWMOffset 70
+#define PWMProportionalGain 0.08
+#define PWMDerivativeGain 0.01
+#define NoWireDetectedReading_Lo 1915
+#define NoWireDetectedReading_Hi 1925
 
 // MotorActionDefines
 #define FORWARD 1
@@ -148,7 +151,6 @@ static ES_Event DuringReloading( ES_Event Event);
 static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
-
 static void InitializeTeamButtonsHardware(void);
 static uint16_t SaveStagingPosition( uint16_t );
 
@@ -162,11 +164,13 @@ static uint8_t MyPriority;
 static uint16_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 static int PositionDifference;
+static int PositionDifference_dt;
+static bool CheckOnWireFlag_Left;
+static bool CheckOnWireFlag_Right;
 static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
-static bool CheckFlag = 1;
 static uint8_t BallCount = 3; //We will start with 3 balls
 static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
@@ -216,7 +220,6 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize stage area frequency reading
 	InitStagingAreaISR();
 	
-		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
 
@@ -398,7 +401,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // During function
        CurrentEvent = DuringReloading(CurrentEvent);
 			 // Process events			 
-			 if (CurrentEvent.EventType == BALLS_AVAILABLE)
+			 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Waitin4Ball_TIMER))
 				{
 					 NextState = DRIVING2STAGING;
 					 MakeTransition = true;
@@ -476,6 +479,15 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 }
 
 
+/******************************************************************
+Function 
+	GetTeamColor
+************************************************************************/
+bool GetTeamColor()
+{
+	return TeamColor;
+}
+
 /***************************************************************************
  private functions
  ***************************************************************************/
@@ -494,7 +506,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			//Post team color to SPIService
+				//Post team color to SPIService
 				ES_Event PostEvent;
 				PostEvent.EventType = TEAM_COLOR;			
 			
@@ -505,6 +517,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 					PostEvent.EventParam = 1;
 				
 				PostSPIService(PostEvent);
+				
+				//Turn on TeamColor LEDs
+				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);		
 				
     }
     else if ( Event.EventType == ES_EXIT )
@@ -574,10 +589,47 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Positive when too left, negative when too right
 			ReadRLCSensor(RLCReading);
 			PositionDifference = RLCReading[1] - RLCReading[0];
+			PositionDifference_dt = PositionDifference/WireFollow_TIME;
+			
+			// Set flags to determine if either side is on the wire
+			// Check if left side is on the wire
+			if ( (RLCReading[1] < (float)NoWireDetectedReading_Hi) && (RLCReading[1] > (float)NoWireDetectedReading_Lo) ){
+				CheckOnWireFlag_Left = 1;
+			}
+			else{
+				CheckOnWireFlag_Left = 0;
+			}
+			// Check if right side is on the wire
+			if ( (RLCReading[0] < (float)NoWireDetectedReading_Hi) && (RLCReading[0] > (float)NoWireDetectedReading_Lo) ){
+				CheckOnWireFlag_Right = 1;
+			}
+			else{
+				CheckOnWireFlag_Right = 0;
+			}
 			
 			// P Control
-			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			
+			// PD Control
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
+			
+			// If either side is on the wire, check if either side is off the wire
+			// Then, if either side is off the wire, turn off the side that is on the wire
+			if ( CheckOnWireFlag_Left || CheckOnWireFlag_Right )
+			{
+				// If left side is off the wire, turn off the right motor
+				if ( ~CheckOnWireFlag_Left ){
+					// turn right wheel off
+					PWMRight = 0;
+				}
+				// If right side is off the wire, turn off the left motor
+				else if ( CheckOnWireFlag_Right ){
+					// turn left wheel off
+					PWMLeft = 0;
+				}
+			}
 			  
 			//Clamp the value to 0-100
 			if(PWMLeft < 0){
@@ -602,29 +654,40 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
-			PeriodCode = GetStagingAreaCode();
-			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
+			PeriodCode = GetStagingAreaCodeArray();
+			printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
-			{
-				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
-				if(PeriodCodeCounter >= MaxPeriodCodeCount){
-					// set current frequency code to last code variable 
-					LastPeriodCode = PeriodCode;
-					PeriodCodeCounter = 0;
-					
-					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
-					ES_Event PostEvent;
-					PostEvent.EventType = STATION_REACHED;
-					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
-				} else {
-					// increment counter 
-					PeriodCodeCounter ++;
-				}
+			if(PeriodCode != codeInvalidStagingArea){ ////Need to be changed!!!!!!!!!!!!!!!!!!!!!!!!
+				ES_Event Event2Post;
+				Event2Post.EventType = STATION_REACHED;
+				Event2Post.EventParam = PeriodCode;
+				PostRobotTopSM(Event2Post);
 			}
-			else{
-				PeriodCodeCounter = 0;
-			}
+			
+//			// Check if a staging area has been reached
+//			PeriodCode = GetStagingAreaCode();
+//			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
+//			
+//			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
+//			{
+//				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
+//				if(PeriodCodeCounter >= MaxPeriodCodeCount){
+//					// set current frequency code to last code variable 
+//					LastPeriodCode = PeriodCode;
+//					PeriodCodeCounter = 0;
+//					
+//					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
+//					ES_Event PostEvent;
+//					PostEvent.EventType = STATION_REACHED;
+//					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
+//				} else {
+//					// increment counter 
+//					PeriodCodeCounter ++;
+//				}
+//			}
+//			else{
+//				PeriodCodeCounter = 0;
+//			}
     }
 		else{
 			
@@ -741,7 +804,7 @@ static ES_Event DuringShooting( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         //Yellow LEDs ON to signal shooting is going to start
-				TurnOnOffYellowLEDs(LEDS_ON);
+				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
         StartShootingSM(Event);  
@@ -756,7 +819,7 @@ static ES_Event DuringShooting( ES_Event Event)
 			// POST SCORED TO ROBOT IF YOU DID
 				
 			  // Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF);
+				TurnOnOffYellowLEDs(LEDS_OFF, TeamColor);
     }
 		
 		// do the 'during' function for this state
@@ -863,29 +926,16 @@ static ES_Event DuringStop( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+ 
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+  
     }
 		else // do the 'during' function for this state
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+      stop();
+			TurnOnOFFTeamColorLEDs(LEDS_OFF, TeamColor);
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

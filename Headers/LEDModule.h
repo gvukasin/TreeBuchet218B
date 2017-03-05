@@ -13,8 +13,8 @@
 #include "ES_Types.h"     /* gets bool type for returns */
 
 // Public Function Prototypes
-void TurnOnOffYellowLEDs(bool ONorOFF);
-void TurnOnOffBlueLEDs(bool ONorOFF);
-void TurnOnTeamColorLEDs(bool TeamColor);
+void TurnOnOffYellowLEDs(bool ONorOFF, bool TeamColor);
+void TurnOnOffBlueLEDs(bool ONorOFF, bool TeamColor);
+void TurnOnOFFTeamColorLEDs(bool ONorOFF, bool TeamColor);
 
 #endif /* LEDmodule_H */

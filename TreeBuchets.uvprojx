@@ -411,6 +411,56 @@
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\main.c</FilePath>
+              <FileOption>
+                <CommonProperty>
+                  <UseCPPCompiler>2</UseCPPCompiler>
+                  <RVCTCodeConst>0</RVCTCodeConst>
+                  <RVCTZI>0</RVCTZI>
+                  <RVCTOtherData>0</RVCTOtherData>
+                  <ModuleSelection>0</ModuleSelection>
+                  <IncludeInBuild>0</IncludeInBuild>
+                  <AlwaysBuild>0</AlwaysBuild>
+                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
+                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
+                  <PublicsOnly>2</PublicsOnly>
+                  <StopOnExitCode>11</StopOnExitCode>
+                  <CustomArgument></CustomArgument>
+                  <IncludeLibraryModules></IncludeLibraryModules>
+                  <ComprImg>1</ComprImg>
+                </CommonProperty>
+                <FileArmAds>
+                  <Cads>
+                    <interw>2</interw>
+                    <Optim>0</Optim>
+                    <oTime>2</oTime>
+                    <SplitLS>2</SplitLS>
+                    <OneElfS>2</OneElfS>
+                    <Strict>2</Strict>
+                    <EnumInt>2</EnumInt>
+                    <PlainCh>2</PlainCh>
+                    <Ropi>2</Ropi>
+                    <Rwpi>2</Rwpi>
+                    <wLevel>0</wLevel>
+                    <uThumb>2</uThumb>
+                    <uSurpInc>2</uSurpInc>
+                    <uC99>2</uC99>
+                    <useXO>2</useXO>
+                    <v6Lang>0</v6Lang>
+                    <v6LangP>0</v6LangP>
+                    <vShortEn>2</vShortEn>
+                    <vShortWch>2</vShortWch>
+                    <v6Lto>2</v6Lto>
+                    <v6WtE>2</v6WtE>
+                    <v6Rtti>2</v6Rtti>
+                    <VariousControls>
+                      <MiscControls></MiscControls>
+                      <Define></Define>
+                      <Undefine></Undefine>
+                      <IncludePath></IncludePath>
+                    </VariousControls>
+                  </Cads>
+                </FileArmAds>
+              </FileOption>
             </File>
           </Files>
         </Group>
@@ -486,6 +536,11 @@
               <FileName>HallEffectModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
+            </File>
+            <File>
+              <FileName>ShiftRegisterWrite.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -638,11 +693,6 @@
               <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
             </File>
             <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
-            <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\WireSensingModule.h</FilePath>
@@ -656,6 +706,11 @@
               <FileName>HallEffectModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\HallEffectModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>ShiftRegisterWrite.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShiftRegisterWrite.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -672,6 +727,11 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>
@@ -1459,6 +1519,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
+            <File>
+              <FileName>ShiftRegisterWrite.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1610,11 +1675,6 @@
               <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
             </File>
             <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
-            <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\WireSensingModule.h</FilePath>
@@ -1628,6 +1688,11 @@
               <FileName>HallEffectModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\HallEffectModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>ShiftRegisterWrite.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShiftRegisterWrite.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1644,6 +1709,11 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>
@@ -1779,5 +1849,11 @@
       </Groups>
     </Target>
   </Targets>
+
+  <RTE>
+    <apis/>
+    <components/>
+    <files/>
+  </RTE>
 
 </Project>

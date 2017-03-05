@@ -1,12 +1,12 @@
 /****************************************************************************
  Module
-   HSMTemplate.c
+   ReloadingSubSM.c
 
  Revision
    2.0.1
 
  Description
-   This is a template file for implementing state machines.
+   Loading a new ball
 
  Notes
 
@@ -56,12 +56,39 @@
 #include "RobotTopSM.h"
 #include "LEDModule.h"
 #include "ShootingSubSM.h"
+#include "PWMModule.h"
+
+// the common headers for C99 types 
+#include <stdint.h>
+#include <stdbool.h>
+
+// the headers to access the GPIO subsystem
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_sysctl.h"
+
+// the headers to access the TivaWare Library
+#include "driverlib/sysctl.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
+#include "driverlib/timer.h"
+#include "driverlib/interrupt.h"
+
+#include "BITDEFS.H"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
 #define LEDS_ON 1
 #define LEDS_OFF 0
+#define IR_LED BIT2HI
+#define IR_LED_OFF BIT2LO
+#define ALL_BITS (0xff<<2)
+#define TimeWaiting4Ball 3000 //3sec must wait between ball requests
+#define STOP_PWM 0
+#define START_PWM 1
+#define PulseDuration 600 // time needed to get 15 complete pulses of the PWM with f=25Hz and d.c. = 75%
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -70,6 +97,7 @@
 */
 static ES_Event DuringRequestingBall( ES_Event Event);
 static ES_Event DuringWaiting4Ball( ES_Event Event);
+static void EmmitIR();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -107,7 +135,7 @@ ES_Event RunReloadingSM( ES_Event CurrentEvent )
          // Execute During function 
          CurrentEvent = DuringRequestingBall(CurrentEvent);
          //process any events
-         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == WAIT4BALL_DELIVERY )) //If an event is active and it's the correct one
+         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == ES_TIMEOUT ) && (CurrentEvent.EventParam == SendingIRPulses_TIMER)) //If an event is active and it's the correct one
          {       
                   NextState = WAITING4BALL;//Decide what the next state will be
                   MakeTransition = true; //mark that we are taking a transition
@@ -120,10 +148,6 @@ ES_Event RunReloadingSM( ES_Event CurrentEvent )
          {     																						//Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
-				 else
-				 {
-					 printf("\r\nERROR: robot in reloading>requestingBall with NOT VALID EVENT\r");
-				 }
        break;
       
 				 // CASE 2/2				 
@@ -131,18 +155,11 @@ ES_Event RunReloadingSM( ES_Event CurrentEvent )
 			 // During function
        CurrentEvent = DuringWaiting4Ball(CurrentEvent);
 			 // Process events	
-			 switch (CurrentEvent.EventType)
+			 if(CurrentEvent.EventType == RELOAD_BALLS)
 			 {
-				 case RELOAD_BALLS:
 					 NextState = REQUESTING_BALL;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;						 
-					 break;
-				 case BALLS_AVAILABLE:
-					 //ReturnEvent.EventType = ES_NO_EVENT;	 DONT KNOW WHAT TO DO
-					 break;
-				 default:
-					 printf("\r\nERROR: robot in reloading>requestingBall with NOT VALID EVENT\r");					 
 			 }
     }
     //   If we are making a state transition
@@ -187,8 +204,12 @@ void StartReloadingSM ( ES_Event CurrentEvent )
    {
         CurrentState = REQUESTING_BALL;
    }
+	 
+	 // Initialize timer
+	 //ES_Timer_SetTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
+	 
    // call the entry function (if any) for the ENTRY_STATE
-   RunShootingSM(CurrentEvent);
+   RunReloadingSM(CurrentEvent);
 }
 
 /****************************************************************************
@@ -226,19 +247,20 @@ static ES_Event DuringRequestingBall( ES_Event Event)
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
-        TurnOnOffBlueLEDs(LEDS_ON);
+        TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // do any local exit functionality
-        TurnOnOffBlueLEDs(LEDS_OFF);
+        TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
 		// do the 'during' function for this state
 		else 
     {
-        // Send 10 pulses (10ms ON + 30ms OFF) 
-				
+				// Send 15 pulses (10ms ON + 30ms OFF) 
+				ES_Timer_InitTimer(SendingIRPulses_TIMER, PulseDuration);
+				EmitIR(START_PWM);	
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -252,7 +274,11 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // Start 3 second timer
+      // Stop sending IR pulses
+			EmitIR(STOP_PWM);	
+
+			// Start 3 second timer
+			ES_Timer_InitTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -267,3 +293,7 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
+
+/********************************************************************************
+********************************************************************************/
+
