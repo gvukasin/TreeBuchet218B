@@ -133,6 +133,9 @@
 #define WireFollow_TIME ONE_SEC/10
 #define PWMOffset 70
 #define PWMProportionalGain 0.08
+#define PWMDerivativeGain 0.01
+#define NoWireDetectedReading_Lo 1915
+#define NoWireDetectedReading_Hi 1925
 
 // MotorActionDefines
 #define FORWARD 1
@@ -148,7 +151,6 @@ static ES_Event DuringReloading( ES_Event Event);
 static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
-
 static void InitializeTeamButtonsHardware(void);
 static uint16_t SaveStagingPosition( uint16_t );
 
@@ -162,11 +164,13 @@ static uint8_t MyPriority;
 static uint8_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
 static int PositionDifference;
+static int PositionDifference_dt;
+static bool CheckOnWireFlag_Left;
+static bool CheckOnWireFlag_Right;
 static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
-static bool CheckFlag = 1;
 static uint8_t BallCount = 3; //We will start with 3 balls
 static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
@@ -586,10 +590,47 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Positive when too left, negative when too right
 			ReadRLCSensor(RLCReading);
 			PositionDifference = RLCReading[1] - RLCReading[0];
+			PositionDifference_dt = PositionDifference/WireFollow_TIME;
+			
+			// Set flags to determine if either side is on the wire
+			// Check if left side is on the wire
+			if ( (RLCReading[1] < (float)NoWireDetectedReading_Hi) && (RLCReading[1] > (float)NoWireDetectedReading_Lo) ){
+				CheckOnWireFlag_Left = 1;
+			}
+			else{
+				CheckOnWireFlag_Left = 0;
+			}
+			// Check if right side is on the wire
+			if ( (RLCReading[0] < (float)NoWireDetectedReading_Hi) && (RLCReading[0] > (float)NoWireDetectedReading_Lo) ){
+				CheckOnWireFlag_Right = 1;
+			}
+			else{
+				CheckOnWireFlag_Right = 0;
+			}
 			
 			// P Control
-			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			
+			// PD Control
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
+			
+			// If either side is on the wire, check if either side is off the wire
+			// Then, if either side is off the wire, turn off the side that is on the wire
+			if ( CheckOnWireFlag_Left || CheckOnWireFlag_Right )
+			{
+				// If left side is off the wire, turn off the right motor
+				if ( ~CheckOnWireFlag_Left ){
+					// turn right wheel off
+					PWMRight = 0;
+				}
+				// If right side is off the wire, turn off the left motor
+				else if ( CheckOnWireFlag_Right ){
+					// turn left wheel off
+					PWMLeft = 0;
+				}
+			}
 			  
 			//Clamp the value to 0-100
 			if(PWMLeft < 0){
