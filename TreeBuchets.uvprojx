@@ -610,11 +610,6 @@
               <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
             </File>
             <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
-            <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\WireSensingModule.h</FilePath>
@@ -644,6 +639,11 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>
@@ -1587,11 +1587,6 @@
               <FilePath>.\Headers\ReloadingSubSM.h</FilePath>
             </File>
             <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
-            <File>
               <FileName>WireSensingModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\WireSensingModule.h</FilePath>
@@ -1621,6 +1616,11 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>
