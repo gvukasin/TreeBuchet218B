@@ -56,6 +56,7 @@
 #include "RobotTopSM.h"
 #include "LEDModule.h"
 #include "ShootingSubSM.h"
+#include "PWMModule.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -260,8 +261,8 @@ static ES_Event DuringRequestingBall( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // Send 10 pulses (10ms ON + 30ms OFF) 
-				
+				// Send 10 pulses (10ms ON + 30ms OFF) 
+				EmitIR();				
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -293,17 +294,4 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
 
 /********************************************************************************
 ********************************************************************************/
-static void EmmitIR()
-{
-	//Initialize hardware
-	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R1; //port B
- 	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R1) != SYSCTL_PRGPIO_R1);
 
-	// Set bit 2 in port B as digital output:
- 	HWREG(GPIO_PORTB_BASE+GPIO_O_DEN) |= IR_LED;	
- 	HWREG(GPIO_PORTB_BASE+GPIO_O_DIR) |= IR_LED;
-	
-	//IR pulses	
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= IR_LED;
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= IR_LED_OFF;
-}

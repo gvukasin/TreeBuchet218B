@@ -55,6 +55,7 @@
 #define L_CW_MOTOR_PIN BIT5HI
 #define R_CW_MOTOR_PIN BIT6HI
 #define R_CCW_MOTOR_PIN BIT7HI
+#define ServoMotor 
 
 #define FORWARD 1
 #define BACKWARD 0
@@ -240,6 +241,10 @@ void SetPWMPeriodUS(uint16_t Period)
 uint16_t GetPWMPeriodUS(void)
 {
 	return PeriodInUS;
+}
+
+void EmitIR( void ){
+	
 }
 
 /***************************************************************************
