@@ -259,7 +259,7 @@ static ES_Event DuringRequestingBall( ES_Event Event)
 		else 
     {
 				// Send 15 pulses (10ms ON + 30ms OFF) 
-				ES_Timer_Init(SendingIRPulses_TIMER);
+				ES_Timer_InitTimer(SendingIRPulses_TIMER, PulseDuration);
 				EmitIR(START_PWM);	
     }
     // return either Event, if you don't want to allow the lower level machine
@@ -278,7 +278,7 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
 			EmitIR(STOP_PWM);	
 
 			// Start 3 second timer
-				ES_Timer_Init(Waitin4Ball_TIMER);
+			ES_Timer_InitTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
     }
     else if ( Event.EventType == ES_EXIT )
     {
