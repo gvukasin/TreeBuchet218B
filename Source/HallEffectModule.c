@@ -66,7 +66,7 @@ static uint32_t MeasuredStagingAreaPeriod;
 static uint8_t counter = 0;
 static int StagingAreaPeriod = 0;
 static int StagingAreaPeriodAddition = 0;
-static uint16_t SampleSize = 10;
+static int SampleSize = 10;
 
 /*---------------------------- Module Functions ---------------------------*/
 
@@ -217,7 +217,6 @@ void StagingAreaISR( void )
 	
 	//StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
 	//StagingAreaPeriod = StagingAreaPeriodAddition;
-	
 }
 
 /****************************************************************************

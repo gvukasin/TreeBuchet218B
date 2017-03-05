@@ -92,18 +92,18 @@
 #define RESPONSE_NOT_READY 0xAA00
 #define RESPONSE_READY_MASK 0xff00
 
-// status byte 2 and 3 masks
+// report status byte masks
 #define ACK1_HI BIT15HI
 #define ACK0_HI BIT14HI
 #define ACK1_LO BIT15LO
 #define ACK0_LO BIT14LO
 
 // status byte 1 masks
-#define G1 BIT12HI
+#define G1 BIT12HI //GREEN goal #i
 #define G2 BIT13HI
 #define G3 (BIT12HI | BIT13HI)
 #define G_ALL_GOALS BIT14HI
-#define R1 BIT8HI
+#define R1 BIT8HI //RED goal #i
 #define R2 BIT9HI
 #define R3 (BIT8HI | BIT9HI)
 #define R_ALL_GOALS BIT10HI
@@ -134,8 +134,7 @@
 #define PWMOffset 70
 #define PWMProportionalGain 0.08
 #define PWMDerivativeGain 0.01
-#define NoWireDetectedReading_Lo 1915
-#define NoWireDetectedReading_Hi 1925
+#define NoWireDetectedReading 2000
 
 // MotorActionDefines
 #define FORWARD 1
@@ -163,11 +162,12 @@ static RobotState_t CurrentState;
 static uint8_t MyPriority;
 static uint16_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
+static int RLCReading_Left;
+static int RLCReading_Right;
 static int PositionDifference;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
-static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -178,6 +178,9 @@ static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
 static uint16_t PeriodCodeCounter = 0;
 static uint16_t MaxPeriodCodeCount = 5;
+static uint8_t NumberOfCorrectReports = 0;
+static uint8_t newRead;
+static bool ValidSecondCode = 1;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -341,9 +344,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						case START :
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
-							 break;						 
+							 break;		
+						case REPORT_SECOND_TIME: // External self transition
+							 NextState = CHECKING_IN;
+							 MakeTransition = true;
+							 break;	
 						 default:
-							 if(ES_ENTRY|ES_EXIT){}
+							 if(ES_ENTRY|ES_EXIT){} //SEE ME: This might actually throw an error (Elena). And it's in other states too
 							 else
 								printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
 					}
@@ -470,8 +477,9 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
   // to initialize the state variable
 	
 	// SEE ME
-	//CurrentState = WAITING2START;
-	CurrentState = DRIVING2STAGING;
+	CurrentState = WAITING2START;
+	//CurrentState = DRIVING2STAGING;
+	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -586,21 +594,25 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
     {
 			// Read the RLC sensor values
-			// Positive when too left, negative when too right
 			ReadRLCSensor(RLCReading);
-			PositionDifference = RLCReading[1] - RLCReading[0];
+			RLCReading_Right = RLCReading[1];
+			RLCReading_Left = RLCReading[0];
+			// Positive when too left (right at higher voltage)
+			// Negative when too right (left at higher ovltage)
+			PositionDifference = RLCReading_Right - RLCReading_Left;
 			PositionDifference_dt = PositionDifference/WireFollow_TIME;
 			
 			// Set flags to determine if either side is on the wire
 			// Check if left side is on the wire
-			if ( (RLCReading[1] < (float)NoWireDetectedReading_Hi) && (RLCReading[1] > (float)NoWireDetectedReading_Lo) ){
+			// SEE ME
+			if ( RLCReading_Left > (int)NoWireDetectedReading ){
 				CheckOnWireFlag_Left = 1;
 			}
 			else{
 				CheckOnWireFlag_Left = 0;
 			}
 			// Check if right side is on the wire
-			if ( (RLCReading[0] < (float)NoWireDetectedReading_Hi) && (RLCReading[0] > (float)NoWireDetectedReading_Lo) ){
+			if ( RLCReading_Right > (int)NoWireDetectedReading ){
 				CheckOnWireFlag_Right = 1;
 			}
 			else{
@@ -608,24 +620,27 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			}
 			
 			// P Control
-			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
 			
+			// SEE ME
+
 			// PD Control
-			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
-			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
+			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
+			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
 			
+			// SEE ME
 			// If either side is on the wire, check if either side is off the wire
 			// Then, if either side is off the wire, turn off the side that is on the wire
 			if ( CheckOnWireFlag_Left || CheckOnWireFlag_Right )
 			{
 				// If left side is off the wire, turn off the right motor
-				if ( ~CheckOnWireFlag_Left ){
+				if ( CheckOnWireFlag_Left == 0 ){
 					// turn right wheel off
 					PWMRight = 0;
 				}
 				// If right side is off the wire, turn off the left motor
-				else if ( CheckOnWireFlag_Right ){
+				else if ( CheckOnWireFlag_Right == 0 ){
 					// turn left wheel off
 					PWMLeft = 0;
 				}
@@ -644,7 +659,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
+			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -657,41 +672,15 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea){ ////Need to be changed!!!!!!!!!!!!!!!!!!!!!!!!
+			if(PeriodCode != codeInvalidStagingArea)
+			{ 
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
 				PostRobotTopSM(Event2Post);
 			}
-			
-//			// Check if a staging area has been reached
-//			PeriodCode = GetStagingAreaCode();
-//			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
-//			
-//			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
-//			{
-//				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
-//				if(PeriodCodeCounter >= MaxPeriodCodeCount){
-//					// set current frequency code to last code variable 
-//					LastPeriodCode = PeriodCode;
-//					PeriodCodeCounter = 0;
-//					
-//					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
-//					ES_Event PostEvent;
-//					PostEvent.EventType = STATION_REACHED;
-//					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
-//				} else {
-//					// increment counter 
-//					PeriodCodeCounter ++;
-//				}
-//			}
-//			else{
-//				PeriodCodeCounter = 0;
-//			}
     }
-		else{
-			
-	  }
+
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
 		LastPeriodCode = PeriodCode;
@@ -705,15 +694,41 @@ static ES_Event DuringCheckIn( ES_Event Event)
 	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-      // Check Ball count  
-//			PostEvent.EventType = ROBOT_STATUS;
-//			PostSPIService(PostEvent);
-//			if (TeamColor == RED)
+    { 
+			// This won't be run if we just want to query again about the same report
+			
+			ValidSecondCode = 1;
+			
+			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
+			{
+				/* Before reporting the second new read period we must check that:
+							1) it is different to the previous one 
+							2) it is a valid code 
+				*/
+				newRead = GetStagingAreaCodeArray();
+				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
+			}
+			
+			// (1) REPORT and (2) START TIMER
+			if (ValidSecondCode) //report the second time ONLY if the code is incorrect
+			{			
+				if (NumberOfCorrectReports == 1) //update code value before reporting 
+				{
+					// Update code 
+					PeriodCode = newRead;
+				}
+			
+				//Report frequency
+				printf("\r\n Report freq posted to spi \r\n");
+				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+				PostEvent.EventParam = PeriodCode;
+				PostSPIService(PostEvent);						
 			 
-			// Check time		
-			DoFirstTimeFlag = 1;			
+				//Start 200ms timer
+				ES_Timer_StartTimer(FrequencyReport_TIMER);	
+			}
     }
+		
     else if ( Event.EventType == ES_EXIT)
     {
     }
@@ -721,74 +736,87 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			// ONLY DO (1) & (2) ON FIRST ENTRY TO THIS DURING FUNCTION
-			if(DoFirstTimeFlag)
+			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
 			{
-			//(1) Report frequency
-			printf("\r\n Report freq posted to spi \r\n");
-			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-			PostEvent.EventParam = PeriodCode;
-			PostSPIService(PostEvent);
-										
-			 //(2) Start 200ms timer
-			 ES_Timer_StartTimer(FrequencyReport_TIMER);
-				
-			// reset flag
-				DoFirstTimeFlag = 0;
-			}
-			
-			/* (3) If there has been a timeout -which means the reporting process 
-						 has had time to be completed- Query until LOC returns a Response Ready */
-			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
-			{
-				printf("\r\n ROBOT_QUERY to SPI\r\n");
-				PostEvent.EventType = ROBOT_QUERY;
-			  PostSPIService(PostEvent);
-				printf("\r\n Robot query end \r\n");	
-			}    
 
-			//(4) Has the LOC received our frequency and is it correct? 
-			if (Event.EventType == COM_QUERY_RESPONSE)
+				/* (3) If there has been a timeout -which means the reporting process 
+							 has had time to be completed- Query until LOC returns a Response Ready */
+				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
+				{
+					printf("\r\n ROBOT_QUERY to SPI\r\n");
+					PostEvent.EventType = ROBOT_QUERY;
+					PostSPIService(PostEvent);
+				}    
+
+				//(4) Has the LOC received our frequency and is it correct? 
+				else if (Event.EventType == COM_QUERY_RESPONSE)
+				{
+					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
+					{
+						PostEvent.EventType = QUERY_AGAIN;
+						PostRobotTopSM(PostEvent);
+					}
+					else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
+					{
+						printf("\r\nResponse ready\r\n");
+						
+						// NACK - wrong frequency
+						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
+						{
+							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
+							
+							//Try reporting again
+							PostEvent.EventType = STATION_REACHED;
+							PostRobotTopSM(PostEvent);
+						}
+						
+						// INACTIVE - wrong staging area
+						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						{
+							
+							// record current driving stage (we will need next staging area too to know which direction to drive in!)
+							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							
+							//Go to DRIVING2STAGING
+							PostEvent.EventType = START;
+							PostRobotTopSM(PostEvent);	
+						}
+						
+						// ACK - all good! 
+						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						{
+							// Add 1 to number of correct reports
+							NumberOfCorrectReports++;
+							
+							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
+							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							
+							if (NumberOfCorrectReports == 2)
+							{	
+								//Go to SHOOTING
+								PostEvent.EventType = CHECK_IN_SUCCESS;
+								PostRobotTopSM(PostEvent);	
+							}
+							else if (NumberOfCorrectReports == 1)							
+							{ 							
+								//Read new frequency and Report again --> repeat CHECKING IN
+								PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
+								PostRobotTopSM(PostEvent);
+							}
+							else
+							{
+								printf("\r\nWARNING: The number of correct reports is a WEIRD #: %i", NumberOfCorrectReports);
+							}
+						}
+					} 
+				}
+			}
+			else if (ValidSecondCode == 0)
 			{
-				if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY)
-				{
-					PostEvent.EventType = QUERY_AGAIN;
+					//read again
+					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
 					PostRobotTopSM(PostEvent);
-				}
-				else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) 
-				{
-					printf("\r\nResponse ready\r\n");
-					
-					// NACK - wrong frequency
-					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
-					{
-						printf("\r\nERROR: Reported the WRONG FREQUENCY!"); // WE SHOULD DO MORE THAN THROW AN ERROR
-					}
-					
-					// INACTIVE - wrong staging area
-					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
-					{
-						
-						// record current driving stage 
-						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
-						
-						//Go to DRIVING2STAGING
-						PostEvent.EventType = START;
-						PostRobotTopSM(PostEvent);	
-					}
-					
-					// ACK - all good! 
-					if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
-					{
-						// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
-						
-						//Go to SHOOTING
-						PostEvent.EventType = CHECK_IN_SUCCESS;
-						PostRobotTopSM(PostEvent);	
-					}
-				}
-			}				
+			}
     }
 		
     // return either Event, if you don't want to allow the lower level machine
