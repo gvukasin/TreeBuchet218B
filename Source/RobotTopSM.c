@@ -178,6 +178,7 @@ static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
 static uint16_t PeriodCodeCounter = 0;
 static uint16_t MaxPeriodCodeCount = 5;
+static uint8_t NumberOfReports = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -607,10 +608,6 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				CheckOnWireFlag_Right = 0;
 			}
 			
-			// P Control
-			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
-			
 			// PD Control
 			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
 			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
@@ -657,41 +654,15 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea){ ////Need to be changed!!!!!!!!!!!!!!!!!!!!!!!!
+			if(PeriodCode != codeInvalidStagingArea)
+			{ 
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
 				PostRobotTopSM(Event2Post);
 			}
-			
-//			// Check if a staging area has been reached
-//			PeriodCode = GetStagingAreaCode();
-//			printf("\r\nstaging area code=%x, %x\r\n",PeriodCode, LastPeriodCode);
-//			
-//			if((PeriodCode != codeInvalidStagingArea)&&(PeriodCode == LastPeriodCode))
-//			{
-//				printf("\r\nCounter: %i\r\n", PeriodCodeCounter);
-//				if(PeriodCodeCounter >= MaxPeriodCodeCount){
-//					// set current frequency code to last code variable 
-//					LastPeriodCode = PeriodCode;
-//					PeriodCodeCounter = 0;
-//					
-//					// printf("\r\nstage detected in Driving2Stage during routine\r\n");
-//					ES_Event PostEvent;
-//					PostEvent.EventType = STATION_REACHED;
-//					PostRobotTopSM(PostEvent); // Move to the CheckingIn state
-//				} else {
-//					// increment counter 
-//					PeriodCodeCounter ++;
-//				}
-//			}
-//			else{
-//				PeriodCodeCounter = 0;
-//			}
     }
-		else{
-			
-	  }
+
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
 		LastPeriodCode = PeriodCode;
@@ -707,11 +678,11 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
       // Check Ball count  
-//			PostEvent.EventType = ROBOT_STATUS;
-//			PostSPIService(PostEvent);
-//			if (TeamColor == RED)
+			//			PostEvent.EventType = ROBOT_STATUS;
+			//			PostSPIService(PostEvent);
+			//			if (TeamColor == RED)
 			 
-			// Check time		
+			// Do we want to just query again or also report the frequency?		
 			DoFirstTimeFlag = 1;			
     }
     else if ( Event.EventType == ES_EXIT)
@@ -721,71 +692,80 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			// ONLY DO (1) & (2) ON FIRST ENTRY TO THIS DURING FUNCTION
-			if(DoFirstTimeFlag)
+			if (NumberOfReports < 2)
 			{
-			//(1) Report frequency
-			printf("\r\n Report freq posted to spi \r\n");
-			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-			PostEvent.EventParam = PeriodCode;
-			PostSPIService(PostEvent);
-										
-			 //(2) Start 200ms timer
-			 ES_Timer_StartTimer(FrequencyReport_TIMER);
-				
-			// reset flag
-				DoFirstTimeFlag = 0;
-			}
-			
-			/* (3) If there has been a timeout -which means the reporting process 
-						 has had time to be completed- Query until LOC returns a Response Ready */
-			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
-			{
-				printf("\r\n ROBOT_QUERY to SPI\r\n");
-				PostEvent.EventType = ROBOT_QUERY;
-			  PostSPIService(PostEvent);
-				printf("\r\n Robot query end \r\n");	
-			}    
-
-			//(4) Has the LOC received our frequency and is it correct? 
-			if (Event.EventType == COM_QUERY_RESPONSE)
-			{
-				if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY)
-				{
-					PostEvent.EventType = QUERY_AGAIN;
-					PostRobotTopSM(PostEvent);
+				// DO (1) & (2) ONLY ONCE PER REPORT
+				if(DoFirstTimeFlag)
+				{			
+					//(1) Report frequency
+					printf("\r\n Report freq posted to spi \r\n");
+					PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+					PostEvent.EventParam = PeriodCode;
+					PostSPIService(PostEvent);
+												
+					 //(2) Start 200ms timer
+					 ES_Timer_StartTimer(FrequencyReport_TIMER);
+						
+					// reset flag
+						DoFirstTimeFlag = 0;
 				}
-				else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) 
+				
+				/* (3) If there has been a timeout -which means the reporting process 
+							 has had time to be completed- Query until LOC returns a Response Ready */
+				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 				{
-					printf("\r\nResponse ready\r\n");
-					
-					// NACK - wrong frequency
-					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
+					printf("\r\n ROBOT_QUERY to SPI\r\n");
+					PostEvent.EventType = ROBOT_QUERY;
+					PostSPIService(PostEvent);
+				}    
+
+				//(4) Has the LOC received our frequency and is it correct? 
+				if (Event.EventType == COM_QUERY_RESPONSE)
+				{
+					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
 					{
-						printf("\r\nERROR: Reported the WRONG FREQUENCY!"); // WE SHOULD DO MORE THAN THROW AN ERROR
+						PostEvent.EventType = QUERY_AGAIN;
+						PostRobotTopSM(PostEvent);
 					}
-					
-					// INACTIVE - wrong staging area
-					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+					else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
 					{
+						printf("\r\nResponse ready\r\n");
 						
-						// record current driving stage 
-						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+						// NACK - wrong frequency
+						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
+						{
+							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
+							
+							//Try reporting again
+							PostEvent.EventType = STATION_REACHED;
+							PostRobotTopSM(PostEvent);
+							
+							//We need 2 consecutive correct reports so reset report count
+							NumberOfReports = 0;
+						}
 						
-						//Go to DRIVING2STAGING
-						PostEvent.EventType = START;
-						PostRobotTopSM(PostEvent);	
-					}
-					
-					// ACK - all good! 
-					if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
-					{
-						// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+						// INACTIVE - wrong staging area
+						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						{
+							
+							// record current driving stage 
+							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							
+							//Go to DRIVING2STAGING
+							PostEvent.EventType = START;
+							PostRobotTopSM(PostEvent);	
+						}
 						
-						//Go to SHOOTING
-						PostEvent.EventType = CHECK_IN_SUCCESS;
-						PostRobotTopSM(PostEvent);	
+						// ACK - all good! 
+						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						{
+							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
+							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							
+							//Go to SHOOTING
+							PostEvent.EventType = CHECK_IN_SUCCESS;
+							PostRobotTopSM(PostEvent);	
+						}
 					}
 				}
 			}				
