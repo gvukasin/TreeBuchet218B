@@ -736,7 +736,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			if (ValidSecondCode == 1) 
+			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
 			{
 
 				/* (3) If there has been a timeout -which means the reporting process 
