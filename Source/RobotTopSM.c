@@ -178,6 +178,7 @@ static uint16_t LastPeriodCode = 0xff;
 static uint16_t PeriodCodeCounter = 0;
 static uint16_t MaxPeriodCodeCount = 5;
 static uint8_t NumberOfCorrectReports = 0;
+static bool SecondReportFlag = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -682,14 +683,29 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
 			// This won't be run if we just want to query again about the same report
-		
+			
+			if (SecondReportFlag) //read new frequency and update PeriodCode
+			{
+				/*The new read Period code must be different to the previous one and 
+				  it should be a valid code before we report it */
+				uint8_t newRead = GetStagingAreaCodeArray();
+				while((newRead == codeInvalidStagingArea) || (newRead == PeriodCode))
+				{
+					newRead = GetStagingAreaCodeArray();
+				}
+				PeriodCode = newRead;
+				
+				//Reset flag
+				SecondReportFlag = 0;
+			}
+					
 			//(1) Report frequency
 			printf("\r\n Report freq posted to spi \r\n");
 			PostEvent.EventType = ROBOT_FREQ_RESPONSE;
 			PostEvent.EventParam = PeriodCode;
-			PostSPIService(PostEvent);
-										
-			 //(2) Start 200ms timer
+			PostSPIService(PostEvent);						
+			 
+			//(2) Start 200ms timer
 			 ES_Timer_StartTimer(FrequencyReport_TIMER);							
     }
     else if ( Event.EventType == ES_EXIT)
@@ -699,79 +715,80 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			if (NumberOfCorrectReports < 2)
-			{
-							
-				/* (3) If there has been a timeout -which means the reporting process 
-							 has had time to be completed- Query until LOC returns a Response Ready */
-				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
-				{
-					printf("\r\n ROBOT_QUERY to SPI\r\n");
-					PostEvent.EventType = ROBOT_QUERY;
-					PostSPIService(PostEvent);
-				}    
 
-				//(4) Has the LOC received our frequency and is it correct? 
-				if (Event.EventType == COM_QUERY_RESPONSE)
+			/* (3) If there has been a timeout -which means the reporting process 
+						 has had time to be completed- Query until LOC returns a Response Ready */
+			if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
+			{
+				printf("\r\n ROBOT_QUERY to SPI\r\n");
+				PostEvent.EventType = ROBOT_QUERY;
+				PostSPIService(PostEvent);
+			}    
+
+			//(4) Has the LOC received our frequency and is it correct? 
+			else if (Event.EventType == COM_QUERY_RESPONSE)
+			{
+				if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
 				{
-					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
+					PostEvent.EventType = QUERY_AGAIN;
+					PostRobotTopSM(PostEvent);
+				}
+				else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
+				{
+					printf("\r\nResponse ready\r\n");
+					
+					// NACK - wrong frequency
+					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
 					{
-						PostEvent.EventType = QUERY_AGAIN;
+						printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
+						
+						//Try reporting again
+						PostEvent.EventType = STATION_REACHED;
 						PostRobotTopSM(PostEvent);
 					}
-					else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
+					
+					// INACTIVE - wrong staging area
+					if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 					{
-						printf("\r\nResponse ready\r\n");
 						
-						// NACK - wrong frequency
-						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
-						{
-							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
-							
-							//Try reporting again
-							PostEvent.EventType = STATION_REACHED;
-							PostRobotTopSM(PostEvent);
-						}
+						// record current driving stage (we will need next staging area too to know which direction to drive in!)
+						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
 						
-						// INACTIVE - wrong staging area
-						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
-						{
-							
-							// record current driving stage (we will need next staging area too to know which direction to drive in!)
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
-							
-							//Go to DRIVING2STAGING
-							PostEvent.EventType = START;
+						//Go to DRIVING2STAGING
+						PostEvent.EventType = START;
+						PostRobotTopSM(PostEvent);	
+					}
+					
+					// ACK - all good! 
+					if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+					{
+						// Add 1 to number of correct reports
+						NumberOfCorrectReports++;
+						
+						// record current driving stage (SEE ME: might set the next staging area as the current staging area)
+						CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+						
+						if (NumberOfCorrectReports == 2)
+						{	//Go to SHOOTING
+							PostEvent.EventType = CHECK_IN_SUCCESS;
 							PostRobotTopSM(PostEvent);	
 						}
-						
-						// ACK - all good! 
-						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						else if (NumberOfCorrectReports == 1)							
+						{ 
+							//Set flag to true
+							SecondReportFlag = 1;
+							
+							//Read new frequency and Report again --> repeat CHECKING IN
+							PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
+							PostRobotTopSM(PostEvent);
+						}
+						else
 						{
-							// Add 1 to number of correct reports
-							NumberOfCorrectReports++;
-							
-							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
-							
-							if (NumberOfCorrectReports == 2)
-							{	//Go to SHOOTING
-								PostEvent.EventType = CHECK_IN_SUCCESS;
-								PostRobotTopSM(PostEvent);	
-							}
-							else if (NumberOfCorrectReports == 1)
-							{ //Report again --> repeat CHECKING IN
-								PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
-								PostRobotTopSM(PostEvent);
-							}
-							else
-							{
-								printf("\r\nWARNING: The number of correct reports is %i", NumberOfCorrectReports);
-							}
+							printf("\r\nWARNING: The number of correct reports is %i", NumberOfCorrectReports);
 						}
 					}
-				}
-			}				
+				} 
+			}						
     }
 		
     // return either Event, if you don't want to allow the lower level machine
