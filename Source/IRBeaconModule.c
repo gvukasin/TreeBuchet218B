@@ -33,24 +33,36 @@ Events to post:
 #define pinC6Mask 0xf0ffffff
 
 // IR frequency codes
-#define code800us 0x00 // 1250Hz
-#define code690us 0x01 // 1450Hz
-#define code588us 0x02 // 1700Hz
-#define code513us 0x03 // 1950Hz
-#define code455us 0x11 // 2200Hz
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x11 // 2200Hz (Green nav beacon)
 #define codeInvalidIRFreq 0xff
 
 
 /*---------------------------- Module Variables ---------------------------*/
-static uint32_t LastCapture;
-static uint32_t ThisCapture;
-static uint32_t MeasuredSignalPeriod;
-static uint32_t MeasuredSignalPeriodAddition = 0;
-static uint32_t IRSignalPeriod;
-static uint8_t counter = 0;
+static uint16_t IRSignalCode;
+static uint16_t IRSignalPeriod_Tolerance = 10;
+// Valid periods from IR beacons in us
+// 455 us -> 2200 Hz (Green nav beacon)
+// 513 us -> 1950 Hz (Red supply depot)
+// 588 us -> 1700 Hz (Red nav beacon)
+// 690 us -> 1450 Hz (Bucket nav beacon)
+// 800 us -> 1250 Hz (Green supply depot)
+static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
 
-uint8_t IRSignalPeriod_Tolerance = 10;
-uint16_t ValidIRSignalPeriods[5] = {455,513,588,690,800};
+static uint16_t PeriodBuffer[10];
+static uint8_t CaptureIndex = 0;
+
+// For IR Signal Frequency Capture
+static uint32_t LastEdge;
+static uint32_t CurrentEdge;
+static uint32_t MeasuredIRSignalPeriod;
+static uint8_t counter = 0;
+static int IRSignalPeriod = 0;
+static int IRSignalPeriodAddition = 0;
+static int SampleSize = 10;
 
 /*------------------------------ Module Code ------------------------------*/
 
@@ -153,24 +165,22 @@ void InputCaptureForIRDetectionResponse( void )
 	//Clear the source of the interrupt, the input capture event
 	HWREG(WTIMER1_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
 	
-	//Grab the captured value 
-	ThisCapture = HWREG(WTIMER1_BASE + TIMER_O_TAR);
-	MeasuredSignalPeriod = ThisCapture - LastCapture;
-	MeasuredSignalPeriod = 1000*MeasuredSignalPeriod/TicksPerMS; // Unit: us
+	// grab captured value and calc period 
+	CurrentEdge = HWREG(WTIMER0_BASE+TIMER_O_TAR);
+	MeasuredIRSignalPeriod = CurrentEdge - LastEdge;
+	MeasuredIRSignalPeriod = 1000*MeasuredIRSignalPeriod/TicksPerMS; // Unit: us
 	
-	// Update the module level variable SignalPeriod to be the average of the past ten catches
+	//Write this captured period into the array
+	PeriodBuffer[counter] = MeasuredIRSignalPeriod;
+	
+	//Move to the next element the next time
+	counter ++;
+		
+	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
 	// Update it every 10 interrupts
-	if(counter >= 10){
-		IRSignalPeriod = MeasuredSignalPeriodAddition/10;
-		MeasuredSignalPeriodAddition = 0;
+	if(counter >= SampleSize){
 		counter = 0;
   }
-  
-	MeasuredSignalPeriodAddition  += MeasuredSignalPeriod;
-	counter ++;
-	
-	// update LastCapture to prepare for the next edge
-	LastCapture = ThisCapture;
 }
 
 /****************************************************************************
