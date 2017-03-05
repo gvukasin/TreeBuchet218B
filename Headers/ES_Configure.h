@@ -344,9 +344,9 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER2_RESP_FUNC PostRobotTopSM
 #define TIMER3_RESP_FUNC PostRobotTopSM
 #define TIMER4_RESP_FUNC PostRobotTopSM
-#define TIMER5_RESP_FUNC TIMER_UNUSED
-#define TIMER6_RESP_FUNC TIMER_UNUSED
-#define TIMER7_RESP_FUNC TIMER_UNUSED
+#define TIMER5_RESP_FUNC PostRobotTopSM
+#define TIMER6_RESP_FUNC PostRobotTopSM
+#define TIMER7_RESP_FUNC PostRobotTopSM
 #define TIMER8_RESP_FUNC TIMER_UNUSED
 #define TIMER9_RESP_FUNC TIMER_UNUSED
 #define TIMER10_RESP_FUNC TIMER_UNUSED
@@ -368,5 +368,8 @@ typedef enum {  ES_NO_EVENT = 0,
 #define FrequencyReport_TIMER 2
 #define Looking4Beacon_TIMER 3
 #define Transmission_TIMER 4 //timer for SPI transmission to slow down queries
+#define Waitin4Ball_TIMER 5
+#define SendingIRPulses_TIMER 6
+#define Waiting4Shot_TIMER 7
 
 #endif /* CONFIGURE_H */

@@ -220,7 +220,6 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize stage area frequency reading
 	InitStagingAreaISR();
 	
-		// Initialize TIMERS
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
 
@@ -402,7 +401,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // During function
        CurrentEvent = DuringReloading(CurrentEvent);
 			 // Process events			 
-			 if (CurrentEvent.EventType == BALLS_AVAILABLE)
+			 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Waitin4Ball_TIMER))
 				{
 					 NextState = DRIVING2STAGING;
 					 MakeTransition = true;
