@@ -480,6 +480,15 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 }
 
 
+/******************************************************************
+Function 
+	GetTeamColor
+************************************************************************/
+bool GetTeamColor()
+{
+	return TeamColor;
+}
+
 /***************************************************************************
  private functions
  ***************************************************************************/
@@ -498,7 +507,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			//Post team color to SPIService
+				//Post team color to SPIService
 				ES_Event PostEvent;
 				PostEvent.EventType = TEAM_COLOR;			
 			
@@ -509,6 +518,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 					PostEvent.EventParam = 1;
 				
 				PostSPIService(PostEvent);
+				
+				//Turn on TeamColor LEDs
+				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);		
 				
     }
     else if ( Event.EventType == ES_EXIT )
@@ -793,7 +805,7 @@ static ES_Event DuringShooting( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         //Yellow LEDs ON to signal shooting is going to start
-				TurnOnOffYellowLEDs(LEDS_ON);
+				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
         StartShootingSM(Event);  
@@ -808,7 +820,7 @@ static ES_Event DuringShooting( ES_Event Event)
 			// POST SCORED TO ROBOT IF YOU DID
 				
 			  // Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF);
+				TurnOnOffYellowLEDs(LEDS_OFF, TeamColor);
     }
 		
 		// do the 'during' function for this state
@@ -915,29 +927,16 @@ static ES_Event DuringStop( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+ 
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+  
     }
 		else // do the 'during' function for this state
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+      stop();
+			TurnOnOFFTeamColorLEDs(LEDS_OFF, TeamColor);
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

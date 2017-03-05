@@ -459,6 +459,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
+            <File>
+              <FileName>ShiftRegisterWrite.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -628,6 +633,11 @@
               <FileName>HallEffectModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\HallEffectModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>ShiftRegisterWrite.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShiftRegisterWrite.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -1436,6 +1446,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\HallEffectModule.c</FilePath>
             </File>
+            <File>
+              <FileName>ShiftRegisterWrite.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1605,6 +1620,11 @@
               <FileName>HallEffectModule.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Headers\HallEffectModule.h</FilePath>
+            </File>
+            <File>
+              <FileName>ShiftRegisterWrite.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShiftRegisterWrite.h</FilePath>
             </File>
           </Files>
         </Group>

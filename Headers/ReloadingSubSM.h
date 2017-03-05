@@ -14,7 +14,7 @@
 
 // typedefs for the states
 // State definitions for use with the query function
-typedef enum { REQUESTING_BALL, WAITING4BALL } ReloadingState_t ;
+typedef enum { REQUESTING_BALL, WAITING4BALL } ReloadingState_t;
 
 // Public Function Prototypes
 
