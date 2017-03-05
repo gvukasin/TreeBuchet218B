@@ -1,6 +1,6 @@
 /****************************************************************************
  Module
-   HSMTemplate.c
+   ReloadingSubSM.c
 
  Revision
    2.0.1
@@ -57,11 +57,32 @@
 #include "LEDModule.h"
 #include "ShootingSubSM.h"
 
+// the common headers for C99 types 
+#include <stdint.h>
+#include <stdbool.h>
+
+// the headers to access the GPIO subsystem
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+#include "inc/hw_gpio.h"
+#include "inc/hw_sysctl.h"
+
+// the headers to access the TivaWare Library
+#include "driverlib/sysctl.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
+#include "driverlib/timer.h"
+#include "driverlib/interrupt.h"
+
+#include "BITDEFS.H"
+
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
 #define LEDS_ON 1
 #define LEDS_OFF 0
+#define IR_LED BIT2HI
+#define ALL_BITS (0xff<<2)
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -70,6 +91,7 @@
 */
 static ES_Event DuringRequestingBall( ES_Event Event);
 static ES_Event DuringWaiting4Ball( ES_Event Event);
+static void EmmitIR();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -188,7 +210,7 @@ void StartReloadingSM ( ES_Event CurrentEvent )
         CurrentState = REQUESTING_BALL;
    }
    // call the entry function (if any) for the ENTRY_STATE
-   RunShootingSM(CurrentEvent);
+   RunReloadingSM(CurrentEvent);
 }
 
 /****************************************************************************
@@ -226,12 +248,12 @@ static ES_Event DuringRequestingBall( ES_Event Event)
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
-        TurnOnOffBlueLEDs(LEDS_ON);
+        TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // do any local exit functionality
-        TurnOnOffBlueLEDs(LEDS_OFF);
+        TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
 		// do the 'during' function for this state
@@ -266,4 +288,19 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
+}
+
+/********************************************************************************
+********************************************************************************/
+static void EmmitIR()
+{
+	//Initialize hardware
+	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R1; //port B
+ 	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R1) != SYSCTL_PRGPIO_R1);
+
+	// Set bit 2 in port B as digital output:
+ 	HWREG(GPIO_PORTB_BASE+GPIO_O_DEN) |= IR_LED;	
+ 	HWREG(GPIO_PORTB_BASE+GPIO_O_DIR) |= IR_LED;
+	
+	
 }

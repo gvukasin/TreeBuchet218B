@@ -124,7 +124,6 @@ static uint8_t ByteCount = 0;
 // create a local variable for data to return
 	uint16_t Data2Return = 0;
 
-
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function

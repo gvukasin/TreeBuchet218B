@@ -97,7 +97,7 @@ void InitInputCaptureForIRDetection( void )
 	//Set up the port to do the capture  -- we will use C6 because we are using wide timer 1A
 	HWREG(GPIO_PORTC_BASE + GPIO_O_AFSEL) |= BIT6HI;
 	
-	//map bit 4's alternate function to WT1CCP0
+	//map bit 6's alternate function to WT1CCP0
 	HWREG(GPIO_PORTC_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTC_BASE + GPIO_O_PCTL) & pinC6Mask) + (7 << (BitsPerNibble*numbNibblesShifted));
 	
 	//Enable pin 6 on Port C for digital I/O
