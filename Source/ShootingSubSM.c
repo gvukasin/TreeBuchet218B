@@ -133,10 +133,10 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          {     																						//Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
-				 else
-				 {
-						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
-				 }
+//				 else
+//				 {
+//						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
+//				 }
        break;
       
 				 // CASE 2/3				 
