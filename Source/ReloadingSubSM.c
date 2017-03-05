@@ -226,12 +226,12 @@ static ES_Event DuringRequestingBall( ES_Event Event)
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // implement any entry actions required for this state machine
-        TurnOnOffBlueLEDs(LEDS_ON);
+        TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // do any local exit functionality
-        TurnOnOffBlueLEDs(LEDS_OFF);
+        TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
 		// do the 'during' function for this state
