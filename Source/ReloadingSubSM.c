@@ -82,6 +82,7 @@
 #define LEDS_ON 1
 #define LEDS_OFF 0
 #define IR_LED BIT2HI
+#define IR_LED_OFF BIT2LO
 #define ALL_BITS (0xff<<2)
 
 /*---------------------------- Module Functions ---------------------------*/
@@ -302,5 +303,7 @@ static void EmmitIR()
  	HWREG(GPIO_PORTB_BASE+GPIO_O_DEN) |= IR_LED;	
  	HWREG(GPIO_PORTB_BASE+GPIO_O_DIR) |= IR_LED;
 	
-	
+	//IR pulses	
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= IR_LED;
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= IR_LED_OFF;
 }
