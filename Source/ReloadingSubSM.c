@@ -97,7 +97,7 @@
 */
 static ES_Event DuringRequestingBall( ES_Event Event);
 static ES_Event DuringWaiting4Ball( ES_Event Event);
-static void EmitIR();
+//static void EmitIR();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
