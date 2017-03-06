@@ -84,7 +84,7 @@ __heap_limit
 		EXTERN ShortTimerBHandler
 		EXTERN SPI_InterruptResponse
 		EXTERN InputCaptureForFrontIRDetection
-		EXTERN InputCaptureForBackIRDetection
+		;EXTERN InputCaptureForBackIRDetection
 		EXTERN StagingAreaISR
 		EXTERN OneShotISR
 		EXTERN GameTimerISR
@@ -212,7 +212,7 @@ __Vectors
         DCD     GameTimerISR           ; Wide Timer 1 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 2 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 2 subtimer B
-        DCD     InputCaptureForBackIRDetection  ; Wide Timer 3 subtimer A
+        DCD     IntDefaultHandler  ; Wide Timer 3 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 3 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 4 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 4 subtimer B

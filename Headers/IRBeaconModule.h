@@ -12,11 +12,11 @@
 
 // Public Function Prototypes
 void InitInputCaptureForFrontIRDetection( void );
-void InitInputCaptureForBackIRDetection( void );
+//void InitInputCaptureForBackIRDetection( void );
 void EnableFrontIRInterrupt(void);
-void EnableBackIRInterrupt(void);
+//void EnableBackIRInterrupt(void);
 void InputCaptureForFrontIRDetection( void );
-void InputCaptureForBackIRDetection( void );
+//void InputCaptureForBackIRDetection( void );
 uint8_t Front_GetIRCodeArray( void );
 uint8_t Back_GetIRCodeArray( void );
 

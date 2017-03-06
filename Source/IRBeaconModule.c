@@ -227,11 +227,11 @@ void EnableFrontIRInterrupt(void)
  Description
      Define the interrupt response routine
 ****************************************************************************/
-void EnableBackIRInterrupt(void)
-{
-	//Kick timer off by enabling timer and enabling the timer to stall while stopped by the debugger
-	HWREG(WTIMER1_BASE + TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
-}
+//void EnableBackIRInterrupt(void)
+//{
+//	//Kick timer off by enabling timer and enabling the timer to stall while stopped by the debugger
+//	HWREG(WTIMER1_BASE + TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+//}
 
 /****************************************************************************
  Function
@@ -299,39 +299,39 @@ void InputCaptureForFrontIRDetection( void )
  Author
      Team 16 
 ****************************************************************************/ 
-void InputCaptureForBackIRDetection( void )  
-{
-	// SEE ME (change to Wide Timer 3 subtimer A)
-	//Clear the source of the interrupt, the input capture event
-	HWREG(WTIMER1_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
-	
-	// SEE ME (change to Wide Timer 3 subtimer A)
-	// grab captured value and calc period 
-	Back_CurrentEdge = HWREG(WTIMER1_BASE + TIMER_O_TAR);
-	
-	Back_MeasuredIRSignalPeriod = Back_CurrentEdge - Back_LastEdge;
-	Back_MeasuredIRSignalPeriod = 1000*Back_MeasuredIRSignalPeriod/TicksPerMS; // Unit: us
-	
-	//Write this captured period into the array
-	Back_PeriodBuffer[Back_counter] = Back_MeasuredIRSignalPeriod;
-	
-	//Move to the next element the next time
-	Back_counter++;
-		
-	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
-	// Update it every 10 interrupts
-	if(Back_counter >= SampleSize){
-		Back_counter = 0;
-  }
-	
-	// update LastCapture to prepare for the next edge
-	Back_LastEdge = Back_CurrentEdge;
+//void InputCaptureForBackIRDetection( void )  
+//{
+//	// SEE ME (change to Wide Timer 3 subtimer A)
+//	//Clear the source of the interrupt, the input capture event
+//	HWREG(WTIMER1_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
+//	
+//	// SEE ME (change to Wide Timer 3 subtimer A)
+//	// grab captured value and calc period 
+//	Back_CurrentEdge = HWREG(WTIMER1_BASE + TIMER_O_TAR);
+//	
+//	Back_MeasuredIRSignalPeriod = Back_CurrentEdge - Back_LastEdge;
+//	Back_MeasuredIRSignalPeriod = 1000*Back_MeasuredIRSignalPeriod/TicksPerMS; // Unit: us
+//	
+//	//Write this captured period into the array
+//	Back_PeriodBuffer[Back_counter] = Back_MeasuredIRSignalPeriod;
+//	
+//	//Move to the next element the next time
+//	Back_counter++;
+//		
+//	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
+//	// Update it every 10 interrupts
+//	if(Back_counter >= SampleSize){
+//		Back_counter = 0;
+//  }
+//	
+//	// update LastCapture to prepare for the next edge
+//	Back_LastEdge = Back_CurrentEdge;
 
-	// SEE ME
-	// Running average calculation. Can use this to make calculation more robust
-	// Back_IRSignalPeriodAddition  = (90*Back_IRSignalPeriodAddition + 10*Back_MeasuredIRSignalPeriod)/100;
-	// Back_IRSignalPeriod = Back_IRSignalPeriodAddition
-}
+//	// SEE ME
+//	// Running average calculation. Can use this to make calculation more robust
+//	// Back_IRSignalPeriodAddition  = (90*Back_IRSignalPeriodAddition + 10*Back_MeasuredIRSignalPeriod)/100;
+//	// Back_IRSignalPeriod = Back_IRSignalPeriodAddition
+//}
 
 /****************************************************************************
  Function
