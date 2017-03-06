@@ -32,7 +32,7 @@ Events to post:
 #define TicksPerMS 40000
 
 // staging area frequency codes
-#define code1333us 0 //0000
+#define code1333us (BIT0LO) //0000;
 #define code1277us (BIT0HI) //0001;
 #define code1222us (BIT1HI) //0010;
 #define code1166us (BIT1HI|BIT0HI) //0011;
@@ -51,22 +51,19 @@ Events to post:
 #define codeInvalidStagingArea 0xff
 
 /*---------------------------- Module Variables ---------------------------*/
-//static ES_Event HallEffectEdgeDetected;
+// For Staging Area Frequency Capture
 static uint16_t StagingAreaCode;
 static uint16_t StagingAreaPeriod_Tolerance = 10;
-static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
-
-static uint16_t PeriodBuffer[10];
-static uint8_t CaptureIndex = 0;	
-
-// For Staging Area Frequency Capture
 static uint32_t LastEdge;
 static uint32_t CurrentEdge;
 static uint32_t MeasuredStagingAreaPeriod;
 static uint8_t counter = 0;
-static int StagingAreaPeriod = 0;
-static int StagingAreaPeriodAddition = 0;
+// static int StagingAreaPeriod = 0; // Can use this to make period calculation more robust
+// static int StagingAreaPeriodAddition = 0; // Can use this to make period calculation more robust
+static uint16_t PeriodBuffer[10];
 static int SampleSize = 10;
+static uint8_t CaptureIndex = 0;
+static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 /*---------------------------- Module Functions ---------------------------*/
 
@@ -195,7 +192,7 @@ void StagingAreaISR( void )
 	PeriodBuffer[counter] = MeasuredStagingAreaPeriod;
 	
 	//Move to the next element the next time
-	counter ++;
+	counter++;
 		
 	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
 	// Update it every 10 interrupts
@@ -215,8 +212,11 @@ void StagingAreaISR( void )
 //		counter = 0;
 //  }
 	
-	//StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
-	//StagingAreaPeriod = StagingAreaPeriodAddition;
+	// SEE ME
+	// Running average calculation. Can use this to make calculation more robust
+	// StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
+	// StagingAreaPeriod = StagingAreaPeriodAddition;
+
 }
 
 /****************************************************************************
@@ -330,6 +330,24 @@ void StagingAreaISR( void )
 //	return StagingAreaCode;
 //}
 
+/****************************************************************************
+ Function
+    GetStagingAreaCodeSingle
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+
 uint8_t GetStagingAreaCodeSingle( uint16_t thePeriod )
 {
 		if( (thePeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (thePeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
@@ -422,6 +440,24 @@ uint8_t GetStagingAreaCodeSingle( uint16_t thePeriod )
 	return StagingAreaCode;
 }
 
+/****************************************************************************
+ Function
+    GetStagingAreaCodeArray
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+
 uint8_t GetStagingAreaCodeArray(void){
 	uint8_t i = 0;
 	uint8_t returnCode = GetStagingAreaCodeSingle(PeriodBuffer[0]);
@@ -435,4 +471,3 @@ uint8_t GetStagingAreaCodeArray(void){
 	
 	return returnCode;
 }
-
