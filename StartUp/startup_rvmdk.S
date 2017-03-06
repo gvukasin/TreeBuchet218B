@@ -86,6 +86,7 @@ __heap_limit
 		EXTERN InputCaptureForIRDetectionResponse
 		EXTERN StagingAreaISR
 		EXTERN OneShotISR
+		EXTERN GameTimerISR
 
 ;******************************************************************************
 ;
@@ -207,7 +208,7 @@ __Vectors
         DCD     StagingAreaISR              ; Wide Timer 0 subtimer A
         DCD     OneShotISR                  ; Wide Timer 0 subtimer B
         DCD     InputCaptureForIRDetectionResponse          ; Wide Timer 1 subtimer A
-        DCD     IntDefaultHandler           ; Wide Timer 1 subtimer B
+        DCD     GameTimerISR           ; Wide Timer 1 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 2 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 2 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 3 subtimer A

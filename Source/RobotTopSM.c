@@ -36,6 +36,7 @@
 */
 #include "ES_Configure.h"
 #include "ES_Framework.h"
+
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
@@ -58,6 +59,8 @@
 #include "inc/hw_types.h"
 #include "inc/hw_gpio.h"
 #include "inc/hw_sysctl.h"
+#include "inc/hw_nvic.h"
+#include "inc/hw_timer.h"
 
 // the headers to access the TivaWare Library
 #include "driverlib/sysctl.h"
@@ -77,6 +80,10 @@
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
 #define ALL_BITS (0xff<<2)
+
+// using 40 MHz clock
+#define TicksPerMS 40000
+
 
 #define RED 0
 #define GREEN 1
@@ -181,6 +188,8 @@ static uint16_t MaxPeriodCodeCount = 5;
 static uint8_t NumberOfCorrectReports = 0;
 static uint8_t newRead;
 static bool ValidSecondCode = 1;
+static uint32_t OneShotTimeoutMS;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -971,7 +980,7 @@ static ES_Event DuringStop( ES_Event Event)
 }
 
 /****************************************************************************
-Hardware Functions:
+ InitializeTeamButtonsHardware
 ****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
 {
@@ -992,6 +1001,9 @@ static void InitializeTeamButtonsHardware(void)
 
 }
 
+/****************************************************************************
+ SaveStagingPosition
+****************************************************************************/
 static uint16_t SaveStagingPosition( uint16_t StatusResponse ){
 	// set staging area variable from status bytes if we are Red team
 	uint16_t TheGoal = 0;
@@ -1031,5 +1043,72 @@ static uint16_t SaveStagingPosition( uint16_t StatusResponse ){
 						}
 						return TheGoal;
 }
+
+/****************************************************************************
+GAME TIMER 
+****************************************************************************/
+
+static void InitGameTimer() //Wide Timer 1 subtimer B
+{	
+	// start by enabling the clock to the timer (Wide Timer 0)
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R0;
+
+	// kill a few cycles to let the clock get going
+	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R0) != SYSCTL_PRWTIMER_R0){}
+
+	// make sure that timer (Timer A) is disabled before configuring
+	HWREG(WTIMER0_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
+
+	// set it up in 32bit wide (individual, not concatenated) mode
+	// the constant name derives from the 16/32 bit timer, but this is a 32/64
+	// bit timer so we are setting the 32bit mode
+	HWREG(WTIMER0_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
+
+	// set up timer A in 1-shot mode so that it disables timer on timeouts
+	// first mask off the TAMR field (bits 0:1) then set the value for
+	// 1-shot mode = 0x01
+	HWREG(WTIMER0_BASE+TIMER_O_TBMR) = (HWREG(WTIMER0_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
+	
+	// set timeout
+	OneShotTimeoutMS = 1000; //arbitrary initialization value
+	HWREG(WTIMER0_BASE+TIMER_O_TBILR) = TicksPerMS*OneShotTimeoutMS;
+	
+	// enable a local timeout interrupt. TBTOIM = bit 1
+	HWREG(WTIMER0_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
+
+	// enable the Timer B in Wide Timer 0 interrupt in the NVIC
+	// it is interrupt number 95 so appears in EN2 at bit 31
+	HWREG(NVIC_EN2) |= BIT31HI;
+	
+	// set priority of this timer 
+	HWREG(NVIC_PRI23) |= NVIC_PRI23_INTD_M;
+
+	// make sure interrupts are enabled globally
+	__enable_irq();
+	
+	printf("\r\nGAME TIMER init done\r\n");
+}
+
+static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS )
+{
+	// set timeout
+	HWREG(WTIMER0_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	
+	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
+	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
+}
+
+void GameTimerISR(void)
+{	
+	// clear interrupt
+	HWREG(WTIMER0_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+	
+	// post event to go into ENDING_STRATEGY state
+	ES_Event PostEvent;
+	PostEvent.EventType = FINISH_STRONG;
+	PostRobotTopSM(PostEvent);
+	
+}
+
 
 /*********************************************************  THE END *************************************************************/

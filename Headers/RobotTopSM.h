@@ -21,5 +21,6 @@ bool PostRobotTopSM( ES_Event ThisEvent );
 ES_Event RunRobotTopSM( ES_Event CurrentEvent );
 void StartRobotTopSM ( ES_Event CurrentEvent );
 bool GetTeamColor(void);
+void GameTimerISR(void);
 
 #endif /*TopHSMTemplate_H */
