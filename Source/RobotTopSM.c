@@ -235,6 +235,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize hardware for IR but not kicking the timer off 
 	InitInputCaptureForFrontIRDetection();
+	printf("\r\n thru inits");
 	InitInputCaptureForBackIRDetection();
 	
 	// Initialize stage area frequency reading

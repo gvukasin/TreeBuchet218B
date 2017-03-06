@@ -162,13 +162,15 @@ void InitInputCaptureForFrontIRDetection( void )
 void InitInputCaptureForBackIRDetection( void )
 {
 	//Start by enabling the clock to the timer (Wide Timer 3A)
-	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R2;
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R3;
 	
 	//Enable the clock to Port D
 	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R3;
 	
 	//Make sure that timer (Timer A) is disabled before configuring
 	HWREG(WTIMER3_BASE + TIMER_O_CTL) &= ~TIMER_CTL_TAEN;
+	
+	printf("\r\n See me1");
 	
 	//Set it up in 32bit wide
 	HWREG(WTIMER3_BASE + TIMER_O_CFG) = TIMER_CFG_16_BIT;
