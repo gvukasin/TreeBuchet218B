@@ -275,14 +275,18 @@ static ES_Event DuringCalibrating( ES_Event Event)
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
     {
         // Read the detected IR frequency
-			  uint8_t IRFreqCode = GetIRCode();
-			  // If detected the frequency we are looking for, post READY2SHOOT event
-			  if(IRFreqCode == 0xff)                                  // !!!!!!!!!!!!!!!!!!!!!!Need to change!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-															                                  // !!!!!!!!!!!!!!!!!Valid Code should be from LOC!!!!!!!!!!!!!!!!!!!
+			  uint8_t MeasuredIRFreqCode = GetIRCode();
+			
+				// Get desired IR frequency from LOC
+				ES_Event QueryEvent;
+				//QueryEvent
+			  
+				// If we detect the frequency we are looking for, post READY2SHOOT event
+			  if(MeasuredIRFreqCode == 0xff)  				
 				{
 					ES_Event Event2Post;
 					Event2Post.EventType = READY2SHOOT;
-					Event2Post.EventParam = IRFreqCode;
+					Event2Post.EventParam = MeasuredIRFreqCode;
 					PostRobotTopSM(Event2Post);
 				}
 			  // Else, restart the timer
@@ -308,29 +312,15 @@ static ES_Event DuringLoadingBall( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
+        // Start spinning flywheel for ball pushing
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
+        // Turn off both the pushing flywheel and the separation servo
     }
 		else // do the 'during' function for this state
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        // Spin the separation wheel 180 degrees
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
