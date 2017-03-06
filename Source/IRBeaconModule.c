@@ -37,7 +37,7 @@ Events to post:
 #define code690us 0x01 // 1450Hz (Bucket nav beacon)
 #define code588us 0x02 // 1700Hz (Red nav beacon)
 #define code513us 0x03 // 1950Hz (Red supply depot)
-#define code455us 0x11 // 2200Hz (Green nav beacon)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
 #define codeInvalidIRFreq 0xff
 
 
