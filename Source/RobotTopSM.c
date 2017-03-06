@@ -75,7 +75,7 @@
 #include <stdio.h>
 #include "termio.h" 
 #define clrScrn() 	printf("\x1b[2J")
-
+#define TEST
 
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
@@ -84,6 +84,7 @@
 // using 40 MHz clock
 #define TicksPerMS 40000
 
+#define GameTimeoutMS 120000 //2min
 
 #define RED 0
 #define GREEN 1
@@ -160,6 +161,8 @@ static ES_Event DuringStop( ES_Event Event);
 static void InitializeTeamButtonsHardware(void);
 static uint16_t SaveStagingPosition( uint16_t );
 
+static void InitGameTimer(void);
+static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -234,6 +237,9 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
+	
+	// Initialize game timer
+	InitGameTimer();
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -482,9 +488,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 ****************************************************************************/
 void StartRobotTopSM ( ES_Event CurrentEvent )
 {
-  // if there is more than 1 state to the top level machine you will need 
-  // to initialize the state variable
-	
+	//Initial state
 	// SEE ME
 	CurrentState = WAITING2START;
 	//CurrentState = DRIVING2STAGING;
@@ -550,7 +554,10 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			// check game status bit
 			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
 			{			
-				printf("\r\n start \r\n");
+				//Start game timer
+				SetTimeoutAndStartGameTimer(GameTimeoutMS);
+				printf("START: time 0");
+				
 				// change return event to START to begin the game
 				ReturnEvent.EventType = START;
 			}			
@@ -1050,38 +1057,38 @@ GAME TIMER
 
 static void InitGameTimer() //Wide Timer 1 subtimer B
 {	
-	// start by enabling the clock to the timer (Wide Timer 0)
-	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R0;
+	// start by enabling the clock to the timer (Wide Timer 1)
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R1;
 
 	// kill a few cycles to let the clock get going
-	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R0) != SYSCTL_PRWTIMER_R0){}
+	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R1) != SYSCTL_PRWTIMER_R1){}
 
-	// make sure that timer (Timer A) is disabled before configuring
-	HWREG(WTIMER0_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
+	// make sure that timer (Timer B) is disabled before configuring
+	HWREG(WTIMER1_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
 
 	// set it up in 32bit wide (individual, not concatenated) mode
 	// the constant name derives from the 16/32 bit timer, but this is a 32/64
 	// bit timer so we are setting the 32bit mode
-	HWREG(WTIMER0_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
+	HWREG(WTIMER1_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
 
-	// set up timer A in 1-shot mode so that it disables timer on timeouts
+	// set up timer B in 1-shot mode so that it disables timer on timeouts
 	// first mask off the TAMR field (bits 0:1) then set the value for
 	// 1-shot mode = 0x01
-	HWREG(WTIMER0_BASE+TIMER_O_TBMR) = (HWREG(WTIMER0_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
+	HWREG(WTIMER1_BASE+TIMER_O_TBMR) = (HWREG(WTIMER1_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
 	
 	// set timeout
 	OneShotTimeoutMS = 1000; //arbitrary initialization value
-	HWREG(WTIMER0_BASE+TIMER_O_TBILR) = TicksPerMS*OneShotTimeoutMS;
+	HWREG(WTIMER1_BASE+TIMER_O_TBILR) = TicksPerMS*OneShotTimeoutMS;
 	
 	// enable a local timeout interrupt. TBTOIM = bit 1
-	HWREG(WTIMER0_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
+	HWREG(WTIMER1_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
 
-	// enable the Timer B in Wide Timer 0 interrupt in the NVIC
-	// it is interrupt number 95 so appears in EN2 at bit 31
-	HWREG(NVIC_EN2) |= BIT31HI;
+	// enable the Timer B in Wide Timer 1 interrupt in the NVIC
+	// it is interrupt number 96 so appears in EN3 at bit 0
+	HWREG(NVIC_EN3) |= BIT0HI;
 	
 	// set priority of this timer 
-	HWREG(NVIC_PRI23) |= NVIC_PRI23_INTD_M;
+	HWREG(NVIC_PRI24) |= NVIC_PRI24_INTA_M;
 
 	// make sure interrupts are enabled globally
 	__enable_irq();
@@ -1092,16 +1099,16 @@ static void InitGameTimer() //Wide Timer 1 subtimer B
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS )
 {
 	// set timeout
-	HWREG(WTIMER0_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	HWREG(WTIMER1_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
 	
 	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
-	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
+	HWREG(WTIMER1_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
 }
 
 void GameTimerISR(void)
 {	
 	// clear interrupt
-	HWREG(WTIMER0_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+	HWREG(WTIMER1_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
 	
 	// post event to go into ENDING_STRATEGY state
 	ES_Event PostEvent;
@@ -1110,5 +1117,19 @@ void GameTimerISR(void)
 	
 }
 
+#ifdef TEST
+#include "termio.h"
+#define clrScrn() 	printf("\x1b[2J")
 
+int main(void){
+	
+	// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
+	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN| SYSCTL_XTAL_16MHZ);
+	TERMIO_Init();
+	clrScrn();
+	printf("\r\n Game Timer Test \r\n");
+	InitGameTimer();	
+}
+
+#endif
 /*********************************************************  THE END *************************************************************/
