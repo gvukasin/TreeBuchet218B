@@ -56,6 +56,7 @@
 #include "RobotTopSM.h"
 #include "MotorActionsModule.h"
 #include "IRBeaconModule.h"
+#include "PWMmodule.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -355,10 +356,13 @@ static ES_Event DuringLoadingBall( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // Start spinning flywheel for ball pushing
+			  SetFlyDuty(80);                               //////////////////Change it !!!!!!!!!!!!!!!!!!!!!!!!!
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // Turn off both the pushing flywheel and the separation servo
+			SetServoDuty(0);
+			SetFlyDuty(0);
     }
 		else // do the 'during' function for this state
     {

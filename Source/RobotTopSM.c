@@ -241,8 +241,9 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize game timer
 	InitGameTimer();
 	
-	// Initialize fly wheel pin
-		InitializeAltPWM();
+
+	// Initialize Fly wheel, IR emitter, and servo pwm
+	InitializeAltPWM();
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -689,7 +690,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -700,7 +701,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			PeriodCode = GetStagingAreaCodeArray();
-			printf("\r\nstaging area code=%i\r\n",PeriodCode);
+			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
 			if(PeriodCode != codeInvalidStagingArea)
 			{ 
@@ -824,7 +825,6 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							{	
 								//Go to SHOOTING
 								PostEvent.EventType = CHECK_IN_SUCCESS;
-								//PostEvent.EventParam = CurrentStagingArea;
 								PostRobotTopSM(PostEvent);	
 							}
 							else if (NumberOfCorrectReports == 1)							
