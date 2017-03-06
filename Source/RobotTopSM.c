@@ -133,7 +133,16 @@
 #define code611us (BIT3HI|BIT2HI|BIT0HI) //1101;
 #define code556us (BIT3HI|BIT2HI|BIT1HI) //1110;
 #define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
-#define codeInvalidStagingArea 0xff
+
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
+
+// Invalid frequency code for both staging area and IR
+#define codeInvalidPeriod 0xff
 
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
@@ -703,7 +712,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea)
+			if(PeriodCode != codeInvalidPeriod)
 			{ 
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
@@ -736,7 +745,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							2) it is a valid code 
 				*/
 				newRead = GetStagingAreaCodeArray();
-				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
+				ValidSecondCode = ((newRead != codeInvalidPeriod) & (newRead != PeriodCode));
 			}
 			
 			// (1) REPORT and (2) START TIMER

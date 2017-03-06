@@ -286,6 +286,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								COM_QUERY_RESPONSE, //31
 								COM_GAME_READY,
 								/* Shooting SM events */
+								ALIGNED2BUCKET,
 								READY2SHOOT,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT, //35
