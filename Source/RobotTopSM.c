@@ -75,7 +75,7 @@
 #include <stdio.h>
 #include "termio.h" 
 #define clrScrn() 	printf("\x1b[2J")
-#define TEST
+//#define TEST
 
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
