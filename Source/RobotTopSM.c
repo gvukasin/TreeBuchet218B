@@ -159,7 +159,7 @@ static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
 static void InitializeTeamButtonsHardware(void);
-static uint16_t SaveStagingPosition( uint16_t );
+//static uint16_t SaveStagingPosition( uint16_t );
 
 static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
@@ -241,6 +241,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize game timer
 	InitGameTimer();
 	
+
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
 
@@ -511,6 +512,17 @@ bool GetTeamColor()
 {
 	return TeamColor;
 }
+
+
+/******************************************************************
+Function 
+	GetCurrentStagingArea
+************************************************************************/       
+uint8_t GetCurrentStagingAreaPosition()
+{
+	return CurrentStagingArea ;
+}
+
 
 /***************************************************************************
  private functions
@@ -793,7 +805,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 						{
 							
 							// record current driving stage (we will need next staging area too to know which direction to drive in!)
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
 							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = START;
@@ -807,13 +819,12 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							NumberOfCorrectReports++;
 							
 							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
 							
 							if (NumberOfCorrectReports == 2)
 							{	
 								//Go to SHOOTING
 								PostEvent.EventType = CHECK_IN_SUCCESS;
-								//PostEvent.EventParam = 
 								PostRobotTopSM(PostEvent);	
 							}
 							else if (NumberOfCorrectReports == 1)							
@@ -872,8 +883,8 @@ static ES_Event DuringShooting( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // run any lower level state machine
-        ReturnEvent = RunShootingSM(Event);  // I THINK THIS WILL WORK??????????????????
+			// run any lower level state machine
+        ReturnEvent = RunShootingSM(Event);  
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -1014,44 +1025,47 @@ static void InitializeTeamButtonsHardware(void)
 /****************************************************************************
  SaveStagingPosition
 ****************************************************************************/
-static uint16_t SaveStagingPosition( uint16_t StatusResponse ){
-	// set staging area variable from status bytes if we are Red team
-	uint16_t TheGoal = 0;
+uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
+{
 	
-						if(TeamColor == RED){
-							if((StatusResponse & R1) == R1){
-								// set current staging area variable to R1	
-								TheGoal = 1;
-								
-							} else if (StatusResponse & R2){
-								
-								// set current staging area variable to R2
-								TheGoal = 2;
-								
-							} else if (StatusResponse & R3) {
-								
-								// set current staging area variable to R3
-								TheGoal = 3;
-							}
-							
-						// set staging area variable from status bytes if we are Green team
-						} else {
-							if((StatusResponse & G1) == G1){
-								// set current staging area variable to G1	
-								TheGoal = 1;
-								
-							} else if (StatusResponse & G2){
-								
-								// set current staging area variable to G2
-								TheGoal = 2;
-								
-							} else if (StatusResponse & G3) {
-								
-								// set current staging area variable to G3
-								TheGoal = 3;
-							}
-						}
-						return TheGoal;
+	// set staging area variable from status bytes if we are Red team
+	uint16_t ReturnPosition = 0;
+	
+	if(TeamColor == RED){
+		
+		if((StatusResponse & R1) == R1){
+			// set current staging area variable to R1	
+			ReturnPosition = 1;
+			
+		} else if (StatusResponse & R2){
+			
+			// set current staging area variable to R2
+			ReturnPosition = 2;
+			
+		} else if (StatusResponse & R3) {
+			
+			// set current staging area variable to R3
+			ReturnPosition = 3;
+		}
+		
+	// set staging area variable from status bytes if we are Green team
+	} else {
+		if((StatusResponse & G1) == G1){
+			// set current staging area variable to G1	
+			ReturnPosition = 1;
+			
+		} else if (StatusResponse & G2){
+			
+			// set current staging area variable to G2
+			ReturnPosition = 2;
+			
+		} else if (StatusResponse & G3) {
+			
+			// set current staging area variable to G3
+			ReturnPosition = 3;
+		}
+	}
+	return ReturnPosition;
 }
 
 /****************************************************************************
