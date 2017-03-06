@@ -485,11 +485,6 @@
               <FilePath>.\Source\ADMulti.c</FilePath>
             </File>
             <File>
-              <FileName>IRBeaconModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\IRBeaconModule.c</FilePath>
-            </File>
-            <File>
               <FileName>LEDModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\LEDModule.c</FilePath>
@@ -513,6 +508,11 @@
               <FileName>ShiftRegisterWrite.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
+            </File>
+            <File>
+              <FileName>IRBeaconModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\IRBeaconModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1482,11 +1482,6 @@
               <FilePath>.\Source\ADMulti.c</FilePath>
             </File>
             <File>
-              <FileName>IRBeaconModule.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\IRBeaconModule.c</FilePath>
-            </File>
-            <File>
               <FileName>LEDModule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\LEDModule.c</FilePath>
@@ -1510,6 +1505,11 @@
               <FileName>ShiftRegisterWrite.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\ShiftRegisterWrite.c</FilePath>
+            </File>
+            <File>
+              <FileName>IRBeaconModule.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\IRBeaconModule.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1854,11 +1854,5 @@
       </Groups>
     </Target>
   </Targets>
-
-  <RTE>
-    <apis/>
-    <components/>
-    <files/>
-  </RTE>
 
 </Project>
