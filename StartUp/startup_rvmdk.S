@@ -88,6 +88,7 @@ __heap_limit
 		EXTERN StagingAreaISR
 		EXTERN OneShotISR
 		EXTERN GameTimerISR
+		EXTERN GetAwayISR
 
 ;******************************************************************************
 ;
@@ -213,7 +214,7 @@ __Vectors
         DCD     IntDefaultHandler		    ; Wide Timer 2 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 2 subtimer B
         DCD     InputCaptureForBackIRDetection ; Wide Timer 3 subtimer A
-        DCD     IntDefaultHandler           ; Wide Timer 3 subtimer B
+        DCD     GetAwayISR           ; Wide Timer 3 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 4 subtimer A
         DCD     IntDefaultHandler           ; Wide Timer 4 subtimer B
         DCD     IntDefaultHandler           ; Wide Timer 5 subtimer A

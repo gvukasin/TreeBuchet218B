@@ -45,9 +45,9 @@
 #define SCLK_HI BIT1HI
 #define SCLK_LO BIT1LO
 
-#define RCLK GPIO_PIN_2
-#define RCLK_LO BIT2LO
-#define RCLK_HI BIT2HI
+#define RCLK GPIO_PIN_3
+#define RCLK_LO BIT3LO
+#define RCLK_HI BIT3HI
 
 #define GET_MSB_IN_LSB(x) ((x & 0x80)>>7)
 #define ALL_BITS (0xff<<2)

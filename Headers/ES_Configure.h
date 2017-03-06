@@ -277,6 +277,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								HALL_EFFECT_EDGE,
 								QUERY_AGAIN,
 								REPORT_SECOND_TIME,
+								RESTART_HALL_EFFECT,
 								/* Robot and LOC com. exchange events */
 								TEAM_COLOR, //26
 								ROBOT_STATUS,

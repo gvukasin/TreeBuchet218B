@@ -163,6 +163,8 @@ static void InitializeTeamButtonsHardware(void);
 
 static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
+static void InitGetAwayTimer(void);
+static void SetGetAwayTimer(uint32_t);
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -192,6 +194,8 @@ static uint8_t NumberOfCorrectReports = 0;
 static uint8_t newRead;
 static bool ValidSecondCode = 1;
 static uint32_t OneShotTimeoutMS;
+static uint16_t LastPeriodCode;
+static uint16_t GetAwayTimeoutMS = 500;
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -231,6 +235,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize hardware for IR but not kicking the timer off 
 	InitInputCaptureForFrontIRDetection();
+	InitInputCaptureForBackIRDetection();
 	
 	// Initialize stage area frequency reading
 	InitStagingAreaISR();
@@ -238,9 +243,11 @@ bool InitRobotTopSM ( uint8_t Priority )
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
 	
-	// Initialize game timer
+	// Initialize game timer,  one-shot
 	InitGameTimer();
 	
+	// Initialize get away one-shot timer
+	InitGetAwayTimer();
 
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
@@ -318,7 +325,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // During function
 			 // printf("\r\n current event: %i",CurrentEvent.EventType);
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 // Process events			 
+			 // Process events		
+				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
 					 //printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
@@ -337,7 +345,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				printf("\r\n checking in \r\n");
+				printf("\r\n checking in %i \r\n",CurrentEvent.EventType);
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -619,7 +627,12 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     {
 			// Stop the motor
 			stop();
-    }
+    } 
+//		else if (Event.EventType == RESTART_HALL_EFFECT) {
+//			
+//			// disable hall effect interrupt 
+//			
+//		}
 		
 		// do the 'during' function for this state
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
@@ -703,8 +716,12 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea)
+			if(PeriodCode != codeInvalidStagingArea && PeriodCode != LastPeriodCode)
 			{ 
+				// save last period code 
+				LastPeriodCode = PeriodCode;
+				
+				// post to Top SM
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
@@ -796,7 +813,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
 							
 							//Try reporting again
-							PostEvent.EventType = STATION_REACHED;
+							PostEvent.EventType = STATION_REACHED; // SEE ME - should change to something besides station reached
 							PostRobotTopSM(PostEvent);
 						}
 						
@@ -1128,6 +1145,70 @@ void GameTimerISR(void)
 	HWREG(WTIMER1_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
 	
 	// post event to go into ENDING_STRATEGY state
+	ES_Event PostEvent;
+	PostEvent.EventType = RESTART_HALL_EFFECT;
+	PostRobotTopSM(PostEvent);
+	
+}
+/****************************************************************************
+GETAWAY STAGING TIMER 
+****************************************************************************/
+
+static void InitGetAwayTimer() //Wide Timer 3 subtimer B
+{	
+	// start by enabling the clock to the timer (Wide Timer 3)
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R2;
+
+	// kill a few cycles to let the clock get going
+	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R3) != SYSCTL_PRWTIMER_R3){}
+
+	// make sure that timer (Timer B) is disabled before configuring
+	HWREG(WTIMER3_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
+
+	// set it up in 32bit wide (individual, not concatenated) mode
+	// the constant name derives from the 16/32 bit timer, but this is a 32/64
+	// bit timer so we are setting the 32bit mode
+	HWREG(WTIMER3_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
+
+	// set up timer B in 1-shot mode so that it disables timer on timeouts
+	// first mask off the TAMR field (bits 0:1) then set the value for
+	// 1-shot mode = 0x01
+	HWREG(WTIMER3_BASE+TIMER_O_TBMR) = (HWREG(WTIMER3_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
+	
+	// set timeout
+	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GetAwayTimeoutMS;
+	
+	// enable a local timeout interrupt. TBTOIM = bit 1
+	HWREG(WTIMER3_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
+
+	// enable the Timer B in Wide Timer 3 interrupt in the NVIC
+	// it is interrupt number 101 so appears in EN3 at bit 5
+	HWREG(NVIC_EN3) |= BIT5HI;
+	
+	// set priority of this timer B of 25
+	HWREG(NVIC_PRI25) |= NVIC_PRI25_INTB_M;
+
+	// make sure interrupts are enabled globally
+	__enable_irq();
+	
+	printf("\r\n Get Away TIMER init done \r\n");
+}
+
+static void SetGetAwayTimer( uint32_t GameTimerTimeoutMS )
+{
+	// set timeout
+	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	
+	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
+	HWREG(WTIMER3_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
+}
+
+void GetAwayISR(void)
+{	
+	// clear interrupt
+	HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+	
+	// post event to re-enable isr for hall effect sensor 
 	ES_Event PostEvent;
 	PostEvent.EventType = FINISH_STRONG;
 	PostRobotTopSM(PostEvent);
