@@ -42,8 +42,19 @@ Events to post:
 
 
 /*---------------------------- Module Variables ---------------------------*/
-static uint16_t IRSignalCode;
-static uint16_t IRSignalPeriod_Tolerance = 10;
+// For IR Signal Frequency Capture
+static uint16_t Front_IRSignalCode;
+static uint16_t Front_IRSignalCode_Tolerance = 10;
+static uint32_t Front_LastEdge;
+static uint32_t Front_CurrentEdge;
+static uint32_t Front_MeasuredIRSignalPeriod;
+static uint8_t Front_counter = 0;
+static int Front_IRSignalPeriod = 0;
+static int Front_IRSignalPeriodAddition = 0;
+static uint16_t Front_PeriodBuffer[5];
+static int SampleSize = 5;
+static uint8_t CaptureIndex = 0;
+
 // Valid periods from IR beacons in us
 // 455 us -> 2200 Hz (Green nav beacon)
 // 513 us -> 1950 Hz (Red supply depot)
@@ -51,18 +62,6 @@ static uint16_t IRSignalPeriod_Tolerance = 10;
 // 690 us -> 1450 Hz (Bucket nav beacon)
 // 800 us -> 1250 Hz (Green supply depot)
 static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
-
-static uint16_t PeriodBuffer[10];
-static uint8_t CaptureIndex = 0;
-
-// For IR Signal Frequency Capture
-static uint32_t LastEdge;
-static uint32_t CurrentEdge;
-static uint32_t MeasuredIRSignalPeriod;
-static uint8_t counter = 0;
-static int IRSignalPeriod = 0;
-static int IRSignalPeriodAddition = 0;
-static int SampleSize = 10;
 
 /*------------------------------ Module Code ------------------------------*/
 
@@ -197,24 +196,24 @@ uint8_t GetIRCode( void )
 {
 	uint8_t IRFreqCode;
 	
-	if ( (IRSignalPeriod < (ValidIRSignalPeriods[0] + IRSignalPeriod_Tolerance)) && (IRSignalPeriod > (ValidIRSignalPeriods[4] - IRSignalPeriod_Tolerance)) ){
-		if ( (IRSignalPeriod > (ValidIRSignalPeriods[0] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[0] + IRSignalPeriod_Tolerance)) ){
+	if ( (IRSignalPeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) && (IRSignalPeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) ){
+		if ( (IRSignalPeriod > (ValidIRSignalPeriods[0] - Front_IRSignalCode_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) ){
 			IRFreqCode = code455us;
 		}
 
-		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[1] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[1] + IRSignalPeriod_Tolerance)) ){
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[1] - Front_IRSignalCode_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[1] + Front_IRSignalCode_Tolerance)) ){
 			IRFreqCode = code513us;
 		}
 
-		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[2] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[2] + IRSignalPeriod_Tolerance)) ){
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[2] - Front_IRSignalCode_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[2] + Front_IRSignalCode_Tolerance)) ){
 			IRFreqCode = code588us;
 		}
 
-		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[3] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[3] + IRSignalPeriod_Tolerance)) ){
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[3] - Front_IRSignalCode_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[3] + Front_IRSignalCode_Tolerance)) ){
 			IRFreqCode = code690us;
 		}
 
-		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[4] - IRSignalPeriod_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[4] + IRSignalPeriod_Tolerance)) ){
+		else if ( (IRSignalPeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) && (IRSignalPeriod < (ValidIRSignalPeriods[4] + Front_IRSignalCode_Tolerance)) ){
 			IRFreqCode = code800us;
 		}
 	}

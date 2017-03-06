@@ -51,22 +51,19 @@ Events to post:
 #define codeInvalidStagingArea 0xff
 
 /*---------------------------- Module Variables ---------------------------*/
-//static ES_Event HallEffectEdgeDetected;
+// For Staging Area Frequency Capture
 static uint16_t StagingAreaCode;
 static uint16_t StagingAreaPeriod_Tolerance = 10;
-static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
-
-static uint16_t PeriodBuffer[10];
-static uint8_t CaptureIndex = 0;	
-
-// For Staging Area Frequency Capture
 static uint32_t LastEdge;
 static uint32_t CurrentEdge;
 static uint32_t MeasuredStagingAreaPeriod;
 static uint8_t counter = 0;
-static int StagingAreaPeriod = 0;
-static int StagingAreaPeriodAddition = 0;
+// static int StagingAreaPeriod = 0; // Can use this to make period calculation more robust
+// static int StagingAreaPeriodAddition = 0; // Can use this to make period calculation more robust
+static uint16_t PeriodBuffer[10];
 static int SampleSize = 10;
+static uint8_t CaptureIndex = 0;
+static uint16_t StagingAreaPeriods[16] = {1333, 1277, 1222, 1166, 1111, 1055, 1000, 944, 889, 833, 778, 722, 667, 611, 556, 500};
 
 /*---------------------------- Module Functions ---------------------------*/
 
@@ -215,8 +212,11 @@ void StagingAreaISR( void )
 //		counter = 0;
 //  }
 	
-	//StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
-	//StagingAreaPeriod = StagingAreaPeriodAddition;
+	// SEE ME
+	// Running average calculation. Can use this to make calculation more robust
+	// StagingAreaPeriodAddition  = (90*StagingAreaPeriodAddition + 10*MeasuredStagingAreaPeriod)/100;
+	// StagingAreaPeriod = StagingAreaPeriodAddition;
+
 }
 
 /****************************************************************************
