@@ -14,7 +14,7 @@
 
 // typedefs for the states
 // State definitions for use with the query function
-typedef enum { CALIBRATING, LOADING_BALL, WATING4SHOT_COMPLETE } ShootingState_t ;
+typedef enum { LOOKING4GOAL, CALIBRATING, LOADING_BALL, WATING4SHOT_COMPLETE } ShootingState_t ;
 
 // Public Function Prototypes
 

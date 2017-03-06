@@ -283,7 +283,6 @@ typedef enum {  ES_NO_EVENT = 0,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
 								COM_STATUS,
-								//COM_FREQ_REPORT, 
 								COM_QUERY_RESPONSE, //31
 								COM_GAME_READY,
 								/* Shooting SM events */
