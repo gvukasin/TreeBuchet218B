@@ -32,7 +32,7 @@ Events to post:
 #define TicksPerMS 40000
 
 // staging area frequency codes
-#define code1333us 0 //0000
+#define code1333us (BIT0LO) //0000;
 #define code1277us (BIT0HI) //0001;
 #define code1222us (BIT1HI) //0010;
 #define code1166us (BIT1HI|BIT0HI) //0011;
