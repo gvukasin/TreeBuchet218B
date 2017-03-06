@@ -19,6 +19,6 @@ bool PostActionService(ES_Event ThisEvent);
 ES_Event RunActionService(ES_Event ThisEvent);	
 void OneShotISR(void);
 void InputCaptureForIRDetectionResponse(void);
-void EnableIRInterrupt(void);
+void EnableFrontIRInterrupt(void);
 
 #endif /* ActionService_H */

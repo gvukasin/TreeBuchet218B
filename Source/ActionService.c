@@ -123,7 +123,7 @@ static ES_Event SPIEvent;
 	InitializePWM();
 	 
 	// Initialize Interrupts
-	InitInputCaptureForIRDetection();
+	InitInputCaptureForFrontIRDetection();
 	InitOneShotISR();
 	
 	// Initialize last event parameter to 0
@@ -249,7 +249,7 @@ ES_Event RunActionService(ES_Event ThisEvent)
 			//Case 10
 			case ALIGN_BEACON:
 				rotate2beacon();
-				EnableIRInterrupt();
+				EnableFrontIRInterrupt();
 				break;
 			
 			//Case 11

@@ -259,7 +259,7 @@ static ES_Event DuringCalibrating( ES_Event Event)
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-			  EnableIRInterrupt();
+			  EnableFrontIRInterrupt();
 			
 			  // Start Rotating
 			  start2rotate(CCW,80);
@@ -275,7 +275,7 @@ static ES_Event DuringCalibrating( ES_Event Event)
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
     {
         // Read the detected IR frequency
-			  uint8_t MeasuredIRFreqCode = GetIRCode();
+			  uint8_t MeasuredIRFreqCode = Front_GetIRCodeArray();
 			
 				// Get desired IR frequency from LOC
 				ES_Event QueryEvent;

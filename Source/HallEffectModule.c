@@ -192,7 +192,7 @@ void StagingAreaISR( void )
 	PeriodBuffer[counter] = MeasuredStagingAreaPeriod;
 	
 	//Move to the next element the next time
-	counter ++;
+	counter++;
 		
 	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
 	// Update it every 10 interrupts
@@ -330,6 +330,24 @@ void StagingAreaISR( void )
 //	return StagingAreaCode;
 //}
 
+/****************************************************************************
+ Function
+    GetStagingAreaCodeSingle
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+
 uint8_t GetStagingAreaCodeSingle( uint16_t thePeriod )
 {
 		if( (thePeriod < (StagingAreaPeriods[0] + StagingAreaPeriod_Tolerance)) && (thePeriod > (StagingAreaPeriods[15] - StagingAreaPeriod_Tolerance)) ){
@@ -422,6 +440,24 @@ uint8_t GetStagingAreaCodeSingle( uint16_t thePeriod )
 	return StagingAreaCode;
 }
 
+/****************************************************************************
+ Function
+    GetStagingAreaCodeArray
+
+ Parameters
+   ES_Event : the event to process
+
+ Returns
+   ES_Event, ES_NO_EVENT if no error ES_ERROR otherwise
+
+ Description
+   add your description here
+ Notes
+   uses nested switch/case to implement the machine.
+ Author
+   J. Edward Carryer, 01/15/12, 15:23
+****************************************************************************/
+
 uint8_t GetStagingAreaCodeArray(void){
 	uint8_t i = 0;
 	uint8_t returnCode = GetStagingAreaCodeSingle(PeriodBuffer[0]);
@@ -435,4 +471,3 @@ uint8_t GetStagingAreaCodeArray(void){
 	
 	return returnCode;
 }
-

@@ -227,7 +227,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 	InitRLCSensor();
 	
 	// Initialize hardware for IR but not kicking the timer off 
-	InitInputCaptureForIRDetection();
+	InitInputCaptureForFrontIRDetection();
 	
 	// Initialize stage area frequency reading
 	InitStagingAreaISR();
@@ -705,7 +705,6 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
 			// This won't be run if we just want to query again about the same report
-			
 			ValidSecondCode = 1;
 			
 			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
