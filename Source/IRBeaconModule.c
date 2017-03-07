@@ -75,7 +75,7 @@ static uint8_t CaptureIndex = 0;
 // 588 us -> 1700 Hz (Red nav beacon)
 // 690 us -> 1450 Hz (Bucket nav beacon)
 // 800 us -> 1250 Hz (Green supply depot)
-static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
+static uint16_t ValidIRSignalPeriods[5] = {800, 690, 588, 513, 455};
 
 /*------------------------------ Module Code ------------------------------*/
 
