@@ -744,7 +744,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 	/***********************************************************************************/
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
-			// This won't be run if we just want to query again about the same report
+			// ENTRY won't be run if we just want to query again about the same report
+			
+			// Valid second code defaults to 1
 			ValidSecondCode = 1;
 			
 			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
@@ -754,6 +756,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							2) it is a valid code 
 				*/
 				newRead = GetStagingAreaCodeArray();
+				
+				// this bool will be 0 if the second freq we've read doesn't fulfill both conditions
 				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
 			}
 			
@@ -789,7 +793,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			{
 
 				/* (3) If there has been a timeout -which means the reporting process 
-							 has had time to be completed- Query until LOC returns a Response Ready */
+							 has had time to be completed- QUERY until LOC returns a Response Ready */
 				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 				{
 					printf("\r\n ROBOT_QUERY to SPI\r\n");
