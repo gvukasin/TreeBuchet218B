@@ -370,10 +370,6 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
-						 case FINISH_STRONG :
-							 NextState = ENDING_STRATEGY;
-							 MakeTransition = true;
-							 break;	
 						case START :
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
