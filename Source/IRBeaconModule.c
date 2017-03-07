@@ -31,6 +31,7 @@ Events to post:
 #define BitsPerNibble 4
 #define numbNibblesShifted 6
 #define pinC6Mask 0xf0ffffff
+#define pinD2Mask 0xfffff0ff
 
 // IR frequency codes
 #define code800us 0x00 // 1250Hz (Green supply depot)
@@ -189,12 +190,12 @@ void InitInputCaptureForBackIRDetection( void )
 	HWREG(GPIO_PORTD_BASE + GPIO_O_AFSEL) |= BIT2HI;
 	
 	//map bit 2's alternate function to WT1CCP0
-	HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTC_BASE + GPIO_O_PCTL) & pinC6Mask) + (7 << (BitsPerNibble*2));
+	HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) & pinD2Mask) + (7 << (BitsPerNibble*2));
 	
-	//Enable pin 6 on Port C for digital I/O
+	//Enable pin 2 on Port D for digital I/O
 	HWREG(GPIO_PORTD_BASE + GPIO_O_DEN) |= BIT2HI;
 	
-	//make pin 6 on Port C into an input
+	//make pin 2 on Port D into an input
 	HWREG(GPIO_PORTD_BASE + GPIO_O_DIR) &= BIT2LO;
 	
 	//Enable a local capture interrupt
