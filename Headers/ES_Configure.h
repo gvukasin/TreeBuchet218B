@@ -289,8 +289,11 @@ typedef enum {  ES_NO_EVENT = 0,
 								/* Shooting SM events */
 								//ALIGNED2BUCKET,
 								//READY2SHOOT,
+								LOOK4GOAL_AGAIN,
 								BALL_FLYING,
-								SHOOTING_TIMEOUT, //35
+								KEEP_WAITING4SHOT,
+								FINISHED_SHOT,
+								//SHOOTING_TIMEOUT, //35
 								/* SPI Event*/
 								EOTEvent
                 } ES_EventTyp_t ;

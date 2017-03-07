@@ -24,5 +24,8 @@ bool GetTeamColor(void);
 void GameTimerISR(void);
 uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse );
 uint8_t GetCurrentStagingAreaPosition(void);
+void EnableGetAwayTimer( uint16_t GetAwayTimeoutMS);
+void GetAwayISR();
+
 
 #endif /*TopHSMTemplate_H */

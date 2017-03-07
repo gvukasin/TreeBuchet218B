@@ -342,11 +342,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-<<<<<<< HEAD
+
 				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
-=======
-				if ((CurrentEvent.EventType == ES_TIMEOUT) && (CurrentEvent.EventParam == WireFollow_TIMER))
->>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 				{
 					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
@@ -377,15 +374,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
-<<<<<<< HEAD
-						 case FINISH_STRONG :
-							 NextState = ENDING_STRATEGY;
-							 MakeTransition = true;
-							 break;	
+
 						case KEEP_DRIVING :
-=======
-						case START :
->>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -525,32 +515,10 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
   return;
 }
 
-
-<<<<<<< HEAD
-/******************************************************************
-Function 
-	GetTeamColor
-************************************************************************/
-bool GetTeamColor()
-{
-	return TeamColor;
-}
-
-
-/******************************************************************
-Function 
-	GetCurrentStagingArea
-************************************************************************/       
-uint8_t GetCurrentStagingAreaPosition()
-{
-	return CurrentStagingArea ;
-}
-
 /***************************************************************************
  private functions
  ***************************************************************************/
-=======
->>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
+
 /****************************************************************************
 During Functions:
 
@@ -826,6 +794,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
     else if ( Event.EventType == ES_EXIT)
     {
     }
+		
 		/***********************************************************************************/
 		// DURING
 		/***********************************************************************************/
@@ -943,15 +912,11 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-<<<<<<< HEAD
-			
-        //Yellow LEDs ON to signal shooting is going to start
-=======
+
         //Set shooting flag to true
 				ShootingFlag = 1;
 			
 			  //Yellow LEDs ON to signal shooting is going to start
->>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
