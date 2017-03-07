@@ -36,6 +36,7 @@
 */
 #include "ES_Configure.h"
 #include "ES_Framework.h"
+
 #include "RobotTopSM.h"
 #include "ShootingSubSM.h"
 #include "SPIService.h"
@@ -58,6 +59,8 @@
 #include "inc/hw_types.h"
 #include "inc/hw_gpio.h"
 #include "inc/hw_sysctl.h"
+#include "inc/hw_nvic.h"
+#include "inc/hw_timer.h"
 
 // the headers to access the TivaWare Library
 #include "driverlib/sysctl.h"
@@ -72,11 +75,16 @@
 #include <stdio.h>
 #include "termio.h" 
 #define clrScrn() 	printf("\x1b[2J")
-
+//#define TEST
 
 /*----------------------------- Module Defines ----------------------------*/
 #define RED_BUTTON BIT4HI
 #define ALL_BITS (0xff<<2)
+
+// using 40 MHz clock
+#define TicksPerMS 40000
+
+#define GameTimeoutMS 120000 //2min
 
 #define RED 0
 #define GREEN 1
@@ -92,18 +100,18 @@
 #define RESPONSE_NOT_READY 0xAA00
 #define RESPONSE_READY_MASK 0xff00
 
-// status byte 2 and 3 masks
+// report status byte masks
 #define ACK1_HI BIT15HI
 #define ACK0_HI BIT14HI
 #define ACK1_LO BIT15LO
 #define ACK0_LO BIT14LO
 
 // status byte 1 masks
-#define G1 BIT12HI
+#define G1 BIT12HI //GREEN goal #i
 #define G2 BIT13HI
 #define G3 (BIT12HI | BIT13HI)
 #define G_ALL_GOALS BIT14HI
-#define R1 BIT8HI
+#define R1 BIT8HI //RED goal #i
 #define R2 BIT9HI
 #define R3 (BIT8HI | BIT9HI)
 #define R_ALL_GOALS BIT10HI
@@ -130,12 +138,12 @@
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
-#define WireFollow_TIME ONE_SEC/10
+#define WireFollow_TIME ONE_SEC/50
 #define PWMOffset 70
-#define PWMProportionalGain 0.08
-#define PWMDerivativeGain 0.01
-#define NoWireDetectedReading_Lo 1915
-#define NoWireDetectedReading_Hi 1925
+#define PWMProportionalGain 0.15 //0.10
+#define PWMDerivativeGain 0.1
+#define NoWireDetectedReading 2000
+// Good try: Timer=1/50s, offset=70, Propertional=0.15, Derivative=0.1
 
 // MotorActionDefines
 #define FORWARD 1
@@ -152,8 +160,12 @@ static ES_Event DuringEndingStrategy( ES_Event Event);
 static ES_Event DuringStop( ES_Event Event);
 
 static void InitializeTeamButtonsHardware(void);
-static uint16_t SaveStagingPosition( uint16_t );
+//static uint16_t SaveStagingPosition( uint16_t );
 
+static void InitGameTimer(void);
+static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
+static void InitGetAwayTimer(void);
+static void EnableGetAwayTimer(void);
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -163,11 +175,13 @@ static RobotState_t CurrentState;
 static uint8_t MyPriority;
 static uint16_t PeriodCode;
 static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] = Right Sensor Reading
+static int RLCReading_Left;
+static int RLCReading_Right;
 static int PositionDifference;
+static int LastPositionDifference = 0;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
-static bool DoFirstTimeFlag;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -178,7 +192,14 @@ static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
 static uint16_t PeriodCodeCounter = 0;
 static uint16_t MaxPeriodCodeCount = 5;
-static uint8_t NumberOfReports = 0;
+static uint8_t NumberOfCorrectReports = 0;
+static uint8_t newRead;
+static bool ValidSecondCode = 1;
+static uint32_t OneShotTimeoutMS;
+static uint16_t LastPeriodCode;
+static uint16_t GetAwayTimeoutMS = 100;
+static bool HallEffectFlag = 0;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -216,13 +237,24 @@ bool InitRobotTopSM ( uint8_t Priority )
 	InitRLCSensor();
 	
 	// Initialize hardware for IR but not kicking the timer off 
-	InitInputCaptureForIRDetection();
+	InitInputCaptureForFrontIRDetection();
+	printf("\r\n thru inits");
+	InitInputCaptureForBackIRDetection();
 	
 	// Initialize stage area frequency reading
 	InitStagingAreaISR();
 	
 	// Initialize 200ms timer for handshake
 	ES_Timer_SetTimer(FrequencyReport_TIMER, Time4FrequencyReport);
+	
+	// Initialize game timer,  one-shot
+	InitGameTimer();
+	
+	// Initialize get away one-shot timer
+	InitGetAwayTimer();
+
+	// Initialize Fly wheel, IR emitter, and servo pwm
+	InitializeAltPWM();
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -295,12 +327,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 // printf("\r\n current event: %i",CurrentEvent.EventType);
+			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 // Process events			 
+			 // Process events		
+				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
-					 //printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
+					 printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
 					 NextState = CHECKING_IN;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -316,7 +349,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				printf("\r\n checking in \r\n");
+				printf("\r\n checking in %i \r\n",CurrentEvent.EventType);
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -342,9 +375,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						case START :
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
-							 break;						 
+							 break;		
+						case REPORT_SECOND_TIME: // External self transition
+							 NextState = CHECKING_IN;
+							 MakeTransition = true;
+							 break;	
 						 default:
-							 if(ES_ENTRY|ES_EXIT){}
+							 if(ES_ENTRY|ES_EXIT){} //SEE ME: This might actually throw an error (Elena). And it's in other states too
 							 else
 								printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
 					}
@@ -467,12 +504,10 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 ****************************************************************************/
 void StartRobotTopSM ( ES_Event CurrentEvent )
 {
-  // if there is more than 1 state to the top level machine you will need 
-  // to initialize the state variable
-	
+	//Initial state
 	// SEE ME
-	//CurrentState = WAITING2START;
-	CurrentState = DRIVING2STAGING;
+	CurrentState = WAITING2START;
+	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
   RunRobotTopSM(CurrentEvent);
@@ -488,6 +523,17 @@ bool GetTeamColor()
 {
 	return TeamColor;
 }
+
+
+/******************************************************************
+Function 
+	GetCurrentStagingArea
+************************************************************************/       
+uint8_t GetCurrentStagingAreaPosition()
+{
+	return CurrentStagingArea ;
+}
+
 
 /***************************************************************************
  private functions
@@ -520,7 +566,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				PostSPIService(PostEvent);
 				
 				//Turn on TeamColor LEDs
-				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);		
+				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);	
+
+				//printf("\r\n Team Color (1 red): %i", TeamColor);
 				
     }
     else if ( Event.EventType == ES_EXIT )
@@ -534,7 +582,10 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			// check game status bit
 			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
 			{			
-				printf("\r\n start \r\n");
+				//Start game timer
+				SetTimeoutAndStartGameTimer(GameTimeoutMS);
+				printf("START: time 0");
+				
 				// change return event to START to begin the game
 				ReturnEvent.EventType = START;
 			}			
@@ -575,54 +626,81 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
-			EnableStagingAreaISR();
+			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
+				// Clear flag
+				HallEffectFlag = 0;
+				printf("\r\n clear flag ");
+				
+			} else {
+				// enable Hall Effect Interrupt
+				EnableStagingAreaISR(1);
+				printf("\r\n en hall int");
+			}
     }
     else if ( Event.EventType == ES_EXIT )
     {
-			// Stop the motor
-			stop();
+			// SEE ME: commented this out because we do not want to stop the motors at a staging area we are not sure is correct
+			// Stop the motor 
+			//stop();
+			
+			// instead, drive straight
+			driveSeperate(70,70,FORWARD);
     }
 		
 		// do the 'during' function for this state
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
     {
 			// Read the RLC sensor values
-			// Positive when too left, negative when too right
 			ReadRLCSensor(RLCReading);
-			PositionDifference = RLCReading[1] - RLCReading[0];
-			PositionDifference_dt = PositionDifference/WireFollow_TIME;
+			RLCReading_Right = RLCReading[1];
+			RLCReading_Left = RLCReading[0];
+			// Positive when too left (right at higher voltage)
+			// Negative when too right (left at higher ovltage)
+			PositionDifference = RLCReading_Right - RLCReading_Left;
+			PositionDifference_dt = (PositionDifference - LastPositionDifference);
+			LastPositionDifference = PositionDifference;
 			
 			// Set flags to determine if either side is on the wire
 			// Check if left side is on the wire
-			if ( (RLCReading[1] < (float)NoWireDetectedReading_Hi) && (RLCReading[1] > (float)NoWireDetectedReading_Lo) ){
+			// SEE ME
+			if ( RLCReading_Left > (int)NoWireDetectedReading ){
 				CheckOnWireFlag_Left = 1;
 			}
 			else{
 				CheckOnWireFlag_Left = 0;
 			}
 			// Check if right side is on the wire
-			if ( (RLCReading[0] < (float)NoWireDetectedReading_Hi) && (RLCReading[0] > (float)NoWireDetectedReading_Lo) ){
+			if ( RLCReading_Right > (int)NoWireDetectedReading ){
 				CheckOnWireFlag_Right = 1;
 			}
 			else{
 				CheckOnWireFlag_Right = 0;
 			}
 			
+			// P Control
+//			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+//			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+//			//printf("\r\n R,L: %i,%i",PWMLeft, PWMRight);
+			
+			
+			// SEE ME
+
 			// PD Control
 			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
 			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
 			
+			// SEE ME
 			// If either side is on the wire, check if either side is off the wire
 			// Then, if either side is off the wire, turn off the side that is on the wire
 			if ( CheckOnWireFlag_Left || CheckOnWireFlag_Right )
 			{
 				// If left side is off the wire, turn off the right motor
-				if ( ~CheckOnWireFlag_Left ){
+				if ( CheckOnWireFlag_Left == 0 ){
 					// turn right wheel off
 					PWMRight = 0;
 				}
 				// If right side is off the wire, turn off the left motor
-				else if ( CheckOnWireFlag_Right ){
+				else if ( CheckOnWireFlag_Right == 0 ){
 					// turn left wheel off
 					PWMLeft = 0;
 				}
@@ -641,7 +719,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight);
+			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -652,10 +730,14 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Check if a staging area has been reached
 			PeriodCode = GetStagingAreaCodeArray();
-			printf("\r\nstaging area code=%i\r\n",PeriodCode);
+			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea)
+			if(PeriodCode != codeInvalidStagingArea && PeriodCode != LastPeriodCode)
 			{ 
+				// save last period code 
+				LastPeriodCode = PeriodCode;
+				
+				// post to Top SM
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
@@ -676,15 +758,40 @@ static ES_Event DuringCheckIn( ES_Event Event)
 	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-      // Check Ball count  
-			//			PostEvent.EventType = ROBOT_STATUS;
-			//			PostSPIService(PostEvent);
-			//			if (TeamColor == RED)
+    { 
+			// This won't be run if we just want to query again about the same report
+			ValidSecondCode = 1;
+			
+			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
+			{
+				/* Before reporting the second new read period we must check that:
+							1) it is different to the previous one 
+							2) it is a valid code 
+				*/
+				newRead = GetStagingAreaCodeArray();
+				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
+			}
+			
+			// (1) REPORT and (2) START TIMER
+			if (ValidSecondCode) //report the second time ONLY if the code is incorrect
+			{			
+				if (NumberOfCorrectReports == 1) //update code value before reporting 
+				{
+					// Update code 
+					PeriodCode = newRead;
+				}
+			
+				//Report frequency
+				printf("\r\n Report freq posted to spi \r\n");
+				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+				PostEvent.EventParam = PeriodCode;
+				PostSPIService(PostEvent);						
 			 
-			// Do we want to just query again or also report the frequency?		
-			DoFirstTimeFlag = 1;			
+				//Start 200ms timer
+				ES_Timer_StartTimer(FrequencyReport_TIMER);	
+			}
     }
+		
     else if ( Event.EventType == ES_EXIT)
     {
     }
@@ -692,24 +799,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {	
-			if (NumberOfReports < 2)
+			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
 			{
-				// DO (1) & (2) ONLY ONCE PER REPORT
-				if(DoFirstTimeFlag)
-				{			
-					//(1) Report frequency
-					printf("\r\n Report freq posted to spi \r\n");
-					PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-					PostEvent.EventParam = PeriodCode;
-					PostSPIService(PostEvent);
-												
-					 //(2) Start 200ms timer
-					 ES_Timer_StartTimer(FrequencyReport_TIMER);
-						
-					// reset flag
-						DoFirstTimeFlag = 0;
-				}
-				
+
 				/* (3) If there has been a timeout -which means the reporting process 
 							 has had time to be completed- Query until LOC returns a Response Ready */
 				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
@@ -720,7 +812,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				}    
 
 				//(4) Has the LOC received our frequency and is it correct? 
-				if (Event.EventType == COM_QUERY_RESPONSE)
+				else if (Event.EventType == COM_QUERY_RESPONSE)
 				{
 					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
 					{
@@ -737,19 +829,25 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
 							
 							//Try reporting again
-							PostEvent.EventType = STATION_REACHED;
+							PostEvent.EventType = STATION_REACHED; // SEE ME - should change to something besides station reached
 							PostRobotTopSM(PostEvent);
-							
-							//We need 2 consecutive correct reports so reset report count
-							NumberOfReports = 0;
 						}
 						
 						// INACTIVE - wrong staging area
 						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 						{
 							
-							// record current driving stage 
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
+							// record current driving stage (we will need next staging area too to know which direction to drive in!)
+							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
+							
+							// Set Flag for disabling interrupt for the hall effect sensor
+							HallEffectFlag = 1;
+							
+							// Disable Hall Effect Interrupt
+							EnableStagingAreaISR(0);
+							
+							// Enable GetAwayTimer Interrupt
+							EnableGetAwayTimer();
 							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = START;
@@ -759,16 +857,42 @@ static ES_Event DuringCheckIn( ES_Event Event)
 						// ACK - all good! 
 						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 						{
-							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-							CurrentStagingArea = SaveStagingPosition(Event.EventParam);
 							
-							//Go to SHOOTING
-							PostEvent.EventType = CHECK_IN_SUCCESS;
-							PostRobotTopSM(PostEvent);	
+							// Add 1 to number of correct reports
+							NumberOfCorrectReports++;
+							
+							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
+							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
+							
+							if (NumberOfCorrectReports == 2)
+							{	
+								// stop the motors, this is the correct station 
+								stop();
+								
+								//Go to SHOOTING
+								PostEvent.EventType = CHECK_IN_SUCCESS;
+								PostRobotTopSM(PostEvent);	
+							}
+							else if (NumberOfCorrectReports == 1)							
+							{ 							
+								//Read new frequency and Report again --> repeat CHECKING IN
+								PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
+								PostRobotTopSM(PostEvent);
+							}
+							else
+							{
+								printf("\r\nWARNING: The number of correct reports is a WEIRD #: %i", NumberOfCorrectReports);
+							}
 						}
-					}
+					} 
 				}
-			}				
+			}
+			else if (ValidSecondCode == 0)
+			{
+					//read again
+					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
+					PostRobotTopSM(PostEvent);
+			}
     }
 		
     // return either Event, if you don't want to allow the lower level machine
@@ -805,8 +929,8 @@ static ES_Event DuringShooting( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // run any lower level state machine
-        ReturnEvent = RunShootingSM(Event);  // I THINK THIS WILL WORK??????????????????
+			// run any lower level state machine
+        ReturnEvent = RunShootingSM(Event);  
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -923,7 +1047,7 @@ static ES_Event DuringStop( ES_Event Event)
 }
 
 /****************************************************************************
-Hardware Functions:
+ InitializeTeamButtonsHardware
 ****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
 {
@@ -944,44 +1068,192 @@ static void InitializeTeamButtonsHardware(void)
 
 }
 
-static uint16_t SaveStagingPosition( uint16_t StatusResponse ){
-	// set staging area variable from status bytes if we are Red team
-	uint16_t TheGoal = 0;
+/****************************************************************************
+ SaveStagingPosition
+****************************************************************************/
+uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
+{
 	
-						if(TeamColor == RED){
-							if((StatusResponse & R1) == R1){
-								// set current staging area variable to R1	
-								TheGoal = 1;
-								
-							} else if (StatusResponse & R2){
-								
-								// set current staging area variable to R2
-								TheGoal = 2;
-								
-							} else if (StatusResponse & R3) {
-								
-								// set current staging area variable to R3
-								TheGoal = 3;
-							}
-							
-						// set staging area variable from status bytes if we are Green team
-						} else {
-							if((StatusResponse & G1) == G1){
-								// set current staging area variable to G1	
-								TheGoal = 1;
-								
-							} else if (StatusResponse & G2){
-								
-								// set current staging area variable to G2
-								TheGoal = 2;
-								
-							} else if (StatusResponse & G3) {
-								
-								// set current staging area variable to G3
-								TheGoal = 3;
-							}
-						}
-						return TheGoal;
+	// set staging area variable from status bytes if we are Red team
+	uint16_t ReturnPosition = 0;
+	
+	if(TeamColor == RED){
+		
+		if((StatusResponse & R1) == R1){
+			// set current staging area variable to R1	
+			ReturnPosition = 1;
+			
+		} else if (StatusResponse & R2){
+			
+			// set current staging area variable to R2
+			ReturnPosition = 2;
+			
+		} else if (StatusResponse & R3) {
+			
+			// set current staging area variable to R3
+			ReturnPosition = 3;
+		}
+		
+	// set staging area variable from status bytes if we are Green team
+	} else {
+		if((StatusResponse & G1) == G1){
+			// set current staging area variable to G1	
+			ReturnPosition = 1;
+			
+		} else if (StatusResponse & G2){
+			
+			// set current staging area variable to G2
+			ReturnPosition = 2;
+			
+		} else if (StatusResponse & G3) {
+			
+			// set current staging area variable to G3
+			ReturnPosition = 3;
+		}
+	}
+	return ReturnPosition;
 }
 
+/****************************************************************************
+GAME TIMER 
+****************************************************************************/
+
+static void InitGameTimer() //Wide Timer 1 subtimer B
+{	
+	// start by enabling the clock to the timer (Wide Timer 1)
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R1;
+
+	// kill a few cycles to let the clock get going
+	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R1) != SYSCTL_PRWTIMER_R1){}
+
+	// make sure that timer (Timer B) is disabled before configuring
+	HWREG(WTIMER1_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
+
+	// set it up in 32bit wide (individual, not concatenated) mode
+	// the constant name derives from the 16/32 bit timer, but this is a 32/64
+	// bit timer so we are setting the 32bit mode
+	HWREG(WTIMER1_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
+
+	// set up timer B in 1-shot mode so that it disables timer on timeouts
+	// first mask off the TAMR field (bits 0:1) then set the value for
+	// 1-shot mode = 0x01
+	HWREG(WTIMER1_BASE+TIMER_O_TBMR) = (HWREG(WTIMER1_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
+	
+	// set timeout
+	OneShotTimeoutMS = 1000; //arbitrary initialization value
+	HWREG(WTIMER1_BASE+TIMER_O_TBILR) = TicksPerMS*OneShotTimeoutMS;
+	
+	// enable a local timeout interrupt. TBTOIM = bit 1
+	HWREG(WTIMER1_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
+
+	// enable the Timer B in Wide Timer 1 interrupt in the NVIC
+	// it is interrupt number 96 so appears in EN3 at bit 0
+	HWREG(NVIC_EN3) |= BIT0HI;
+	
+	// set priority of this timer 
+	HWREG(NVIC_PRI24) |= NVIC_PRI24_INTA_M;
+
+	// make sure interrupts are enabled globally
+	__enable_irq();
+	
+	printf("\r\nGAME TIMER init done\r\n");
+}
+
+static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS )
+{
+	// set timeout
+	HWREG(WTIMER1_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	
+	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
+	HWREG(WTIMER1_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
+}
+
+void GameTimerISR(void) 
+{	
+	// clear interrupt
+	HWREG(WTIMER1_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+	
+	// post event to go into ENDING_STRATEGY state
+	ES_Event PostEvent;
+	PostEvent.EventType = FINISH_STRONG;
+	PostRobotTopSM(PostEvent);
+	
+}
+/****************************************************************************
+GETAWAY STAGING TIMER 
+****************************************************************************/
+
+static void InitGetAwayTimer() //Wide Timer 3 subtimer B
+{	
+	// start by enabling the clock to the timer (Wide Timer 3)
+	HWREG(SYSCTL_RCGCWTIMER) |= SYSCTL_RCGCWTIMER_R2;
+
+	// kill a few cycles to let the clock get going
+	while((HWREG(SYSCTL_PRWTIMER) & SYSCTL_PRWTIMER_R3) != SYSCTL_PRWTIMER_R3){}
+
+	// make sure that timer (Timer B) is disabled before configuring
+	HWREG(WTIMER3_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TBEN; //TAEN = Bit1
+
+	// set it up in 32bit wide (individual, not concatenated) mode
+	// the constant name derives from the 16/32 bit timer, but this is a 32/64
+	// bit timer so we are setting the 32bit mode
+	HWREG(WTIMER3_BASE+TIMER_O_CFG) = TIMER_CFG_16_BIT; //bits 0-2 = 0x04
+
+	// set up timer B in 1-shot mode so that it disables timer on timeouts
+	// first mask off the TAMR field (bits 0:1) then set the value for
+	// 1-shot mode = 0x01
+	HWREG(WTIMER3_BASE+TIMER_O_TBMR) = (HWREG(WTIMER3_BASE+TIMER_O_TBMR)& ~TIMER_TBMR_TBMR_M)| TIMER_TBMR_TBMR_1_SHOT;
+	
+	// set timeout
+	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GetAwayTimeoutMS;
+	
+	// enable a local timeout interrupt. TBTOIM = bit 1
+	HWREG(WTIMER3_BASE+TIMER_O_IMR) |= TIMER_IMR_TBTOIM; // bit1
+
+	// enable the Timer B in Wide Timer 3 interrupt in the NVIC
+	// it is interrupt number 101 so appears in EN3 at bit 5
+	HWREG(NVIC_EN3) |= BIT5HI;
+	
+	// set priority of this timer B of 25
+	HWREG(NVIC_PRI25) |= NVIC_PRI25_INTB_M;
+
+	// make sure interrupts are enabled globally
+	__enable_irq();
+	
+	printf("\r\n Get Away TIMER init done \r\n");
+}
+
+static void EnableGetAwayTimer( void )
+{
+	// set timeout
+	//HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	
+	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
+	HWREG(WTIMER3_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
+}
+
+void GetAwayISR(void)
+{	
+	// clear interrupt
+	HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+	
+	// re-enable isr for hall effect sensor 
+	EnableStagingAreaISR(1);
+}
+
+#ifdef TEST
+#include "termio.h"
+#define clrScrn() 	printf("\x1b[2J")
+
+int main(void){
+	
+	// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
+	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN| SYSCTL_XTAL_16MHZ);
+	TERMIO_Init();
+	clrScrn();
+	printf("\r\n Game Timer Test \r\n");
+	InitGameTimer();	
+}
+
+#endif
 /*********************************************************  THE END *************************************************************/

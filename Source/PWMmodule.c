@@ -9,7 +9,8 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
-#define TEST 
+
+//#define TEST 
 
 #include "ES_Configure.h"
 #include "ES_Framework.h"
@@ -175,7 +176,7 @@ void InitializeAltPWM(void){
 	HWREG(PWM1_BASE + PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ZERO;
 	HWREG(PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ZERO;
 	HWREG(PWM1_BASE + PWM_O_2_GENA) = PWM_2_GENA_ACTZERO_ZERO;
-	HWREG(PWM1_BASE + PWM_O_3_GENB) = PWM_2_GENB_ACTZERO_ZERO;
+	HWREG(PWM1_BASE + PWM_O_2_GENB) = PWM_2_GENB_ACTZERO_ZERO;
 	
 	// Enable the PWM outputs  2, 3, 4, 5
 	HWREG(PWM1_BASE + PWM_O_ENABLE) |= (PWM_ENABLE_PWM2EN | PWM_ENABLE_PWM3EN | PWM_ENABLE_PWM4EN | PWM_ENABLE_PWM5EN);
@@ -348,7 +349,7 @@ void SetFlyDuty( uint16_t DatDooty ){
 	// restore pwm 
 		HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM1_GenB_Normal;
 		 
-		// set duty cycle to 25%
+		// set duty cycle to DatDooty
 		HWREG( PWM1_BASE + PWM_O_1_CMPB) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((DatDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
 	
 }
@@ -462,7 +463,7 @@ int main(void){
 	InitializeAltPWM();
 	EmitIR( 0 );
 	SetFlyDuty(50);
-	SetServoDuty(75);
+	SetServoDuty(60); 
 	
 }
 #endif

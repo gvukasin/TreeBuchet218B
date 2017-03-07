@@ -97,7 +97,6 @@
 */
 static ES_Event DuringRequestingBall( ES_Event Event);
 static ES_Event DuringWaiting4Ball( ES_Event Event);
-static void EmmitIR();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -206,7 +205,7 @@ void StartReloadingSM ( ES_Event CurrentEvent )
    }
 	 
 	 // Initialize timer
-	 //ES_Timer_SetTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
+	 //ES_Timer_SetTimer(Waiting4Ball_TIMER, TimeWaiting4Ball);
 	 
    // call the entry function (if any) for the ENTRY_STATE
    RunReloadingSM(CurrentEvent);
@@ -237,28 +236,34 @@ ReloadingState_t QueryReloadingSM ( void )
 /***************************************************************************
  private functions
  ***************************************************************************/
+//		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+//		EnableBackIRInterrupt();
+//		
+//		// Start Rotating
+//		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
 
-static ES_Event DuringRequestingBall( ES_Event Event)
+//		// Start the timer to periodically check the IR frequency
+//		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+
+static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
+        
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // do any local exit functionality
         TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
 		// do the 'during' function for this state
 		else 
     {
-				// Send 15 pulses (10ms ON + 30ms OFF) 
+				// Send 15 pulses (10ms ON + 30ms OFF)
+				TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());			
 				ES_Timer_InitTimer(SendingIRPulses_TIMER, PulseDuration);
 				EmitIR(START_PWM);	
     }
@@ -287,7 +292,7 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-				// we are just waiting to get a timeout
+				// we are just waiting to get a timeout OR repeating if we want more balls
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
