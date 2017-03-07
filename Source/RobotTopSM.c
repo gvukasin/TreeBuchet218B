@@ -518,6 +518,10 @@ the lower level state machines to re-map or consume
 the event
 ****************************************************************************/
 
+/****************************************************************************
+				WAITING2START
+****************************************************************************/
+
 static ES_Event DuringWaiting2Start( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -584,6 +588,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			DRIVING2STAGING
+****************************************************************************/
 static ES_Event DuringDriving2Staging( ES_Event Event)
 {
 
@@ -723,12 +730,18 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			CHECKING IN
+****************************************************************************/
+
 static ES_Event DuringCheckIn( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 		ES_Event PostEvent;
 	
+	/***********************************************************************************/
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+	/***********************************************************************************/
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
 			// This won't be run if we just want to query again about the same report
@@ -767,8 +780,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
     else if ( Event.EventType == ES_EXIT)
     {
     }
-		
-		// do the 'during' function for this state
+		/***********************************************************************************/
+		// DURING
+		/***********************************************************************************/
 		else 
     {	
 			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
@@ -872,6 +886,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			SHOOTING
+****************************************************************************/
 static ES_Event DuringShooting( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -933,6 +950,10 @@ static ES_Event DuringShooting( ES_Event Event)
     return(ReturnEvent);
 }
 
+
+/****************************************************************************
+			DRIVING2RELOAD
+****************************************************************************/
 static ES_Event DuringDriving2Reload( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -956,6 +977,9 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			RELOADING
+****************************************************************************/
 static ES_Event DuringReloading( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -983,6 +1007,9 @@ static ES_Event DuringReloading( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			ENDING STRATEGY
+****************************************************************************/
 static ES_Event DuringEndingStrategy( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -1019,6 +1046,9 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			STOP
+****************************************************************************/
 static ES_Event DuringStop( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
