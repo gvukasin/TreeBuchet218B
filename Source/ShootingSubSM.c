@@ -486,7 +486,11 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 *******************************************************************************************/
 static bool DetectAGoal()
 {
-		// If first beacon aligned TRUE
+		// If first beacon aligned TRUE   
+	
+		// SEE ME - I'm not actually sure what firstIRBeaconAlignment does. I guess make sure that
+		// you have aligned with a non-goal type beacon previously
+	
 		if ( firstIRBeaconAlignment == 1 )
 		{
 			// reset flag
@@ -499,50 +503,56 @@ static bool DetectAGoal()
 				return false;
 		}
 		
-		// (A) If on the GREEN side
-		if ( GetTeamColor() == GREEN )
-		{
+		
+		else{
 			
-			// If aligned1250 TRUE - Rotate CCW
-			if ( Back_MeasuredIRPeriodCode == code800us ) //1250Hz
+			// (A) If on the GREEN side
+			if ( GetTeamColor() == GREEN )
 			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// rotate counterclockwise
-				BeaconRotationDirection = CCW;
+				
+				// If aligned1250 TRUE - Rotate CCW
+				if ( Back_MeasuredIRPeriodCode == code800us ) //1250Hz
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate counterclockwise
+					BeaconRotationDirection = CCW;
+				}
+					
+				// If aligned with 2200Hz beacon - Rotate CW
+				else if ( Back_MeasuredIRPeriodCode == code455us )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate clockwise
+					BeaconRotationDirection = CW;
+				}
+				
 			}
 				
-			// If aligned with 2200Hz beacon - Rotate CW
-			else if ( Back_MeasuredIRPeriodCode == code455us )
-			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// rotate clockwise
-				BeaconRotationDirection = CW;
+			// (B) If on the RED side
+			else if ( GetTeamColor() == RED )
+			{				
+				// If aligned 1700Hz - Rotate CCW
+				if ( Back_MeasuredIRPeriodCode == code588us )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate counterclockwise
+					BeaconRotationDirection = CCW;
+				}
+				
+				// If aligned 1950Hz - Rotate CW
+				else if ( Back_MeasuredIRPeriodCode == code513us )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate clockwise
+					BeaconRotationDirection = CW;
+				}
 			}
 			
-		}
-			
-		// (B) If on the RED side
-		else if ( GetTeamColor() == RED )
-		{				
-			// If aligned 1700Hz - Rotate CCW
-			if ( Back_MeasuredIRPeriodCode == code588us )
-			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// rotate counterclockwise
-				BeaconRotationDirection = CCW;
-			}
-			
-			// If aligned 1950Hz - Rotate CW
-			else if ( Back_MeasuredIRPeriodCode == code513us )
-			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// rotate clockwise
-				BeaconRotationDirection = CW;
-			}
+			return false;
 		}
 }
 
