@@ -236,14 +236,14 @@ ReloadingState_t QueryReloadingSM ( void )
 /***************************************************************************
  private functions
  ***************************************************************************/
-// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-		EnableBackIRInterrupt();
-		
-		// Start Rotating
-		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
+//		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+//		EnableBackIRInterrupt();
+//		
+//		// Start Rotating
+//		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
 
-		// Start the timer to periodically check the IR frequency
-		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+//		// Start the timer to periodically check the IR frequency
+//		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
 
 static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
 {
@@ -252,7 +252,7 @@ static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
+        
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -262,7 +262,8 @@ static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
 		// do the 'during' function for this state
 		else 
     {
-				// Send 15 pulses (10ms ON + 30ms OFF) 
+				// Send 15 pulses (10ms ON + 30ms OFF)
+				TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());			
 				ES_Timer_InitTimer(SendingIRPulses_TIMER, PulseDuration);
 				EmitIR(START_PWM);	
     }
@@ -291,7 +292,7 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-				// we are just waiting to get a timeout
+				// we are just waiting to get a timeout OR repeating if we want more balls
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.

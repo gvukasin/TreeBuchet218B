@@ -84,12 +84,11 @@
    behavior of this state machine
 */
 static ES_Event DuringLooking4Goal( ES_Event Event);
-static ES_Event DuringCalibrating( ES_Event Event);
-static ES_Event DuringLoadingBall( ES_Event Event);
+static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 
-static void AlignWithGoal();
-
+static bool DetectAGoal();
+static void SetServoAndFlyWheelSpeed();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -108,6 +107,7 @@ static bool BeaconRotationDirection = CW;
 static uint8_t CurrentStagingAreaPosition;
 static uint16_t LOCResponse;
 static uint16_t bucketNumber;
+static bool GoalFound;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -136,15 +136,12 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 
 	 /*
 	 LOOKING4GOAL
-		- Query status to know what goal is active
+		- Rotate and find an active goal, then stop
 	 
-	 CALIBRATING
+	 SETTING_BALL_SPEED
 	  - When we get a status response, we start calibrating
-		- Rotate until aligned with correct goal
-	 
-	 LOADING BALL
-	 - Set fly wheel and separator speed as a function of current 
-		 goal and location
+		- Set fly wheel and separator speed as a function of current 
+		  goal and location
 	 
 	 WATING4SHOT_COMPLETE
 	 - Wait for a timeout and then check if you have scored or not 
@@ -153,38 +150,33 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 	 */
    switch ( CurrentState )
    {
-			 // CASE 1/4
+			 // CASE 1/3
 			 case LOOKING4GOAL :
 				 // Execute During function 
-         CurrentEvent = DuringLooking4Goal(CurrentEvent);
+         CurrentEvent = DuringLooking4Goal(CurrentEvent);				 
 				 // process events
-			
-				 // Why are we checking COM_STATUS? Is this copied code?
-				 // if (CurrentEvent.EventType == COM_STATUS)
-				 if ( CurrentEvent.EventType == ALIGNED2BUCKET )
+				 if (CurrentEvent.EventType == COM_STATUS)
 				 {
-					 NextState = CALIBRATING;
+					 NextState = SETTING_BALL_SPEED;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				 }
-				  else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER)) // Self Transition
+				  else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER)) // Internal Self Transition
 				 {
 						NextState = LOOKING4GOAL;
 						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
 				 }
 				 break;
 		 
-		   // CASE 2/4
-       case CALIBRATING :       
+		   // CASE 2/3
+       case SETTING_BALL_SPEED :       
          // Execute During function 
-         CurrentEvent = DuringCalibrating(CurrentEvent);
+         CurrentEvent = DuringSettingBallSpeed(CurrentEvent);
          //process any events
-         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == READY2SHOOT )) //If an event is active and it's the correct one
+         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == BALL_FLYING )) //If an event is active and it's the correct one
          {       
-            NextState = LOADING_BALL;//Decide what the next state will be
-            MakeTransition = true; //mark that we are taking a transition
-            // if transitioning to a state with history change kind of entry
-            //EntryEventKind.EventType = ES_ENTRY_HISTORY;
+            NextState = WATING4SHOT_COMPLETE;
+            MakeTransition = true; 
             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
           }
 				 else if ( CurrentEvent.EventType == ES_NO_EVENT )// Current Event is now ES_NO_EVENT. Correction 2/20/17 
@@ -192,21 +184,8 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
          break;
-      
-				 // CASE 3/4				 
-			 case LOADING_BALL :
-				 // During function
-				 CurrentEvent = DuringLoadingBall(CurrentEvent);
-				 // Process events			 
-				 if (CurrentEvent.EventType == BALL_FLYING)
-					{
-						 NextState = WATING4SHOT_COMPLETE;
-						 MakeTransition = true;
-						 ReturnEvent.EventType = ES_NO_EVENT;
-					}							 
-				 break;
 				
-				// CASE 4/4				 
+				// CASE 3/3				 
 			 case WATING4SHOT_COMPLETE :
 				 // During function
 				 CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
@@ -303,10 +282,8 @@ uint8_t GetMyScore()
  ***************************************************************************/
 
 /***************************************************************************
-  Rotate and look for beacon. Stop when you find A goal. 
+  DuringLooking4Goal
  ***************************************************************************/
-
-//SEE ME this should probably look for what goal we are trying to align with!
 
 static ES_Event DuringLooking4Goal( ES_Event Event)  
 {
@@ -335,29 +312,28 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 		// Read the detected IR frequency
 		Back_MeasuredIRPeriodCode = Front_GetIRCodeArray();  //SEE ME: POSSIBLE BACK AND FRONT BUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-		
-			
-			// If we are looking at a bucket then move to next state - CALIBRATING
-			if(Back_MeasuredIRPeriodCode == BucketCode)
-			{
-				// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
-				ES_Event QueryEvent;
-				QueryEvent.EventType = ROBOT_STATUS;
-			}
-
-			// Else, restart the timer and INTERNAL SELF TRANSITION to start looking for beacon again
-			else
-			{
-				ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME); //SEE ME: should we also reenable the ISR?!!!!!
-			}					
-    }
+		// Detect a goal
+		GoalFound = DetectAGoal();		
+		// If we are looking at a bucket then query LOC which will trigger moving to the next state
+		if(GoalFound == true)
+		{
+			// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
+			ES_Event QueryEvent;
+			QueryEvent.EventType = ROBOT_STATUS;
+		}
+		// Else, restart the timer and INTERNAL SELF TRANSITION to start looking for beacon again
+		else
+		{
+			ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME); //SEE ME: should we also reenable the ISR?!!!!!
+		}					
+  }
 	return ReturnEvent;
 }
 
 /***************************************************************************
-  Make sure you are aligned with the correct bucket
- ***************************************************************************/
-static ES_Event DuringCalibrating( ES_Event Event)
+DuringSettingBallSpeed
+***************************************************************************/
+static ES_Event DuringSettingBallSpeed( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
@@ -367,6 +343,14 @@ static ES_Event DuringCalibrating( ES_Event Event)
 		}
     else if ( Event.EventType == ES_EXIT )
     {  
+			// Turn off both the pushing flywheel and the separation servo
+			SetServoDuty(0);
+			SetFlyDuty(0);
+			
+			// Speed has been set so the ball is flying towards the goal	
+			ES_Event Event2Post;
+			Event2Post.EventType = BALL_FLYING;
+			PostRobotTopSM(Event2Post);
     }
 		else //DURING
 		{
@@ -377,14 +361,9 @@ static ES_Event DuringCalibrating( ES_Event Event)
 			// Get current staging area
 			CurrentStagingAreaPosition = GetCurrentStagingAreaPosition();
 			
-			// If we detect the frequency we are looking for, post READY2SHOOT event			
-			if (setSpeedReady == 1)
-			{
-				ES_Event Event2Post;
-				Event2Post.EventType = READY2SHOOT;
-				Event2Post.EventParam = Back_MeasuredIRPeriodCode;
-				PostRobotTopSM(Event2Post);
-			}		
+			// Set the speed 
+			SetServoAndFlyWheelSpeed();
+			
 		}
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -392,40 +371,8 @@ static ES_Event DuringCalibrating( ES_Event Event)
 }
 
 /***************************************************************************
-  Set fly wheel and ball separator speed as a function of your current 
-	location and target.
+DuringWaiting4ShotComplete
  ***************************************************************************/
-static ES_Event DuringLoadingBall( ES_Event Event)
-{
-    ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
-    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
-        // Start spinning flywheel for ball pushing
-			  SetFlyDuty(80);                               //////////////////Change it !!!!!!!!!!!!!!!!!!!!!!!!!
-			
-			//SEE ME - this should be a function of where you are and where yo ure shooting to
-    }
-    else if ( Event.EventType == ES_EXIT )
-    {
-				// Turn off both the pushing flywheel and the separation servo
-				SetServoDuty(0);
-				SetFlyDuty(0);
-				
-				// SEE ME. Is this the right place?  NOPE need to post to robottopSM
-				ReturnEvent.EventType = BALL_FLYING;
-    }
-		else // do the 'during' function for this state
-    {
-        // Spin the separation wheel 180 degrees
-			
-    }
-    // return either Event, if you don't want to allow the lower level machine
-    // to remap the current event, or ReturnEvent if you do want to allow it.
-    return(ReturnEvent);
-}
-
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THEN GET OUT OF SUB SM
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -437,12 +384,10 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);		     
     }
     else if ( Event.EventType == ES_EXIT )
-    {
-        
+    {       
     }
 		else // do the 'during' function for this state
-    {
-        
+    {       
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -450,9 +395,19 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 }
 
 /****************************************************************************************
-	AlignWithGoal
+	SetServoAndFlyWheelSpeed
+	- Spin the separation wheel 180 degrees
+	- Set the flywheel speed depending on current location and goal
 *******************************************************************************************/
-static void AlignWithGoal()
+static void SetServoAndFlyWheelSpeed()
+{
+}
+
+/****************************************************************************************
+	AlignWithGoal
+	- Find an active goal and return true if you found it
+*******************************************************************************************/
+static bool DetectAGoal()
 {
 	// (1) If first beacon aligned TRUE
 		if ( firstIRBeaconAlignment == 1 )
@@ -460,8 +415,8 @@ static void AlignWithGoal()
 			// If aligned1450 TRUE
 			if ( aligned1450 == 1 )
 			{
-				// Move on to next state - CALIBRATING
-				ReturnEvent.EventType = ALIGNED2BUCKET;
+				// Ready to move on to next state
+				return true;
 			}
 		}
 		
