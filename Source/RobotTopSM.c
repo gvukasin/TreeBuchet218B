@@ -629,6 +629,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				EnableStagingAreaISR(1);
 				printf("\r\n en hall int");
 			}
+			
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -643,6 +644,45 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// do the 'during' function for this state
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
+			// Not sure if this is where we want to align with the appropriate beacon, but I will add the pseudo code here
+			// if on the GREEN side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 2200 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1250 Hz
+					// else if the next staging area is > 2
+						// align with 2200 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1250 Hz
+			
+			// if on the RED side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 1700 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1950 Hz
+					// else if the next staging area is > 2
+						// align with 1700 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1950 Hz
+			
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
 			RLCReading_Right = RLCReading[1];
@@ -997,6 +1037,9 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 			 {
 				// Read the detected IR frequency
 				Front_MeasuredIRPeriodCode = Front_GetIRCode();
+				
+				// if on the GREEN side, align with 1250 Hz
+				// if on the RED side, align with 1950 Hz
 				 
 				if ( GetTeamColor() == GREEN )
 				{
@@ -1040,7 +1083,16 @@ static ES_Event DuringReloading( ES_Event Event)
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        RunReloadingSM(Event); 
+        RunReloadingSM(Event);
+			
+			// either rotate 180 deg (EASIER)
+			
+			// or, align with beacon on opposite side of reloader
+			
+			// if on the GREEN side
+				// align with 2200 Hz
+			// else if on the RED side
+				// align with 1700 Hz
     }
 		
 		// do the 'during' function for this state
