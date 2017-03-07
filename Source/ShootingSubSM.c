@@ -80,6 +80,11 @@
 #define GOAL_BYTE_MASK 0x00ff
 #define LEDS_OFF 0
 
+#define FlyWheelDuty 90
+#define SeparatorDuty 30
+#define SeparatorONTime 150 //ms
+
+
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
    functions, entry & exit functions.They should be functions relevant to the
@@ -198,9 +203,9 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
          break;
-				
+				 
 				// CASE 3/3				 
-			 case WATING4SHOT_COMPLETE :  //SEE ME - not sure how to get out of the sub SM. Hope this works
+			  case WATING4SHOT_COMPLETE :  //SEE ME - not sure how to get out of the sub SM. Hope this works
 				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
 			    // During function
 				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
@@ -380,11 +385,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 		{
 		}
     else if ( Event.EventType == ES_EXIT )
-    {  
-			// Turn off both the pushing flywheel and the separation servo
-			SetServoDuty(0);
-			SetFlyDuty(0);
-			
+    {  			
 			// Speed has been set so the ball is flying towards the goal	
 			ES_Event Event2Post;
 			Event2Post.EventType = BALL_FLYING;
@@ -401,7 +402,10 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			CurrentStagingAreaPosition = GetCurrentStagingAreaPosition();
 			
 			// Set the speed 
-			SetServoAndFlyWheelSpeed();		
+			//	 - servo speed is fixed 
+			// 	 - flywheel as a function of where we are  /////SEE ME - If we have time!!			
+			SetServoDuty(SeparatorDuty); 
+			SetFlyDuty(FlyWheelDuty);	
 		}
 		
     // return either Event, if you don't want to allow the lower level machine
@@ -424,7 +428,11 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);	
 
 				// Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF, GetTeamColor());			
+				TurnOnOffYellowLEDs(LEDS_OFF, GetTeamColor());	
+
+				// Turn off both the pushing flywheel and the separation servo
+				SetServoDuty(0);
+				SetFlyDuty(0);			
     }
     else if ( Event.EventType == ES_EXIT )
     {    

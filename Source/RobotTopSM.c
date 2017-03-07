@@ -92,7 +92,7 @@
 #define LEDS_ON 1
 #define LEDS_OFF 0
 
-#define Time4FrequencyReport 200
+#define Time4FrequencyReport 200 
 
 // query byte masks
 #define GAME_STATUS_BIT BIT7HI
@@ -165,7 +165,7 @@ static void InitializeTeamButtonsHardware(void);
 static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
 static void InitGetAwayTimer(void);
-static void EnableGetAwayTimer(void);
+
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -201,7 +201,7 @@ static bool HallEffectFlag = 0;
 
 static uint16_t OldScore;
 static uint16_t NewScore;
-
+static bool ShootingFlag = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -823,7 +823,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							EnableStagingAreaISR(0);
 							
 							// Enable GetAwayTimer Interrupt
-							EnableGetAwayTimer();
+							EnableGetAwayTimer(GetAwayTimeoutMS);
 							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = START;
@@ -884,7 +884,10 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        //Yellow LEDs ON to signal shooting is going to start
+        //Set shooting flag to true
+				ShootingFlag = 1;
+			
+			  //Yellow LEDs ON to signal shooting is going to start
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
@@ -901,6 +904,9 @@ static ES_Event DuringShooting( ES_Event Event)
     {
 			if(Event.EventType == FINISHED_SHOT)
 			{
+				//Reset shooting flag to 0
+				ShootingFlag = 0;
+				
 				// Get the old score - that was saved at the beginning of the sub SM
 				OldScore = GetScoreFromShootingSM();
 				
@@ -1249,36 +1255,31 @@ static void InitGetAwayTimer() //Wide Timer 3 subtimer B
 	printf("\r\n Get Away TIMER init done \r\n");
 }
 
-static void EnableGetAwayTimer( void ) 
+void EnableGetAwayTimer( uint16_t GetAwayTimeoutMS ) 
 {
-	// set timeout
-	//HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	//set timeout
+	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GetAwayTimeoutMS;
 	
 	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
 	HWREG(WTIMER3_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
 }
 
-void GetAwayISR(void)
-{	
-	// clear interrupt
-	HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
-	
-	// re-enable isr for hall effect sensor 
-	EnableStagingAreaISR(1);
+void GetAwayISR()
+{
+	if(ShootingFlag)
+	{
+		// clear interrupt
+		HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+		
+		// re-enable isr for hall effect sensor 
+		EnableStagingAreaISR(1);
+	}
+	else
+	{
+		//stop ball separator
+		SetServoDuty(0);
+	}
 }
-
-
-	 
-			
-				 // Post correct event to Robot top SM
-				if(Scored)
-					Event2Post.EventType = SCORED;
-				else if(Missed)
-					Event2Post.EventType = MISSED_SHOT;
-				else if(NoBalls)
-					Event2Post.EventType = NO_BALLS;
-				
-				PostRobotTopSM(Event2Post);
 
 /****************************************************************************
 TESTS
