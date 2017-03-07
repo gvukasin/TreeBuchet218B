@@ -22,6 +22,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent );
 void StartShootingSM ( ES_Event CurrentEvent );
 ShootingState_t QueryShootingSM ( void );
 uint8_t GetBallCount( void );
-uint8_t GetMyScore( void );
+uint16_t GetMyScoreFromStatusResponse( uint16_t StatusResponse);
+uint16_t GetScoreFromShootingSM();
 
 #endif /*ShootingSubSM_H */

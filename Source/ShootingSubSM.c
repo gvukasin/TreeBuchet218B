@@ -57,6 +57,14 @@
 #include "MotorActionsModule.h"
 #include "IRBeaconModule.h"
 #include "PWMmodule.h"
+#include "LEDModule.h"
+
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -73,10 +81,15 @@
 #define CCW 0
 
 #define Wait4ShotTime 10000 //10sec
-
 #define BucketCode 0x01
-
 #define BeaconRotationDutyCycle 80
+#define GOAL_BYTE_MASK 0x00ff
+#define LEDS_OFF 0
+
+#define FlyWheelDuty 90
+#define SeparatorDuty 30
+#define SeparatorONTime 150 //ms
+
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -107,7 +120,14 @@ static bool BeaconRotationDirection = CW;
 static uint8_t CurrentStagingAreaPosition;
 static uint16_t LOCResponse;
 static uint16_t bucketNumber;
+
 static bool GoalFound;
+static bool Scored = 0;
+static bool Missed = 0;
+static bool NoBalls = 0;
+static bool ScoreHasBeenSaved = 0;
+static uint16_t ScoreBeforeShooting;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -137,21 +157,24 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 	 /*
 	 LOOKING4GOAL
 		- Rotate and find an active goal, then stop
+		- It has to be the correct goal because only one is active at a time
+		- Query status and exit
 	 
 	 SETTING_BALL_SPEED
-	  - When we get a status response, we start calibrating
+	  - When we get a status response, we start SETTING_BALL_SPEED
 		- Set fly wheel and separator speed as a function of current 
-		  goal and location
+		  active goal and location
 	 
 	 WATING4SHOT_COMPLETE
 	 - Wait for a timeout and then check if you have scored or not 
-		 in order to do one thing or another
-	 
+		 in order to do one thing or another	 
 	 */
+	 
    switch ( CurrentState )
    {
 			 // CASE 1/3
 			 case LOOKING4GOAL :
+				 printf("\r\n LOOKING4GOAL \r\n");
 				 // Execute During function 
          CurrentEvent = DuringLooking4Goal(CurrentEvent);				 
 				 // process events
@@ -161,19 +184,21 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				 }
-				  else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER)) // Internal Self Transition
+				  else if (CurrentEvent.EventType == LOOK4GOAL_AGAIN) // External Self Transition
 				 {
 						NextState = LOOKING4GOAL;
+					  MakeTransition = true;
 						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
 				 }
 				 break;
 		 
 		   // CASE 2/3
-       case SETTING_BALL_SPEED :       
+       case SETTING_BALL_SPEED : 
+				 printf("\r\n SETTING_BALL_SPEED \r\n");				 
          // Execute During function 
          CurrentEvent = DuringSettingBallSpeed(CurrentEvent);
          //process any events
-         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == BALL_FLYING )) //If an event is active and it's the correct one
+         if ( CurrentEvent.EventType == BALL_FLYING ) 
          {       
             NextState = WATING4SHOT_COMPLETE;
             MakeTransition = true; 
@@ -184,16 +209,22 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
          break;
-				
+				 
 				// CASE 3/3				 
-			 case WATING4SHOT_COMPLETE :
-				 // During function
-				 CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-				 // Process events			 
-				 if (CurrentEvent.EventType == SHOOTING_TIMEOUT)
+			  case WATING4SHOT_COMPLETE :  //SEE ME - not sure how to get out of the sub SM. Hope this works
+				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
+			    // During function
+				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
+				  // Process events	
+					if (CurrentEvent.EventType == KEEP_WAITING4SHOT) //Internal self transition
 					{
-						 ReturnEvent.EventType = SHOOTING_TIMEOUT; //re-map this event for the upper level state machine
-					}							 
+						NextState = WATING4SHOT_COMPLETE;
+            ReturnEvent.EventType = ES_NO_EVENT;
+					}					
+				  else if (CurrentEvent.EventType == FINISHED_SHOT)
+					{ 
+						ReturnEvent.EventType = FINISHED_SHOT; //re-map this event for the upper level state machine
+					}								
 				 break;
     }
     //   If we are making a state transition
@@ -230,7 +261,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 ****************************************************************************/
 void StartShootingSM ( ES_Event CurrentEvent )
 {
-   // to implement entry to a history state or directly to a substate
+   // to implement entry directly to a substate
    // you can modify the initialization of the CurrentState variable
    // otherwise just start in the entry state every time the state machine
    // is started
@@ -264,23 +295,6 @@ ShootingState_t QueryShootingSM ( void )
    return(CurrentState);
 }
 
-/****************************************************************************
-Getters needed by the RobotTopSM
-****************************************************************************/
-
-uint8_t GetBallCount()
-{
-	return BallCount;
-}
-
-uint8_t GetMyScore()
-{
-	return MyScore;
-}
-/***************************************************************************
- private functions
- ***************************************************************************/
-
 /***************************************************************************
   DuringLooking4Goal
  ***************************************************************************/
@@ -288,45 +302,80 @@ uint8_t GetMyScore()
 static ES_Event DuringLooking4Goal( ES_Event Event)  
 {
 	ES_Event ReturnEvent = Event; 
+	ES_Event Event2Post;
 	
+	// ****************** ENTRY
 	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
   {
+		if(ScoreHasBeenSaved == 0)
+		{
+			// Ask for our current score
+			Event2Post.EventType = ROBOT_STATUS;
+			PostSPIService(Event2Post);			
+		}
+		else
+		{
 		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
 		EnableBackIRInterrupt();
 		
 		// Start Rotating
 		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
 
-		// Start the timer to periodically check the IR frequency
-		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+		// Start the timer to periodically check the IR frequency   SEE ME - THERE IS ALREADY AN INTERRUPT
+		//ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+		}
 	}
-	
+	// ****************** EXIT
 	else if ( Event.EventType == ES_EXIT )
   {
 		// Stop Rotating
-		stop();    
+		stop(); 		
 	}
 	
-	else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
-  {
-		// Read the detected IR frequency
-		Back_MeasuredIRPeriodCode = Front_GetIRCodeArray();  //SEE ME: POSSIBLE BACK AND FRONT BUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
-		// Detect a goal
-		GoalFound = DetectAGoal();		
-		// If we are looking at a bucket then query LOC which will trigger moving to the next state
-		if(GoalFound == true)
+	// ****************** DURING
+	else
+	{
+		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
 		{
-			// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
-			ES_Event QueryEvent;
-			QueryEvent.EventType = ROBOT_STATUS;
+			// Read the detected IR frequency
+			Back_MeasuredIRPeriodCode = Back_GetIRCode();  
+		
+			// DETECT A GOAL
+			GoalFound = DetectAGoal();
+			printf("Goal found = %i", GoalFound);
+			
+			// If we are looking at a bucket then query LOC which will trigger moving to the next state
+			if(GoalFound == true)
+			{
+				// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
+				Event2Post.EventType = ROBOT_STATUS;
+				PostSPIService(Event2Post);
+				
+				// Reset save score flag
+				ScoreHasBeenSaved = 1;
+			}
+			// If we haven't found an active bucket - EXTERNAL SELF TRANSITION to start looking for beacon again
+			else
+			{
+				printf("\r\nLook 4 goal again\r\n");		
+				Event2Post.EventType = LOOK4GOAL_AGAIN;
+				PostRobotTopSM(Event2Post);
+			}					
 		}
-		// Else, restart the timer and INTERNAL SELF TRANSITION to start looking for beacon again
-		else
+		
+		else if (Event.EventType == COM_STATUS)
 		{
-			ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME); //SEE ME: should we also reenable the ISR?!!!!!
-		}					
-  }
+			//Save current score 
+			ScoreBeforeShooting = GetMyScoreFromStatusResponse(Event.EventParam);
+			
+			//set flag
+			ScoreHasBeenSaved = 1;
+			
+			//make an external self transition
+			Event2Post.EventType = LOOK4GOAL_AGAIN;
+			PostRobotTopSM(Event2Post);
+		}
+	}
 	return ReturnEvent;
 }
 
@@ -342,17 +391,14 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 		{
 		}
     else if ( Event.EventType == ES_EXIT )
-    {  
-			// Turn off both the pushing flywheel and the separation servo
-			SetServoDuty(0);
-			SetFlyDuty(0);
-			
+    {  			
 			// Speed has been set so the ball is flying towards the goal	
 			ES_Event Event2Post;
 			Event2Post.EventType = BALL_FLYING;
 			PostRobotTopSM(Event2Post);
     }
-		else //DURING
+		//DURING
+		else 
 		{
 			// Get the goal position from the LOC response			
 			LOCResponse = Event.EventParam;
@@ -362,9 +408,12 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			CurrentStagingAreaPosition = GetCurrentStagingAreaPosition();
 			
 			// Set the speed 
-			SetServoAndFlyWheelSpeed();
-			
+			//	 - servo speed is fixed 
+			// 	 - flywheel as a function of where we are  /////SEE ME - If we have time!!			
+			SetServoDuty(SeparatorDuty); 
+			SetFlyDuty(FlyWheelDuty);	
 		}
+		
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
@@ -376,32 +425,64 @@ DuringWaiting4ShotComplete
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THEN GET OUT OF SUB SM
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
+		ES_Event Event2Post;
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
 				// start 10sec timer
-				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);		     
+				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);	
+
+				// Turn OFF LEDs
+				TurnOnOffYellowLEDs(LEDS_OFF, GetTeamColor());	
+
+				// Turn off both the pushing flywheel and the separation servo
+				SetServoDuty(0);
+				SetFlyDuty(0);			
     }
     else if ( Event.EventType == ES_EXIT )
-    {       
+    {    
     }
-		else // do the 'during' function for this state
-    {       
+		else //DURING - Scored, Missed, or No Balls?
+    {  
+			// If shot is done				
+			if((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Waiting4Shot_TIMER))
+			{
+					// Substract 1 from ball count independetly of whether we scored or not. 			
+					BallCount = BallCount - 1;
+					printf("\r\n #balls = %i\r\n", BallCount);
+					
+					if (BallCount == 0) // go to RELOADING
+					{
+						printf("\r\n No balls after shooting\r\n");
+						Event2Post.EventType = NO_BALLS;
+						PostRobotTopSM(Event2Post);
+					}
+					else // Go back to the robot top state machine and from there post SCORED or MISSED
+					{
+						printf("\r\n Finished shooting\r\n");
+						Event2Post.EventType = FINISHED_SHOT;
+						PostRobotTopSM(Event2Post);
+					}
+				}
+			
+			// If shot is NOT done - keep waiting
+			{
+				//internal self transition
+				Event2Post.EventType = KEEP_WAITING4SHOT;
+				PostRobotTopSM(Event2Post);
+			}			
     }
-    // return either Event, if you don't want to allow the lower level machine
-    // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
+		
 
-/****************************************************************************************
-	SetServoAndFlyWheelSpeed
-	- Spin the separation wheel 180 degrees
-	- Set the flywheel speed depending on current location and goal
-*******************************************************************************************/
-static void SetServoAndFlyWheelSpeed()
-{
-}
+/****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************/
 
 /****************************************************************************************
 	AlignWithGoal
@@ -409,21 +490,21 @@ static void SetServoAndFlyWheelSpeed()
 *******************************************************************************************/
 static bool DetectAGoal()
 {
-	// (1) If first beacon aligned TRUE
+		// If first beacon aligned TRUE
 		if ( firstIRBeaconAlignment == 1 )
 		{
-			// If aligned1450 TRUE
-			if ( aligned1450 == 1 )
-			{
-				// Ready to move on to next state
+			// If aligned1450 TRUE - Ready to move on to next state
+			if ( Back_MeasuredIRPeriodCode ==  )				
 				return true;
-			}
+			else
+				return false;
 		}
 		
-		// (2) If on the GREEN side
+		// (A) If on the GREEN side
 		if ( GetTeamColor() == GREEN )
 		{
-			// If aligned1250 TRUE
+			
+			// If aligned1250 TRUE - Rotate CCW
 			if ( aligned1250 == 1 )
 			{
 				// set first beacon aligned TRUE
@@ -433,37 +514,38 @@ static bool DetectAGoal()
 				// rotate counterclockwise
 				BeaconRotationDirection = CCW;
 	
-					// If first beacon aligned TRUE && aligned2200 TRUE
-					if ( (firstIRBeaconAlignment == 1) && (aligned2200 == 1) )
-					{
-						// set aligned2200 FALSE
-						aligned2200 = 0;
-					}
-				}
-				
-				// If aligned2200 TRUE
-				else if ( aligned2200 == 1 )
+				// If first beacon aligned TRUE && aligned2200 TRUE
+				if ( (firstIRBeaconAlignment == 1) && (aligned2200 == 1) )
 				{
-					// set first beacon aligned TRUE
-					firstIRBeaconAlignment = 1;
-					// set aligned2200 TRUE
-					aligned2200 = 1;
-					// rotate clockwise
-					BeaconRotationDirection = CW;
-				
-						// If first beacon aligned TRUE && aligned1250 TRUE
-						if ( (firstIRBeaconAlignment == 1) && (aligned1250 == 1) )
-						{
-							// set aligned1250 FALSE
-							aligned1250 = 0;
-						}
-					}
+					// set aligned2200 FALSE
+					aligned2200 = 0;
+				}
 			}
+				
+			// If aligned2200 TRUE - Rotate CW
+			else if ( aligned2200 == 1 )
+			{
+				// set first beacon aligned TRUE
+				firstIRBeaconAlignment = 1;
+				// set aligned2200 TRUE
+				aligned2200 = 1;
+				// rotate clockwise
+				BeaconRotationDirection = CW;
 			
-			// (3) If on the RED side
+				// If first beacon aligned TRUE && aligned1250 TRUE
+				if ( (firstIRBeaconAlignment == 1) && (aligned1250 == 1) )
+				{
+					// set aligned1250 FALSE
+					aligned1250 = 0;
+				}
+			}
+		}
+			
+			// (B) If on the RED side
 			else if ( GetTeamColor() == RED )
 			{
-				// If aligned1700 TRUE
+				
+				// If aligned1700 TRUE - Rotate CCW
 				if ( aligned1700 == 1 )
 				{
 					// set first beacon aligned TRUE
@@ -481,7 +563,7 @@ static bool DetectAGoal()
 					}
 				}
 				
-				// If aligned1950 TRUE
+				// If aligned1950 TRUE - Rotate CW
 				else if ( aligned1950 == 1 )
 				{
 					// set first beacon aligned TRUE
@@ -500,4 +582,37 @@ static bool DetectAGoal()
 				}
 			}
 }
+
+/****************************************************************************************
+	GetMyScoreFromStatusResponse
+	- Find an active goal and return true if you found it
+*******************************************************************************************/
+uint16_t GetMyScoreFromStatusResponse( uint16_t StatusResponse)
+{
+	uint16_t score;	
+	// We want to look at SB2 or SB3 four our total # of scores
+	score = (StatusResponse & GOAL_BYTE_MASK) ; // VALUE IN BINARY	
+	return score;
+}
+
+/****************************************************************************************
+	GetMyScoreFromStatusResponse
+	- Find an active goal and return true if you found it
+*******************************************************************************************/
+uint16_t GetScoreFromShootingSM()
+{
+	return ScoreBeforeShooting;
+}
+
+/****************************************************************************
+GetBallCount
+- The ball count needs to be updated when we shoot and when we reload
+****************************************************************************/
+
+uint8_t GetBallCount()
+{
+	return BallCount;
+}
+
+
 

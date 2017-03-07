@@ -92,7 +92,7 @@
 #define LEDS_ON 1
 #define LEDS_OFF 0
 
-#define Time4FrequencyReport 200
+#define Time4FrequencyReport 200 
 
 // query byte masks
 #define GAME_STATUS_BIT BIT7HI
@@ -165,7 +165,7 @@ static void InitializeTeamButtonsHardware(void);
 static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
 static void InitGetAwayTimer(void);
-static void EnableGetAwayTimer(void);
+
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -186,7 +186,6 @@ static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
 static uint8_t BallCount = 3; //We will start with 3 balls
-static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
 static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
@@ -200,6 +199,9 @@ static uint16_t LastPeriodCode;
 static uint16_t GetAwayTimeoutMS = 3000;
 static bool HallEffectFlag = 0;
 
+static uint16_t OldScore;
+static uint16_t NewScore;
+static bool ShootingFlag = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -340,7 +342,11 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
+<<<<<<< HEAD
 				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
+=======
+				if ((CurrentEvent.EventType == ES_TIMEOUT) && (CurrentEvent.EventParam == WireFollow_TIMER))
+>>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 				{
 					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
@@ -371,11 +377,15 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
+<<<<<<< HEAD
 						 case FINISH_STRONG :
 							 NextState = ENDING_STRATEGY;
 							 MakeTransition = true;
 							 break;	
 						case KEEP_DRIVING :
+=======
+						case START :
+>>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -395,34 +405,31 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 case SHOOTING:
 			 // During function
        CurrentEvent = DuringShooting(CurrentEvent);
-			 // Process events			 
-			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-       {
-					switch (CurrentEvent.EventType)
-					{
-						 case SCORED : 
-								NextState = DRIVING2STAGING;
-								MakeTransition = true; 
-								break;
-						 case MISSED_SHOT :
-								NextState = SHOOTING; // Self transition
-								MakeTransition = true; 
-								break;
-						 case NO_BALLS :
-								NextState = DRIVING2RELOAD; 
-								MakeTransition = true; 
-								break;
-						 case FINISH_STRONG :
-							 NextState = ENDING_STRATEGY;
-							 MakeTransition = true;
-							 break;
-						 default:
-							 if(ES_ENTRY|ES_EXIT){}
-							 else
-								printf("\r\nERROR: Robot is in SHOOTING and the event received is NOT VALID\n");
-					}
-			 }
-			 break;
+			 // Process events	
+			 //(1)			 
+				if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
+				{
+					NextState = SHOOTING; // INTERNAL Self transition
+				}
+				//(2)			 
+				if (CurrentEvent.EventType == COM_STATUS) 
+				{
+					NextState = SHOOTING; // INTERNAL Self transition
+				}
+			  //(3)			 				
+				else if (CurrentEvent.EventType == SCORED) 
+				{
+					NextState = DRIVING2STAGING;
+					MakeTransition = true;
+				}		
+			  //(4)			 			
+				else if (CurrentEvent.EventType == MISSED_SHOT )
+				{
+					NextState = SHOOTING; // EXTERNAL Self transition
+					MakeTransition = true; 
+					break;
+				}
+			  break;
 
 			 // CASE 5/8				 
 			 case DRIVING2RELOAD:
@@ -519,6 +526,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 }
 
 
+<<<<<<< HEAD
 /******************************************************************
 Function 
 	GetTeamColor
@@ -541,12 +549,18 @@ uint8_t GetCurrentStagingAreaPosition()
 /***************************************************************************
  private functions
  ***************************************************************************/
+=======
+>>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 /****************************************************************************
 During Functions:
 
 ES_ENTRY & ES_EXIT are processed here and allow 
 the lower level state machines to re-map or consume 
 the event
+****************************************************************************/
+
+/****************************************************************************
+				WAITING2START
 ****************************************************************************/
 
 static ES_Event DuringWaiting2Start( ES_Event Event)
@@ -615,6 +629,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			DRIVING2STAGING
+****************************************************************************/
 static ES_Event DuringDriving2Staging( ES_Event Event)
 {
 
@@ -651,7 +668,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     }
 		
 		// do the 'during' function for this state
-		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
+		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
@@ -755,15 +772,23 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			CHECKING IN
+****************************************************************************/
+
 static ES_Event DuringCheckIn( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 		ES_Event PostEvent;
 	
+	/***********************************************************************************/
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+	/***********************************************************************************/
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
-			// This won't be run if we just want to query again about the same report
+			// ENTRY won't be run if we just want to query again about the same report
+			
+			// Valid second code defaults to 1
 			ValidSecondCode = 1;
 			
 			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
@@ -773,6 +798,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							2) it is a valid code 
 				*/
 				newRead = GetStagingAreaCodeArray();
+				
+				// this bool will be 0 if the second freq we've read doesn't fulfill both conditions
 				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
 			}
 			
@@ -799,15 +826,16 @@ static ES_Event DuringCheckIn( ES_Event Event)
     else if ( Event.EventType == ES_EXIT)
     {
     }
-		
-		// do the 'during' function for this state
+		/***********************************************************************************/
+		// DURING
+		/***********************************************************************************/
 		else 
     {	
 			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
 			{
 
 				/* (3) If there has been a timeout -which means the reporting process 
-							 has had time to be completed- Query until LOC returns a Response Ready */
+							 has had time to be completed- QUERY until LOC returns a Response Ready */
 				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
 				{
 					printf("\r\n ROBOT_QUERY to SPI\r\n");
@@ -851,7 +879,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							EnableStagingAreaISR(0);
 							
 							// Enable GetAwayTimer Interrupt
-							EnableGetAwayTimer();
+							EnableGetAwayTimer(GetAwayTimeoutMS);
 							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = KEEP_DRIVING;
@@ -904,44 +932,79 @@ static ES_Event DuringCheckIn( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			SHOOTING
+****************************************************************************/
 static ES_Event DuringShooting( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
+		ES_Event PostEvent;
+	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+<<<<<<< HEAD
 			
         //Yellow LEDs ON to signal shooting is going to start
+=======
+        //Set shooting flag to true
+				ShootingFlag = 1;
+			
+			  //Yellow LEDs ON to signal shooting is going to start
+>>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
-        StartShootingSM(Event);  
-	
+        StartShootingSM(Event);  	
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
         RunShootingSM(Event);   
-			
-			// ASK LOC FOR CURRENT SCORE AND COMPARE TO OLD TO KNOW IF YOU SCORED
-			// POST SCORED TO ROBOT IF YOU DID
-				
-			  // Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF, TeamColor);
     }
 		
 		// do the 'during' function for this state
 		else 
     {
+			if(Event.EventType == FINISHED_SHOT)
+			{
+				//Reset shooting flag to 0
+				ShootingFlag = 0;
+				
+				// Get the old score - that was saved at the beginning of the sub SM
+				OldScore = GetScoreFromShootingSM();
+				
+				// Ask for new score by posting event to LOC
+				PostEvent.EventType = ROBOT_STATUS;
+				PostSPIService(PostEvent);
+				
+			}
+			else if (Event.EventType == COM_STATUS)
+			{
+				// Compare the 2 scores and post the correct event
+				NewScore = GetMyScoreFromStatusResponse(Event.EventParam);
+				
+				if(NewScore > OldScore)
+					PostEvent.EventType = SCORED;
+					
+				else
+					PostEvent.EventType = MISSED_SHOT;			
+			}
+			else
+			{
 			// run any lower level state machine
-        ReturnEvent = RunShootingSM(Event);  
+        ReturnEvent = RunShootingSM(Event); 
+			}				
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
 
+
+/****************************************************************************
+			DRIVING2RELOAD
+****************************************************************************/
 static ES_Event DuringDriving2Reload( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -965,6 +1028,9 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			RELOADING
+****************************************************************************/
 static ES_Event DuringReloading( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -992,6 +1058,9 @@ static ES_Event DuringReloading( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			ENDING STRATEGY
+****************************************************************************/
 static ES_Event DuringEndingStrategy( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -1031,6 +1100,9 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
     return(ReturnEvent);
 }
 
+/****************************************************************************
+			STOP
+****************************************************************************/
 static ES_Event DuringStop( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
@@ -1055,6 +1127,13 @@ static ES_Event DuringStop( ES_Event Event)
 }
 
 /****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************/
+
+/****************************************************************************
  InitializeTeamButtonsHardware
 ****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
@@ -1076,8 +1155,28 @@ static void InitializeTeamButtonsHardware(void)
 
 }
 
+/******************************************************************
+Function 
+	GetTeamColor
+************************************************************************/
+bool GetTeamColor()
+{
+	return TeamColor;
+}
+
+
+/******************************************************************
+Function 
+	GetCurrentStagingAreaPosition
+************************************************************************/       
+uint8_t GetCurrentStagingAreaPosition()
+{
+	return CurrentStagingArea ;
+}
+
+
 /****************************************************************************
- SaveStagingPosition
+ GetGoalOrStagePositionFromStatus
 ****************************************************************************/
 uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 {
@@ -1091,12 +1190,12 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 			// set current staging area variable to R1	
 			ReturnPosition = 1;
 			
-		} else if (StatusResponse & R2){
+		} else if ((StatusResponse & R2) == R2){
 			
 			// set current staging area variable to R2
 			ReturnPosition = 2;
 			
-		} else if (StatusResponse & R3) {
+		} else if ((StatusResponse & R3) == R3){
 			
 			// set current staging area variable to R3
 			ReturnPosition = 3;
@@ -1108,12 +1207,12 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 			// set current staging area variable to G1	
 			ReturnPosition = 1;
 			
-		} else if (StatusResponse & G2){
+		} else if ((StatusResponse & G2) == G2){
 			
 			// set current staging area variable to G2
 			ReturnPosition = 2;
 			
-		} else if (StatusResponse & G3) {
+		} else if ((StatusResponse & G3) == G3){
 			
 			// set current staging area variable to G3
 			ReturnPosition = 3;
@@ -1124,6 +1223,8 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 
 /****************************************************************************
 GAME TIMER 
+
+		2 min timeout to move onto strategy state
 ****************************************************************************/
 
 static void InitGameTimer() //Wide Timer 1 subtimer B
@@ -1189,6 +1290,9 @@ void GameTimerISR(void)
 }
 /****************************************************************************
 GETAWAY STAGING TIMER 
+
+		This timer gives the robot some time to move away from a station before
+		it starts looking for magnetic frequencies again
 ****************************************************************************/
 
 static void InitGetAwayTimer() //Wide Timer 3 subtimer B
@@ -1231,23 +1335,35 @@ static void InitGetAwayTimer() //Wide Timer 3 subtimer B
 	printf("\r\n Get Away TIMER init done \r\n");
 }
 
-static void EnableGetAwayTimer( void )
+void EnableGetAwayTimer( uint16_t GetAwayTimeoutMS ) 
 {
-	// set timeout
-	//HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	//set timeout
+	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GetAwayTimeoutMS;
 	
 	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
 	HWREG(WTIMER3_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
 }
 
-void GetAwayISR(void)
-{	
-	// clear interrupt
-	HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
-	
-	// re-enable isr for hall effect sensor 
-	EnableStagingAreaISR(1);
+void GetAwayISR()
+{
+	if(ShootingFlag)
+	{
+		// clear interrupt
+		HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
+		
+		// re-enable isr for hall effect sensor 
+		EnableStagingAreaISR(1);
+	}
+	else
+	{
+		//stop ball separator
+		SetServoDuty(0);
+	}
 }
+
+/****************************************************************************
+TESTS
+****************************************************************************/
 
 #ifdef TEST
 #include "termio.h"

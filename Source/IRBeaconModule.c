@@ -76,7 +76,10 @@ static uint8_t CaptureIndex = 0;
 // 588 us -> 1700 Hz (Red nav beacon)
 // 690 us -> 1450 Hz (Bucket nav beacon)
 // 800 us -> 1250 Hz (Green supply depot)
+<<<<<<< HEAD
 //static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
+=======
+>>>>>>> 1c3870bc1cc36e4da4b603302aeece2b512e38d6
 static uint16_t ValidIRSignalPeriods[5] = {800, 690, 588, 513, 455};
 
 /*------------------------------ Module Code ------------------------------*/
@@ -241,12 +244,6 @@ void EnableBackIRInterrupt(void)
  Function
 		 InputCaptureForFrontIRDetection
 
- Parameters
-     void
-
- Returns
-     void
-
  Description
 			Interrupt response for input capture --> 
 			will give us the period of the detected IR signal
@@ -257,10 +254,10 @@ void EnableBackIRInterrupt(void)
 void InputCaptureForFrontIRDetection( void )  
 {
 	//Clear the source of the interrupt, the input capture event
-	HWREG(WTIMER1_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
+	HWREG(WTIMER3_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
 	
 	// grab captured value and calc period 
-	Front_CurrentEdge = HWREG(WTIMER1_BASE + TIMER_O_TAR);
+	Front_CurrentEdge = HWREG(WTIMER3_BASE + TIMER_O_TAR);
 	
 	Front_MeasuredIRSignalPeriod = Front_CurrentEdge - Front_LastEdge;
 	Front_MeasuredIRSignalPeriod = 1000*Front_MeasuredIRSignalPeriod/TicksPerMS; // Unit: us
@@ -273,9 +270,8 @@ void InputCaptureForFrontIRDetection( void )
 		
 	// Update the module level variable StagingAreaPeriod to be the average of the past ten catches
 	// Update it every 10 interrupts
-	if(Front_counter >= SampleSize){
+	if(Front_counter >= SampleSize)
 		Front_counter = 0;
-  }
 	
 	// update LastCapture to prepare for the next edge
 	Front_LastEdge = Front_CurrentEdge;
@@ -303,7 +299,7 @@ void InputCaptureForFrontIRDetection( void )
  Author
      Team 16 
 ****************************************************************************/ 
-void InputCaptureForBackIRDetection( void )  
+void InputCaptureForBackIRDetection( void )  //ISR
 {
 	//Clear the source of the interrupt, the input capture event
 	HWREG(WTIMER3_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
@@ -447,7 +443,7 @@ uint8_t Back_GetIRCodeSingle( uint16_t thePeriod )
 
 /****************************************************************************
  Function
-    Front_GetIRCodeArray
+    Front_GetIRCode
 
  Parameters
    ES_Event : the event to process
@@ -463,7 +459,7 @@ uint8_t Back_GetIRCodeSingle( uint16_t thePeriod )
    J. Edward Carryer, 01/15/12, 15:23
 ****************************************************************************/
 
-uint8_t Front_GetIRCodeArray(void){
+uint8_t Front_GetIRCode(void){
 	uint8_t i = 0;
 	uint8_t returnCode = Front_GetIRCodeSingle(Front_PeriodBuffer[0]);
 //	printf("\r\n-------------Code=%u------------\r\n",returnCode);
@@ -487,7 +483,7 @@ uint8_t Front_GetIRCodeArray(void){
 
 /****************************************************************************
  Function
-    Back_GetIRCodeArray
+    Back_GetIRCode
 
  Parameters
    ES_Event : the event to process
@@ -503,7 +499,7 @@ uint8_t Front_GetIRCodeArray(void){
    J. Edward Carryer, 01/15/12, 15:23
 ****************************************************************************/
 
-uint8_t Back_GetIRCodeArray(void){
+uint8_t Back_GetIRCode(void){
 	uint8_t i = 0;
 	uint8_t returnCode = Back_GetIRCodeSingle(Back_PeriodBuffer[0]);
 	//printf("\r\n%u\r\n",returnCode);
