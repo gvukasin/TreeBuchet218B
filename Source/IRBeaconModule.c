@@ -302,7 +302,7 @@ void InputCaptureForFrontIRDetection( void )
  Author
      Team 16 
 ****************************************************************************/ 
-void InputCaptureForBackIRDetection( void )  
+void InputCaptureForBackIRDetection( void )  //ISR
 {
 	//Clear the source of the interrupt, the input capture event
 	HWREG(WTIMER3_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
