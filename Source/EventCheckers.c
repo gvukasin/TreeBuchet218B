@@ -38,6 +38,8 @@
 // actual functionsdefinition
 #include "EventCheckers.h"
 
+#include "MotorActionsModule.h"
+
 #include "RobotTopSM.h"
 
 // This is the event checking function sample. It is not intended to be 
@@ -94,6 +96,9 @@ bool Check4Keystroke(void)
 		else if( ThisEvent.EventParam == 'V' ){
 			CommandEvent.EventParam = ROBOT_STATUS;
 			PostSPIService(CommandEvent);
+		}
+		else if (ThisEvent.EventParam == 'x') {
+			stop();
 		}
 		else{   // otherwise post to Service 0 for processing
    
