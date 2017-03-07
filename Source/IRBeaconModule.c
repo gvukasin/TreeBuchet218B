@@ -31,6 +31,7 @@ Events to post:
 #define BitsPerNibble 4
 #define numbNibblesShifted 6
 #define pinC6Mask 0xf0ffffff
+#define pinD2Mask 0xfffff0ff
 
 // IR frequency codes
 #define code800us 0x00 // 1250Hz (Green supply depot)
@@ -75,7 +76,8 @@ static uint8_t CaptureIndex = 0;
 // 588 us -> 1700 Hz (Red nav beacon)
 // 690 us -> 1450 Hz (Bucket nav beacon)
 // 800 us -> 1250 Hz (Green supply depot)
-static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
+//static uint16_t ValidIRSignalPeriods[5] = {455, 513, 588, 690, 800};
+static uint16_t ValidIRSignalPeriods[5] = {800, 690, 588, 513, 455};
 
 /*------------------------------ Module Code ------------------------------*/
 
@@ -142,7 +144,6 @@ void InitInputCaptureForFrontIRDetection( void )
 	
 }
 
-// SEE ME (change to Wide Timer 3 subtimer A)
 /****************************************************************************
  Function
      InitInputCaptureForBackIRDetection
@@ -189,12 +190,12 @@ void InitInputCaptureForBackIRDetection( void )
 	HWREG(GPIO_PORTD_BASE + GPIO_O_AFSEL) |= BIT2HI;
 	
 	//map bit 2's alternate function to WT1CCP0
-	HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTC_BASE + GPIO_O_PCTL) & pinC6Mask) + (7 << (BitsPerNibble*2));
+	HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTD_BASE + GPIO_O_PCTL) & pinD2Mask) + (7 << (BitsPerNibble*2));
 	
-	//Enable pin 6 on Port C for digital I/O
+	//Enable pin 2 on Port D for digital I/O
 	HWREG(GPIO_PORTD_BASE + GPIO_O_DEN) |= BIT2HI;
 	
-	//make pin 6 on Port C into an input
+	//make pin 2 on Port D into an input
 	HWREG(GPIO_PORTD_BASE + GPIO_O_DIR) &= BIT2LO;
 	
 	//Enable a local capture interrupt
@@ -219,7 +220,7 @@ void InitInputCaptureForBackIRDetection( void )
 void EnableFrontIRInterrupt(void)
 {
 	//Kick timer off by enabling timer and enabling the timer to stall while stopped by the debugger
-	HWREG(WTIMER3_BASE + TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+	HWREG(WTIMER1_BASE + TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
 }
 
 // SEE ME (change to Wide Timer 3 subtimer A)
@@ -357,32 +358,32 @@ uint8_t Front_GetIRCodeSingle( uint16_t thePeriod )
 		if( (thePeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) && (thePeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) ){
 			if ( (thePeriod > (ValidIRSignalPeriods[0] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) ){
 				Front_IRSignalCode = code455us;
-				//printf("\r\n code1333 %x",Front_IRSignalCode);
+				printf("\r\n code455 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[1] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[1] + Front_IRSignalCode_Tolerance)) ){
 				Front_IRSignalCode = code513us;
-				//printf("\r\n code1277 %x",Front_IRSignalCode);
+				printf("\r\n code513 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[2] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[2] + Front_IRSignalCode_Tolerance)) ){
 				Front_IRSignalCode = code588us;
-				//printf("\r\n code1222 %x",Front_IRSignalCode);
+			 printf("\r\n code588 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[3] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[3] + Front_IRSignalCode_Tolerance)) ){
 				Front_IRSignalCode = code690us;
-				//printf("\r\n code1166 %x",Front_IRSignalCode);
+				printf("\r\n code690 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[4] + Front_IRSignalCode_Tolerance)) ){
 				Front_IRSignalCode = code800us;
-				//printf("\r\n code1111 %x",Front_IRSignalCode);
+				printf("\r\n code800 %x",Front_IRSignalCode);
 			}
 		}
 		else{
 			Front_IRSignalCode = codeInvalidIRFreq;
-			//printf("\r\n code70 %x",Front_IRSignalCode);
+			printf("\r\n Invalid, period = %d\r\n",Front_MeasuredIRSignalPeriod);
 		}	
 
 	//printf("\r\n code %x",Front_IRSignalCode);
@@ -465,15 +466,23 @@ uint8_t Back_GetIRCodeSingle( uint16_t thePeriod )
 uint8_t Front_GetIRCodeArray(void){
 	uint8_t i = 0;
 	uint8_t returnCode = Front_GetIRCodeSingle(Front_PeriodBuffer[0]);
-	printf("\r\n%u\r\n",returnCode);
+//	printf("\r\n-------------Code=%u------------\r\n",returnCode);
+//	printf("\r\n!!!!!!!!!!!Period0=%d\r\n",Front_PeriodBuffer[0]);
+//	printf("\r\n!!!!!!!!!!!Period1=%d\r\n",Front_PeriodBuffer[1]);
+//	printf("\r\n!!!!!!!!!!!Period2=%d\r\n",Front_PeriodBuffer[2]);
+//	printf("\r\n!!!!!!!!!!!Period3=%d\r\n",Front_PeriodBuffer[3]);
+//	printf("\r\n!!!!!!!!!!!Period4=%d\r\n",Front_PeriodBuffer[4]);
+//	printf("\r\n!!!!!!!!!!!%u\r\n",returnCode);
+//	printf("\r\n!!!!!!!!!!!Counter=%u\r\n",Front_counter);
 	
 	for(i = 1; i < SampleSize; i++){
 		if(Front_GetIRCodeSingle(Front_PeriodBuffer[i]) != returnCode){
 			return codeInvalidIRFreq;
 		}
 	}
-	
+	printf("\r\n--------------ValidCode--------%u\r\n",returnCode);
 	return returnCode;
+	
 }
 
 /****************************************************************************
@@ -497,7 +506,12 @@ uint8_t Front_GetIRCodeArray(void){
 uint8_t Back_GetIRCodeArray(void){
 	uint8_t i = 0;
 	uint8_t returnCode = Back_GetIRCodeSingle(Back_PeriodBuffer[0]);
-	printf("\r\n%u\r\n",returnCode);
+	//printf("\r\n%u\r\n",returnCode);
+	printf("\r\n!!!!!!!!!!!Period0=%d\r\n",Back_PeriodBuffer[0]);
+	printf("\r\n!!!!!!!!!!!Period1=%d\r\n",Back_PeriodBuffer[1]);
+	printf("\r\n!!!!!!!!!!!Period2=%d\r\n",Back_PeriodBuffer[2]);
+	printf("\r\n!!!!!!!!!!!Period3=%d\r\n",Back_PeriodBuffer[3]);
+	printf("\r\n!!!!!!!!!!!Period4=%d\r\n",Back_PeriodBuffer[4]);
 	
 	for(i = 1; i < SampleSize; i++){
 		if(Back_GetIRCodeSingle(Back_PeriodBuffer[i]) != returnCode){
