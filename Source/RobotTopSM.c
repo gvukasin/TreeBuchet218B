@@ -138,11 +138,12 @@
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
-#define WireFollow_TIME ONE_SEC/10
+#define WireFollow_TIME ONE_SEC/50
 #define PWMOffset 70
-#define PWMProportionalGain 0.08
-#define PWMDerivativeGain 0.01
+#define PWMProportionalGain 0.15 //0.10
+#define PWMDerivativeGain 0.1
 #define NoWireDetectedReading 2000
+// Good try: Timer=1/50s, offset=70, Propertional=0.15, Derivative=0.1
 
 // MotorActionDefines
 #define FORWARD 1
@@ -164,7 +165,7 @@ static void InitializeTeamButtonsHardware(void);
 static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
 static void InitGetAwayTimer(void);
-static void SetGetAwayTimer(uint32_t);
+static void EnableGetAwayTimer(void);
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -177,6 +178,7 @@ static int RLCReading[2]; //RLCReading[0] = Left Sensor Reading; RLCReading[1] =
 static int RLCReading_Left;
 static int RLCReading_Right;
 static int PositionDifference;
+static int LastPositionDifference = 0;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
@@ -195,7 +197,8 @@ static uint8_t newRead;
 static bool ValidSecondCode = 1;
 static uint32_t OneShotTimeoutMS;
 static uint16_t LastPeriodCode;
-static uint16_t GetAwayTimeoutMS = 500;
+static uint16_t GetAwayTimeoutMS = 100;
+static bool HallEffectFlag = 0;
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -324,13 +327,13 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 // printf("\r\n current event: %i",CurrentEvent.EventType);
+			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
 			 // Process events		
 				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
-					 //printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
+					 printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
 					 NextState = CHECKING_IN;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -563,7 +566,9 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				PostSPIService(PostEvent);
 				
 				//Turn on TeamColor LEDs
-				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);		
+				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);	
+
+				//printf("\r\n Team Color (1 red): %i", TeamColor);
 				
     }
     else if ( Event.EventType == ES_EXIT )
@@ -621,18 +626,25 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
-			EnableStagingAreaISR();
+			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
+				// Clear flag
+				HallEffectFlag = 0;
+				
+				
+			} else {
+				// enable Hall Effect Interrupt
+				EnableStagingAreaISR(1);
+			}
     }
     else if ( Event.EventType == ES_EXIT )
     {
-			// Stop the motor
-			stop();
-    } 
-//		else if (Event.EventType == RESTART_HALL_EFFECT) {
-//			
-//			// disable hall effect interrupt 
-//			
-//		}
+			// SEE ME: commented this out because we do not want to stop the motors at a staging area we are not sure is correct
+			// Stop the motor 
+			//stop();
+			
+			// instead, drive straight
+			driveSeperate(75,75,FORWARD);
+    }
 		
 		// do the 'during' function for this state
 		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
@@ -644,7 +656,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Positive when too left (right at higher voltage)
 			// Negative when too right (left at higher ovltage)
 			PositionDifference = RLCReading_Right - RLCReading_Left;
-			PositionDifference_dt = PositionDifference/WireFollow_TIME;
+			PositionDifference_dt = (PositionDifference - LastPositionDifference);
+			LastPositionDifference = PositionDifference;
 			
 			// Set flags to determine if either side is on the wire
 			// Check if left side is on the wire
@@ -664,14 +677,16 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			}
 			
 			// P Control
-			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+//			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
+//			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
+//			//printf("\r\n R,L: %i,%i",PWMLeft, PWMRight);
+			
 			
 			// SEE ME
 
 			// PD Control
-			// int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
-			// int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
 			
 			// SEE ME
 			// If either side is on the wire, check if either side is off the wire
@@ -824,6 +839,15 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							// record current driving stage (we will need next staging area too to know which direction to drive in!)
 							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
 							
+							// Set Flag for disabling interrupt for the hall effect sensor
+							HallEffectFlag = 1;
+							
+							// Disable Hall Effect Interrupt
+							EnableStagingAreaISR(0);
+							
+							// Enable GetAwayTimer Interrupt
+							EnableGetAwayTimer();
+							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = START;
 							PostRobotTopSM(PostEvent);	
@@ -832,6 +856,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 						// ACK - all good! 
 						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
 						{
+							
 							// Add 1 to number of correct reports
 							NumberOfCorrectReports++;
 							
@@ -840,6 +865,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							
 							if (NumberOfCorrectReports == 2)
 							{	
+								// stop the motors, this is the correct station 
+								stop();
+								
 								//Go to SHOOTING
 								PostEvent.EventType = CHECK_IN_SUCCESS;
 								PostRobotTopSM(PostEvent);	
@@ -1139,14 +1167,14 @@ static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS )
 	HWREG(WTIMER1_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
 }
 
-void GameTimerISR(void)
+void GameTimerISR(void) 
 {	
 	// clear interrupt
 	HWREG(WTIMER1_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
 	
 	// post event to go into ENDING_STRATEGY state
 	ES_Event PostEvent;
-	PostEvent.EventType = RESTART_HALL_EFFECT;
+	PostEvent.EventType = FINISH_STRONG;
 	PostRobotTopSM(PostEvent);
 	
 }
@@ -1194,10 +1222,10 @@ static void InitGetAwayTimer() //Wide Timer 3 subtimer B
 	printf("\r\n Get Away TIMER init done \r\n");
 }
 
-static void SetGetAwayTimer( uint32_t GameTimerTimeoutMS )
+static void EnableGetAwayTimer( void )
 {
 	// set timeout
-	HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
+	//HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
 	
 	// now kick the timer off by enabling it and enabling the timer to stall while stopped by the debugger
 	HWREG(WTIMER3_BASE+TIMER_O_CTL) |= (TIMER_CTL_TBEN | TIMER_CTL_TBSTALL);
@@ -1208,11 +1236,8 @@ void GetAwayISR(void)
 	// clear interrupt
 	HWREG(WTIMER3_BASE+TIMER_O_ICR) = TIMER_ICR_TBTOCINT; 
 	
-	// post event to re-enable isr for hall effect sensor 
-	ES_Event PostEvent;
-	PostEvent.EventType = FINISH_STRONG;
-	PostRobotTopSM(PostEvent);
-	
+	// re-enable isr for hall effect sensor 
+	EnableStagingAreaISR(1);
 }
 
 #ifdef TEST
