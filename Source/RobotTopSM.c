@@ -630,11 +630,12 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
 				// Clear flag
 				HallEffectFlag = 0;
-				
+				printf("\r\n clear flag ");
 				
 			} else {
 				// enable Hall Effect Interrupt
 				EnableStagingAreaISR(1);
+				printf("\r\n en hall int");
 			}
     }
     else if ( Event.EventType == ES_EXIT )
@@ -644,7 +645,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			//stop();
 			
 			// instead, drive straight
-			driveSeperate(75,75,FORWARD);
+			driveSeperate(70,70,FORWARD);
     }
 		
 		// do the 'during' function for this state
