@@ -507,7 +507,6 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	//Initial state
 	// SEE ME
 	CurrentState = WAITING2START;
-	//CurrentState = DRIVING2STAGING;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var

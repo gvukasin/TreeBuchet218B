@@ -97,7 +97,6 @@
 */
 static ES_Event DuringRequestingBall( ES_Event Event);
 static ES_Event DuringWaiting4Ball( ES_Event Event);
-//static void EmitIR();
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -237,21 +236,26 @@ ReloadingState_t QueryReloadingSM ( void )
 /***************************************************************************
  private functions
  ***************************************************************************/
+// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+		EnableBackIRInterrupt();
+		
+		// Start Rotating
+		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
 
-static ES_Event DuringRequestingBall( ES_Event Event)
+		// Start the timer to periodically check the IR frequency
+		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+
+static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
-    if ( (Event.EventType == ES_ENTRY) ||
-         (Event.EventType == ES_ENTRY_HISTORY) )
+    if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
         TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // do any local exit functionality
         TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
