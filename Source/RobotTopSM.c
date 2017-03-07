@@ -515,29 +515,6 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 }
 
 
-/******************************************************************
-Function 
-	GetTeamColor
-************************************************************************/
-bool GetTeamColor()
-{
-	return TeamColor;
-}
-
-
-/******************************************************************
-Function 
-	GetCurrentStagingArea
-************************************************************************/       
-uint8_t GetCurrentStagingAreaPosition()
-{
-	return CurrentStagingArea ;
-}
-
-
-/***************************************************************************
- private functions
- ***************************************************************************/
 /****************************************************************************
 During Functions:
 
@@ -911,8 +888,7 @@ static ES_Event DuringShooting( ES_Event Event)
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
         // start any lower level machines that run in this state
-        StartShootingSM(Event);  
-	
+        StartShootingSM(Event);  	
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -1047,6 +1023,13 @@ static ES_Event DuringStop( ES_Event Event)
 }
 
 /****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************
+****************************************************************************/
+
+/****************************************************************************
  InitializeTeamButtonsHardware
 ****************************************************************************/
 static void InitializeTeamButtonsHardware(void)
@@ -1068,8 +1051,28 @@ static void InitializeTeamButtonsHardware(void)
 
 }
 
+/******************************************************************
+Function 
+	GetTeamColor
+************************************************************************/
+bool GetTeamColor()
+{
+	return TeamColor;
+}
+
+
+/******************************************************************
+Function 
+	GetCurrentStagingAreaPosition
+************************************************************************/       
+uint8_t GetCurrentStagingAreaPosition()
+{
+	return CurrentStagingArea ;
+}
+
+
 /****************************************************************************
- SaveStagingPosition
+ GetGoalOrStagePositionFromStatus
 ****************************************************************************/
 uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 {
@@ -1083,12 +1086,12 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 			// set current staging area variable to R1	
 			ReturnPosition = 1;
 			
-		} else if (StatusResponse & R2){
+		} else if ((StatusResponse & R2) == R2){
 			
 			// set current staging area variable to R2
 			ReturnPosition = 2;
 			
-		} else if (StatusResponse & R3) {
+		} else if ((StatusResponse & R3) == R3){
 			
 			// set current staging area variable to R3
 			ReturnPosition = 3;
@@ -1100,12 +1103,12 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 			// set current staging area variable to G1	
 			ReturnPosition = 1;
 			
-		} else if (StatusResponse & G2){
+		} else if ((StatusResponse & G2) == G2){
 			
 			// set current staging area variable to G2
 			ReturnPosition = 2;
 			
-		} else if (StatusResponse & G3) {
+		} else if ((StatusResponse & G3) == G3){
 			
 			// set current staging area variable to G3
 			ReturnPosition = 3;
@@ -1116,6 +1119,8 @@ uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse )
 
 /****************************************************************************
 GAME TIMER 
+
+		2 min timeout to move onto strategy state
 ****************************************************************************/
 
 static void InitGameTimer() //Wide Timer 1 subtimer B
@@ -1181,6 +1186,9 @@ void GameTimerISR(void)
 }
 /****************************************************************************
 GETAWAY STAGING TIMER 
+
+		This timer gives the robot some time to move away from a station before
+		it starts looking for magnetic frequencies again
 ****************************************************************************/
 
 static void InitGetAwayTimer() //Wide Timer 3 subtimer B
@@ -1223,7 +1231,7 @@ static void InitGetAwayTimer() //Wide Timer 3 subtimer B
 	printf("\r\n Get Away TIMER init done \r\n");
 }
 
-static void EnableGetAwayTimer( void )
+static void EnableGetAwayTimer( void ) 
 {
 	// set timeout
 	//HWREG(WTIMER3_BASE+TIMER_O_TBILR) = TicksPerMS*GameTimerTimeoutMS;
@@ -1240,6 +1248,10 @@ void GetAwayISR(void)
 	// re-enable isr for hall effect sensor 
 	EnableStagingAreaISR(1);
 }
+
+/****************************************************************************
+TESTS
+****************************************************************************/
 
 #ifdef TEST
 #include "termio.h"
