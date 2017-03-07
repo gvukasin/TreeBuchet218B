@@ -627,7 +627,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     }
 		
 		// do the 'during' function for this state
-		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIMER))
+		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
