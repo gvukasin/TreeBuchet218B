@@ -468,7 +468,7 @@ uint8_t GetStagingAreaCodeSingle( uint16_t thePeriod )
 uint8_t GetStagingAreaCodeArray(void){
 	uint8_t i = 0;
 	uint8_t returnCode = GetStagingAreaCodeSingle(PeriodBuffer[0]);
-	printf("\r\n%u\r\n",returnCode);
+	//printf("\r\n staging area code %u \r\n",returnCode);
 	
 	for(i = 1; i < SampleSize; i++){
 		if(GetStagingAreaCodeSingle(PeriodBuffer[i]) != returnCode){

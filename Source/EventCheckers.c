@@ -41,6 +41,7 @@
 #include "MotorActionsModule.h"
 
 #include "RobotTopSM.h"
+#include "PWMmodule.h"
 
 // This is the event checking function sample. It is not intended to be 
 // included in the module. It is only here as a sample to guide you in writing
@@ -98,7 +99,10 @@ bool Check4Keystroke(void)
 			PostSPIService(CommandEvent);
 		}
 		else if (ThisEvent.EventParam == 'x') {
-			stop();
+			//stop();
+			SetServoDuty(70); 
+		} else if (ThisEvent.EventParam == 'd') {
+			SetServoDuty(0); 
 		}
 		else{   // otherwise post to Service 0 for processing
    

@@ -59,13 +59,6 @@
 #include "PWMmodule.h"
 #include "LEDModule.h"
 
-// IR frequency codes
-#define code800us 0x00 // 1250Hz (Green supply depot)
-#define code690us 0x01 // 1450Hz (Bucket nav beacon)
-#define code588us 0x02 // 1700Hz (Red nav beacon)
-#define code513us 0x03 // 1950Hz (Red supply depot)
-#define code455us 0x04 // 2200Hz (Green nav beacon)
-
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
@@ -90,6 +83,13 @@
 #define SeparatorDuty 30
 #define SeparatorONTime 150 //ms
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
+
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -101,7 +101,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 
 static bool DetectAGoal();
-static void SetServoAndFlyWheelSpeed();
+// static void SetServoAndFlyWheelSpeed(); // Do we still need this?
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -110,12 +110,8 @@ static uint8_t BallCount;
 static uint8_t MyScore;
 static uint8_t Back_MeasuredIRPeriodCode;
 static bool setSpeedReady = 0;
-static bool aligned1250;
-static bool aligned1450;
-static bool aligned1700;
-static bool aligned1950;
-static bool aligned2200;
-static bool firstIRBeaconAlignment;
+
+static bool firstIRBeaconAlignment = 0;
 static bool BeaconRotationDirection = CW;
 static uint8_t CurrentStagingAreaPosition;
 static uint16_t LOCResponse;
@@ -490,97 +486,74 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 *******************************************************************************************/
 static bool DetectAGoal()
 {
-		// If first beacon aligned TRUE
+		// If first beacon aligned TRUE   
+	
+		// SEE ME - I'm not actually sure what firstIRBeaconAlignment does. I guess make sure that
+		// you have aligned with a non-goal type beacon previously
+	
 		if ( firstIRBeaconAlignment == 1 )
 		{
-			// If aligned1450 TRUE - Ready to move on to next state
-			if ( Back_MeasuredIRPeriodCode ==  )				
+			// reset flag
+			firstIRBeaconAlignment = 0;  //SEE ME - I guess this needs to happen here. It was a flag that was never reset!!! - Elena 
+			
+			// If aligned with 1450Hz beacon - Ready to move on to SHOOTING
+			if ( Back_MeasuredIRPeriodCode ==  code690us)		// We compare the value measured with the ISR with the desired code
 				return true;
 			else
 				return false;
 		}
 		
-		// (A) If on the GREEN side
-		if ( GetTeamColor() == GREEN )
-		{
+		
+		else{
 			
-			// If aligned1250 TRUE - Rotate CCW
-			if ( aligned1250 == 1 )
-			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// set aligned1250 TRUE
-				aligned1250 = 1;
-				// rotate counterclockwise
-				BeaconRotationDirection = CCW;
-	
-				// If first beacon aligned TRUE && aligned2200 TRUE
-				if ( (firstIRBeaconAlignment == 1) && (aligned2200 == 1) )
-				{
-					// set aligned2200 FALSE
-					aligned2200 = 0;
-				}
-			}
-				
-			// If aligned2200 TRUE - Rotate CW
-			else if ( aligned2200 == 1 )
-			{
-				// set first beacon aligned TRUE
-				firstIRBeaconAlignment = 1;
-				// set aligned2200 TRUE
-				aligned2200 = 1;
-				// rotate clockwise
-				BeaconRotationDirection = CW;
-			
-				// If first beacon aligned TRUE && aligned1250 TRUE
-				if ( (firstIRBeaconAlignment == 1) && (aligned1250 == 1) )
-				{
-					// set aligned1250 FALSE
-					aligned1250 = 0;
-				}
-			}
-		}
-			
-			// (B) If on the RED side
-			else if ( GetTeamColor() == RED )
+			// (A) If on the GREEN side
+			if ( GetTeamColor() == GREEN )
 			{
 				
-				// If aligned1700 TRUE - Rotate CCW
-				if ( aligned1700 == 1 )
+				// If aligned1250 TRUE - Rotate CCW
+				if ( Back_MeasuredIRPeriodCode == code800us ) //1250Hz
 				{
 					// set first beacon aligned TRUE
 					firstIRBeaconAlignment = 1;
-					// set aligned1700 TRUE
-					aligned1700 = 1;
 					// rotate counterclockwise
 					BeaconRotationDirection = CCW;
-		
-					// If first beacon aligned TRUE && aligned1950 TRUE
-					if ( (firstIRBeaconAlignment == 1) && (aligned1950 == 1) )
-					{
-						// set aligned1950 FALSE
-						aligned1950 = 0;
-					}
 				}
-				
-				// If aligned1950 TRUE - Rotate CW
-				else if ( aligned1950 == 1 )
+					
+				// If aligned with 2200Hz beacon - Rotate CW
+				else if ( Back_MeasuredIRPeriodCode == code455us )
 				{
 					// set first beacon aligned TRUE
 					firstIRBeaconAlignment = 1;
-					// set aligned1950 TRUE
-					aligned1950 = 1;
 					// rotate clockwise
 					BeaconRotationDirection = CW;
-		
-					// If first beacon aligned TRUE && aligned1700 TRUE
-					if ( (firstIRBeaconAlignment == 1) && (aligned1700 == 1) )
-					{
-						// set aligned1700 FALSE
-						aligned1700 = 0;
-					}
+				}
+				
+			}
+				
+			// (B) If on the RED side
+			else if ( GetTeamColor() == RED )
+			{				
+				// If aligned 1700Hz - Rotate CCW
+				if ( Back_MeasuredIRPeriodCode == code588us )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate counterclockwise
+					BeaconRotationDirection = CCW;
+				}
+				
+				// If aligned 1950Hz - Rotate CW
+				else if ( Back_MeasuredIRPeriodCode == code513us )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// rotate clockwise
+					BeaconRotationDirection = CW;
 				}
 			}
+			
+			return false;
+		}
 }
 
 /****************************************************************************************

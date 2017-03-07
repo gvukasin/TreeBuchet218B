@@ -135,6 +135,10 @@
 #define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
 #define codeInvalidStagingArea 0xff
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
@@ -143,7 +147,7 @@
 #define PWMProportionalGain 0.15 //0.10
 #define PWMDerivativeGain 0.1
 #define NoWireDetectedReading 2000
-// Good try: Timer=1/50s, offset=70, Propertional=0.15, Derivative=0.1
+// Good try: Timer=1/50s, offset=70, Proportional=0.15, Derivative=0.1
 
 // MotorActionDefines
 #define FORWARD 1
@@ -196,12 +200,14 @@ static uint8_t newRead;
 static bool ValidSecondCode = 1;
 static uint32_t OneShotTimeoutMS;
 static uint16_t LastPeriodCode;
-static uint16_t GetAwayTimeoutMS = 100;
+static uint16_t GetAwayTimeoutMS = 3000;
 static bool HallEffectFlag = 0;
 
 static uint16_t OldScore;
 static uint16_t NewScore;
 static bool ShootingFlag = 0;
+
+static uint8_t Front_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -240,7 +246,6 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize hardware for IR but not kicking the timer off 
 	InitInputCaptureForFrontIRDetection();
-	printf("\r\n thru inits");
 	InitInputCaptureForBackIRDetection();
 	
 	// Initialize stage area frequency reading
@@ -257,6 +262,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
+	printf("\r\n thru inits");
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -329,9 +335,11 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 
+
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 // Process events		
+			 // Process events	
 				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
@@ -340,13 +348,15 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-				if ((CurrentEvent.EventType == ES_TIMEOUT) && (CurrentEvent.EventParam == WireFollow_TIMER))
+
+				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{
 					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
+
 				break;
 				
 			 // CASE 3/8				 
@@ -370,7 +380,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
-						case START :
+						case KEEP_DRIVING:
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -501,6 +511,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
 	// SEE ME
+//CurrentState = ENDING_STRATEGY;
 	CurrentState = WAITING2START;
 	
   // now we need to let the Run function init the lower level state machines
@@ -509,6 +520,9 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
   return;
 }
 
+/***************************************************************************
+ private functions
+ ***************************************************************************/
 
 /****************************************************************************
 During Functions:
@@ -553,7 +567,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 		
 		else if(Event.EventType == COM_STATUS)
 		{
-			// printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
+			printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
 							
 			// check game status bit
 			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
@@ -567,7 +581,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			}			
 			else 
 			{		
-				//printf("\r\n ask loc again 1\r\n");					
+				printf("\r\n ask loc again 1\r\n");					
 				//ask LOC for GAME STATUS again (until it says we're ready to start)
 				ES_Event PostEvent;
 				PostEvent.EventType = ROBOT_STATUS;	
@@ -599,7 +613,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			printf("\r\nDriving2Staging ENTRY\r\n");
+			printf("\r\n Driving2Staging ENTRY \r\n");
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
@@ -615,6 +629,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				EnableStagingAreaISR(1);
 				printf("\r\n en hall int");
 			}
+			
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -623,12 +638,51 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			//stop();
 			
 			// instead, drive straight
-			driveSeperate(70,70,FORWARD);
+			driveSeperate(40,40,FORWARD);
     }
 		
 		// do the 'during' function for this state
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
+			// Not sure if this is where we want to align with the appropriate beacon, but I will add the pseudo code here
+			// if on the GREEN side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 2200 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1250 Hz
+					// else if the next staging area is > 2
+						// align with 2200 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1250 Hz
+			
+			// if on the RED side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 1700 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1950 Hz
+					// else if the next staging area is > 2
+						// align with 1700 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1950 Hz
+			
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
 			RLCReading_Right = RLCReading[1];
@@ -698,7 +752,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -720,6 +774,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
+				printf("\r\n pcode %x",PeriodCode);
 				PostRobotTopSM(Event2Post);
 			}
     }
@@ -784,6 +839,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
     else if ( Event.EventType == ES_EXIT)
     {
     }
+		
 		/***********************************************************************************/
 		// DURING
 		/***********************************************************************************/
@@ -840,7 +896,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							EnableGetAwayTimer(GetAwayTimeoutMS);
 							
 							//Go to DRIVING2STAGING
-							PostEvent.EventType = START;
+							PostEvent.EventType = KEEP_DRIVING;
 							PostRobotTopSM(PostEvent);	
 						}
 						
@@ -901,6 +957,7 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+
         //Set shooting flag to true
 				ShootingFlag = 1;
 			
@@ -973,8 +1030,37 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // do any activity that is repeated as long as we are in this state
-				Drive2Reload();
+      // do any activity that is repeated as long as we are in this state
+			// Drive2Reload();
+			
+			 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+			 {
+				// Read the detected IR frequency
+				Front_MeasuredIRPeriodCode = Front_GetIRCode();
+				
+				// if on the GREEN side, align with 1250 Hz
+				// if on the RED side, align with 1950 Hz
+				 
+				if ( GetTeamColor() == GREEN )
+				{
+					if ( Front_MeasuredIRPeriodCode == code800us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+				else if ( GetTeamColor() == RED )
+				{
+					if ( Front_MeasuredIRPeriodCode == code513us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+			}
+			
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -997,7 +1083,16 @@ static ES_Event DuringReloading( ES_Event Event)
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        RunReloadingSM(Event); 
+        RunReloadingSM(Event);
+			
+			// either rotate 180 deg (EASIER)
+			
+			// or, align with beacon on opposite side of reloader
+			
+			// if on the GREEN side
+				// align with 2200 Hz
+			// else if on the RED side
+				// align with 1700 Hz
     }
 		
 		// do the 'during' function for this state
@@ -1027,6 +1122,9 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
         //StartLowerLevelSM( Event );
         // repeat the StartxxxSM() functions for concurrent state machines
         // on the lower level
+			
+			//SEE ME: get rid of this, just for testing shooter
+			SetFlyDuty(80);
     }
     else if ( Event.EventType == ES_EXIT )
     {

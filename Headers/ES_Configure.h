@@ -264,6 +264,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								NEXT_COMMAND,
 								/* Robot SM events*/
 								START, 
+								KEEP_DRIVING,
 								STATION_REACHED,
 								CHECK_IN_SUCCESS, //14
 								FINISH_STRONG, 
