@@ -135,6 +135,10 @@
 #define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
 #define codeInvalidStagingArea 0xff
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
@@ -143,7 +147,7 @@
 #define PWMProportionalGain 0.15 //0.10
 #define PWMDerivativeGain 0.1
 #define NoWireDetectedReading 2000
-// Good try: Timer=1/50s, offset=70, Propertional=0.15, Derivative=0.1
+// Good try: Timer=1/50s, offset=70, Proportional=0.15, Derivative=0.1
 
 // MotorActionDefines
 #define FORWARD 1
@@ -202,6 +206,8 @@ static bool HallEffectFlag = 0;
 static uint16_t OldScore;
 static uint16_t NewScore;
 static bool ShootingFlag = 0;
+
+static uint8_t Front_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -374,8 +380,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
-
-						case KEEP_DRIVING :
+						case KEEP_DRIVING:
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -707,7 +712,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -985,8 +990,34 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // do any activity that is repeated as long as we are in this state
-				Drive2Reload();
+      // do any activity that is repeated as long as we are in this state
+			// Drive2Reload();
+			
+			 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+			 {
+				// Read the detected IR frequency
+				Front_MeasuredIRPeriodCode = Front_GetIRCode();
+				 
+				if ( GetTeamColor() == GREEN )
+				{
+					if ( Front_MeasuredIRPeriodCode == code800us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+				else if ( GetTeamColor() == RED )
+				{
+					if ( Front_MeasuredIRPeriodCode == code513us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+			}
+			
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
