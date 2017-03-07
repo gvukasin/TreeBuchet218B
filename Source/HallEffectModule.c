@@ -155,10 +155,17 @@ void InitStagingAreaISR ( void )
  Author
    J. Edward Carryer, 01/15/12, 15:23
 ****************************************************************************/
-void EnableStagingAreaISR( void )
+void EnableStagingAreaISR( bool isEnabled )
 {
-	// enable timer and enable timer to stall when program stopped by the debugger
-	HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+	if(isEnabled == 1){
+		// enable timer and enable timer to stall when program stopped by the debugger
+		HWREG(WTIMER0_BASE+TIMER_O_CTL) |= (TIMER_CTL_TAEN | TIMER_CTL_TASTALL);
+		
+	} else {
+		
+		// disable interrupt
+		HWREG(WTIMER0_BASE+TIMER_O_CTL) &= ~TIMER_CTL_TAEN;
+	}
 }
 
 /****************************************************************************
