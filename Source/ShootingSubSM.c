@@ -57,6 +57,8 @@
 #include "MotorActionsModule.h"
 #include "IRBeaconModule.h"
 #include "PWMmodule.h"
+#include "LEDModule.h"
+
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -73,12 +75,10 @@
 #define CCW 0
 
 #define Wait4ShotTime 10000 //10sec
-
 #define BucketCode 0x01
-
 #define BeaconRotationDutyCycle 80
-
 #define GOAL_BYTE_MASK 0x00ff
+#define LEDS_OFF 0
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -115,8 +115,8 @@ static bool Scored = 0;
 static bool Missed = 0;
 static bool NoBalls = 0;
 static bool ScoreHasBeenSaved = 0;
-static uint16_t CurrentScore;
-static uint16_t NewScore;
+static uint16_t ScoreBeforeShooting;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -187,7 +187,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          // Execute During function 
          CurrentEvent = DuringSettingBallSpeed(CurrentEvent);
          //process any events
-         if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == BALL_FLYING )) //If an event is active and it's the correct one
+         if ( CurrentEvent.EventType == BALL_FLYING ) 
          {       
             NextState = WATING4SHOT_COMPLETE;
             MakeTransition = true; 
@@ -201,26 +201,19 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 				
 				// CASE 3/3				 
 			 case WATING4SHOT_COMPLETE :  //SEE ME - not sure how to get out of the sub SM. Hope this works
-				 printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
-			   // During function
-				 CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-				 // Process events			 
-				 if (CurrentEvent.EventType == SCORED)
-					{ 
-						ReturnEvent.EventType = SCORED; //re-map this event for the upper level state machine
-					}	
-				  else if (CurrentEvent.EventType == COM_STATUS)
+				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
+			    // During function
+				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
+				  // Process events	
+					if (CurrentEvent.EventType == KEEP_WAITING4SHOT) //Internal self transition
 					{
-						ReturnEvent.EventType = COM_STATUS;
-					}
-//					else if (CurrentEvent.EventType == MISSED_SHOT)
-//					{ 
-//						ReturnEvent.EventType = MISSED_SHOT; //re-map this event for the upper level state machine
-//					}	
-//					else if (CurrentEvent.EventType == NO_BALLS)
-//					{ 
-//						ReturnEvent.EventType = NO_BALLS; //re-map this event for the upper level state machine
-//					}									
+						NextState = WATING4SHOT_COMPLETE;
+            ReturnEvent.EventType = ES_NO_EVENT;
+					}					
+				  else if (CurrentEvent.EventType == FINISHED_SHOT)
+					{ 
+						ReturnEvent.EventType = FINISHED_SHOT; //re-map this event for the upper level state machine
+					}								
 				 break;
     }
     //   If we are making a state transition
@@ -362,7 +355,7 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 		else if (Event.EventType == COM_STATUS)
 		{
 			//Save current score 
-			CurrentScore = GetMyScoreFromStatusResponse(Event.EventParam);
+			ScoreBeforeShooting = GetMyScoreFromStatusResponse(Event.EventParam);
 			
 			//set flag
 			ScoreHasBeenSaved = 1;
@@ -428,34 +421,43 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
 				// start 10sec timer
-				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);		     
+				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);	
+
+				// Turn OFF LEDs
+				TurnOnOffYellowLEDs(LEDS_OFF, GetTeamColor());			
     }
     else if ( Event.EventType == ES_EXIT )
     {    
     }
 		else //DURING - Scored, Missed, or No Balls?
     {  
-			// Wait for the shot to be done				
+			// If shot is done				
 			if((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Waiting4Shot_TIMER))
 			{
-				if(Event.EventType == BALL_FLYING)
-				{
 					// Substract 1 from ball count independetly of whether we scored or not. 			
 					BallCount = BallCount - 1;
 					printf("\r\n #balls = %i\r\n", BallCount);
 					
 					if (BallCount == 0) // go to RELOADING
 					{
+						printf("\r\n No balls after shooting\r\n");
 						Event2Post.EventType = NO_BALLS;
 						PostRobotTopSM(Event2Post);
 					}
-					else // Internal self transition
+					else // Go back to the robot top state machine and from there post SCORED or MISSED
 					{
-						Event2Post.EventType = ROBOT_STATUS;
-						PostSPIService(Event2Post);
+						printf("\r\n Finished shooting\r\n");
+						Event2Post.EventType = FINISHED_SHOT;
+						PostRobotTopSM(Event2Post);
 					}
 				}
-			}
+			
+			// If shot is NOT done - keep waiting
+			{
+				//internal self transition
+				Event2Post.EventType = KEEP_WAITING4SHOT;
+				PostRobotTopSM(Event2Post);
+			}			
     }
     return(ReturnEvent);
 }
@@ -586,6 +588,15 @@ uint16_t GetMyScoreFromStatusResponse( uint16_t StatusResponse)
 	// We want to look at SB2 or SB3 four our total # of scores
 	score = (StatusResponse & GOAL_BYTE_MASK) ; // VALUE IN BINARY	
 	return score;
+}
+
+/****************************************************************************************
+	GetMyScoreFromStatusResponse
+	- Find an active goal and return true if you found it
+*******************************************************************************************/
+uint16_t GetScoreFromShootingSM()
+{
+	return ScoreBeforeShooting;
 }
 
 /****************************************************************************

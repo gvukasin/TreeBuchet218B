@@ -186,7 +186,6 @@ static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
 static uint8_t BallCount = 3; //We will start with 3 balls
-static uint8_t PreviousScore = 0;
 static uint8_t CurrentStagingArea;
 static uint8_t NextStagingArea;
 static uint16_t LastPeriodCode = 0xff;
@@ -199,6 +198,9 @@ static uint32_t OneShotTimeoutMS;
 static uint16_t LastPeriodCode;
 static uint16_t GetAwayTimeoutMS = 100;
 static bool HallEffectFlag = 0;
+
+static uint16_t OldScore;
+static uint16_t NewScore;
 
 
 /*------------------------------ Module Code ------------------------------*/
@@ -392,34 +394,31 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 case SHOOTING:
 			 // During function
        CurrentEvent = DuringShooting(CurrentEvent);
-			 // Process events			 
-			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-       {
-					switch (CurrentEvent.EventType)
-					{
-						 case SCORED : 
-								NextState = DRIVING2STAGING;
-								MakeTransition = true; 
-								break;
-						 case MISSED_SHOT :
-								NextState = SHOOTING; // Self transition
-								MakeTransition = true; 
-								break;
-						 case NO_BALLS :
-								NextState = DRIVING2RELOAD; 
-								MakeTransition = true; 
-								break;
-						 case FINISH_STRONG :
-							 NextState = ENDING_STRATEGY;
-							 MakeTransition = true;
-							 break;
-						 default:
-							 if(ES_ENTRY|ES_EXIT){}
-							 else
-								printf("\r\nERROR: Robot is in SHOOTING and the event received is NOT VALID\n");
-					}
-			 }
-			 break;
+			 // Process events	
+			 //(1)			 
+				if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
+				{
+					NextState = SHOOTING; // INTERNAL Self transition
+				}
+				//(2)			 
+				if (CurrentEvent.EventType == COM_STATUS) 
+				{
+					NextState = SHOOTING; // INTERNAL Self transition
+				}
+			  //(3)			 				
+				else if (CurrentEvent.EventType == SCORED) 
+				{
+					NextState = DRIVING2STAGING;
+					MakeTransition = true;
+				}		
+			  //(4)			 			
+				else if (CurrentEvent.EventType == MISSED_SHOT )
+				{
+					NextState = SHOOTING; // EXTERNAL Self transition
+					MakeTransition = true; 
+					break;
+				}
+			  break;
 
 			 // CASE 5/8				 
 			 case DRIVING2RELOAD:
@@ -880,7 +879,8 @@ static ES_Event DuringCheckIn( ES_Event Event)
 static ES_Event DuringShooting( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
-
+		ES_Event PostEvent;
+	
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
@@ -894,19 +894,37 @@ static ES_Event DuringShooting( ES_Event Event)
     {
         // on exit, give the lower levels a chance to clean up first
         RunShootingSM(Event);   
-			
-			// ASK LOC FOR CURRENT SCORE AND COMPARE TO OLD TO KNOW IF YOU SCORED
-			// POST SCORED TO ROBOT IF YOU DID
-				
-			  // Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF, TeamColor);
     }
 		
 		// do the 'during' function for this state
 		else 
     {
+			if(Event.EventType == FINISHED_SHOT)
+			{
+				// Get the old score - that was saved at the beginning of the sub SM
+				OldScore = GetScoreFromShootingSM();
+				
+				// Ask for new score by posting event to LOC
+				PostEvent.EventType = ROBOT_STATUS;
+				PostSPIService(PostEvent);
+				
+			}
+			else if (Event.EventType == COM_STATUS)
+			{
+				// Compare the 2 scores and post the correct event
+				NewScore = GetMyScoreFromStatusResponse(Event.EventParam);
+				
+				if(NewScore > OldScore)
+					PostEvent.EventType = SCORED;
+					
+				else
+					PostEvent.EventType = MISSED_SHOT;			
+			}
+			else
+			{
 			// run any lower level state machine
-        ReturnEvent = RunShootingSM(Event);  
+        ReturnEvent = RunShootingSM(Event); 
+			}				
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -1248,6 +1266,19 @@ void GetAwayISR(void)
 	// re-enable isr for hall effect sensor 
 	EnableStagingAreaISR(1);
 }
+
+
+	 
+			
+				 // Post correct event to Robot top SM
+				if(Scored)
+					Event2Post.EventType = SCORED;
+				else if(Missed)
+					Event2Post.EventType = MISSED_SHOT;
+				else if(NoBalls)
+					Event2Post.EventType = NO_BALLS;
+				
+				PostRobotTopSM(Event2Post);
 
 /****************************************************************************
 TESTS

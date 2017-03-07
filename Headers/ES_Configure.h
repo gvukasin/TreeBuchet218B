@@ -290,6 +290,8 @@ typedef enum {  ES_NO_EVENT = 0,
 								//READY2SHOOT,
 								LOOK4GOAL_AGAIN,
 								BALL_FLYING,
+								KEEP_WAITING4SHOT,
+								FINISHED_SHOT,
 								//SHOOTING_TIMEOUT, //35
 								/* SPI Event*/
 								EOTEvent
