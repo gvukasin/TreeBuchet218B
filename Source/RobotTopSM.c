@@ -197,7 +197,7 @@ static uint8_t newRead;
 static bool ValidSecondCode = 1;
 static uint32_t OneShotTimeoutMS;
 static uint16_t LastPeriodCode;
-static uint16_t GetAwayTimeoutMS = 100;
+static uint16_t GetAwayTimeoutMS = 3000;
 static bool HallEffectFlag = 0;
 
 
@@ -238,7 +238,6 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize hardware for IR but not kicking the timer off 
 	InitInputCaptureForFrontIRDetection();
-	printf("\r\n thru inits");
 	InitInputCaptureForBackIRDetection();
 	
 	// Initialize stage area frequency reading
@@ -255,6 +254,7 @@ bool InitRobotTopSM ( uint8_t Priority )
 
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
+	printf("\r\n thru inits");
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -327,9 +327,11 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 
+
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 // Process events		
+			 // Process events	
 				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
@@ -338,13 +340,14 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-				if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
+				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{
 					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
+
 				break;
 				
 			 // CASE 3/8				 
@@ -372,7 +375,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 							 NextState = ENDING_STRATEGY;
 							 MakeTransition = true;
 							 break;	
-						case START :
+						case KEEP_DRIVING :
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -506,6 +509,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
 	// SEE ME
+//CurrentState = ENDING_STRATEGY;
 	CurrentState = WAITING2START;
 	
   // now we need to let the Run function init the lower level state machines
@@ -533,7 +537,6 @@ uint8_t GetCurrentStagingAreaPosition()
 {
 	return CurrentStagingArea ;
 }
-
 
 /***************************************************************************
  private functions
@@ -577,7 +580,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 		
 		else if(Event.EventType == COM_STATUS)
 		{
-			// printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
+			printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
 							
 			// check game status bit
 			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
@@ -591,7 +594,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			}			
 			else 
 			{		
-				//printf("\r\n ask loc again 1\r\n");					
+				printf("\r\n ask loc again 1\r\n");					
 				//ask LOC for GAME STATUS again (until it says we're ready to start)
 				ES_Event PostEvent;
 				PostEvent.EventType = ROBOT_STATUS;	
@@ -620,7 +623,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			printf("\r\nDriving2Staging ENTRY\r\n");
+			printf("\r\n Driving2Staging ENTRY \r\n");
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
@@ -644,7 +647,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			//stop();
 			
 			// instead, drive straight
-			driveSeperate(70,70,FORWARD);
+			driveSeperate(40,40,FORWARD);
     }
 		
 		// do the 'during' function for this state
@@ -741,6 +744,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
+				printf("\r\n pcode %x",PeriodCode);
 				PostRobotTopSM(Event2Post);
 			}
     }
@@ -850,7 +854,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							EnableGetAwayTimer();
 							
 							//Go to DRIVING2STAGING
-							PostEvent.EventType = START;
+							PostEvent.EventType = KEEP_DRIVING;
 							PostRobotTopSM(PostEvent);	
 						}
 						
@@ -907,6 +911,7 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+			
         //Yellow LEDs ON to signal shooting is going to start
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
@@ -1000,6 +1005,9 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
         //StartLowerLevelSM( Event );
         // repeat the StartxxxSM() functions for concurrent state machines
         // on the lower level
+			
+			//SEE ME: get rid of this, just for testing shooter
+			SetFlyDuty(80);
     }
     else if ( Event.EventType == ES_EXIT )
     {

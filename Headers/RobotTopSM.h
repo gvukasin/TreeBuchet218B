@@ -23,6 +23,6 @@ void StartRobotTopSM ( ES_Event CurrentEvent );
 bool GetTeamColor(void);
 void GameTimerISR(void);
 uint16_t GetGoalOrStagePositionFromStatus( uint16_t StatusResponse );
-uint8_t GetCurrentStagingAreaPosition();
+uint8_t GetCurrentStagingAreaPosition(void);
 
 #endif /*TopHSMTemplate_H */
