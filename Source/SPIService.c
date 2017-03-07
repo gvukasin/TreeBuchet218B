@@ -477,15 +477,6 @@ static void SendData(void){
 		Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
 	}	
 	
-//	else if (LastEvent.EventType == ROBOT_FREQ_RESPONSE) 
-//  {
-//		// set return event type to COM_FREQ_REPORT
-//		PostEvent.EventType = COM_FREQ_REPORT;
-//		
-//		// set ReturnedData to the first two bytes of the total response from the LOC
-//		Data2Return = ((ReceivedLOCData[1]<<NumResponseBits)|ReceivedLOCData[2]);
-// 	} 
-	
 	else if (LastEvent.EventType == ROBOT_STATUS)
 	{
 			// set return event type to COM_STATUS

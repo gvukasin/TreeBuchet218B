@@ -56,6 +56,7 @@
 #include "RobotTopSM.h"
 #include "MotorActionsModule.h"
 #include "IRBeaconModule.h"
+#include "PWMmodule.h"
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -65,16 +66,24 @@
 #define ONE_SEC 976
 #define Looking4Beacon_TIME ONE_SEC/100 
 
+#define RED 0
+#define GREEN 1
+
 #define CW 1
 #define CCW 0
 
 #define Wait4ShotTime 10000 //10sec
+
+#define BucketCode 0x01
+
+#define BeaconRotationDutyCycle 80
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
    functions, entry & exit functions.They should be functions relevant to the
    behavior of this state machine
 */
+static ES_Event DuringLooking4Goal( ES_Event Event);
 static ES_Event DuringCalibrating( ES_Event Event);
 static ES_Event DuringLoadingBall( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
@@ -84,6 +93,16 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 static ShootingState_t CurrentState;
 static uint8_t BallCount;
 static uint8_t MyScore;
+static uint8_t Back_MeasuredIRPeriodCode;
+static bool setSpeedReady = 0;
+static bool aligned1250;
+static bool aligned1450;
+static bool aligned1700;
+static bool aligned1950;
+static bool aligned2200;
+static bool firstIRBeaconAlignment;
+static bool BeaconRotationDirection = CW;
+static uint8_t CurrentStagingAreaPosition;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -107,12 +126,28 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 {
    bool MakeTransition = false;/* are we making a state transition? */
    ShootingState_t NextState = CurrentState;
-   ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
+   ES_Event EntryEventKind = { ES_ENTRY, 0 }; // default to normal entry to new state
    ES_Event ReturnEvent = CurrentEvent; // assume we are not consuming event
 
    switch ( CurrentState )
    {
-			 // CASE 1/3
+			 // CASE 1/4
+			 case LOOKING4GOAL :
+				 // Execute During function 
+         CurrentEvent = DuringLooking4Goal(CurrentEvent);
+				 // process events
+			
+				 // Why are we checking COM_STATUS? Is this copied code?
+				 // if (CurrentEvent.EventType == COM_STATUS)
+				 if ( CurrentEvent.EventType == ALIGNED2BUCKET )
+				 {
+					 NextState = CALIBRATING;
+					 MakeTransition = true;
+					 ReturnEvent.EventType = ES_NO_EVENT;
+				 }
+				 break;
+		 
+		   // CASE 2/4
        case CALIBRATING :       
          // Execute During function 
          CurrentEvent = DuringCalibrating(CurrentEvent);
@@ -124,7 +159,6 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
             // if transitioning to a state with history change kind of entry
             //EntryEventKind.EventType = ES_ENTRY_HISTORY;
             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-            break;
           }
 				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER)) // Self Transition
 				 {
@@ -135,34 +169,30 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          {     																						//Probably means that CurrentEvent was consumed by lower level
             ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
-//				 else
-//				 {
-//						printf("\r\nERROR: robot in shooting>calibrating with NOT VALID EVENT\r");
-//				 }
-       break;
+         break;
       
-				 // CASE 2/3				 
-			 case LOADING_BALL:
-			 // During function
-       CurrentEvent = DuringLoadingBall(CurrentEvent);
-			 // Process events			 
-			 if (CurrentEvent.EventType == BALL_FLYING)
-				{
-					 NextState = WATING4SHOT_COMPLETE;
-					 MakeTransition = true;
-					 ReturnEvent.EventType = ES_NO_EVENT;
-				}							 
+				 // CASE 3/4				 
+			 case LOADING_BALL :
+				 // During function
+				 CurrentEvent = DuringLoadingBall(CurrentEvent);
+				 // Process events			 
+				 if (CurrentEvent.EventType == BALL_FLYING)
+					{
+						 NextState = WATING4SHOT_COMPLETE;
+						 MakeTransition = true;
+						 ReturnEvent.EventType = ES_NO_EVENT;
+					}							 
 				 break;
 				
-				// CASE 3/3				 
-			 case WATING4SHOT_COMPLETE:
-			 // During function
-       CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-			 // Process events			 
-			 if (CurrentEvent.EventType == SHOOTING_TIMEOUT)
-				{
-					 ReturnEvent.EventType = SHOOTING_TIMEOUT; //re-map this event for the upper level state machine
-				}							 
+				// CASE 4/4				 
+			 case WATING4SHOT_COMPLETE :
+				 // During function
+				 CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
+				 // Process events			 
+				 if (CurrentEvent.EventType == SHOOTING_TIMEOUT)
+					{
+						 ReturnEvent.EventType = SHOOTING_TIMEOUT; //re-map this event for the upper level state machine
+					}							 
 				 break;
     }
     //   If we are making a state transition
@@ -205,7 +235,7 @@ void StartShootingSM ( ES_Event CurrentEvent )
    // is started
    if ( ES_ENTRY_HISTORY != CurrentEvent.EventType )
    {
-        CurrentState = CALIBRATING;
+        CurrentState = LOOKING4GOAL;
    }
    // call the entry function (if any) for the ENTRY_STATE
    RunShootingSM(CurrentEvent);
@@ -250,6 +280,139 @@ uint8_t GetMyScore()
  private functions
  ***************************************************************************/
 
+static ES_Event DuringLooking4Goal( ES_Event Event)
+{
+	ES_Event ReturnEvent = Event; 
+	
+	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
+  {
+		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+		EnableBackIRInterrupt();
+		
+		// Start Rotating
+		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
+
+		// Start the timer to periodically check the IR frequency
+		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+	}
+	
+	else if ( Event.EventType == ES_EXIT )
+  {
+	}
+	
+	else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+  {
+			// Read the detected IR frequency
+			Back_MeasuredIRPeriodCode = Front_GetIRCodeArray();
+		
+			// If first beacon aligned TRUE
+			if ( firstIRBeaconAlignment == 1 )
+			{
+				// If aligned1450 TRUE
+				if ( aligned1450 == 1 )
+				{
+					// SHOOT
+					ReturnEvent.EventType = ALIGNED2BUCKET;
+				}
+			}
+			
+			// If on the GREEN side
+			if ( GetTeamColor() == GREEN )
+			{
+				// If aligned1250 TRUE
+				if ( aligned1250 == 1 )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// set aligned1250 TRUE
+					aligned1250 = 1;
+					// rotate counterclockwise
+					BeaconRotationDirection = CCW;
+		
+					// If first beacon aligned TRUE && aligned2200 TRUE
+					if ( (firstIRBeaconAlignment == 1) && (aligned2200 == 1) )
+					{
+						// set aligned2200 FALSE
+						aligned2200 = 0;
+					}
+				}
+					
+				// If aligned2200 TRUE
+				else if ( aligned2200 == 1 )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// set aligned2200 TRUE
+					aligned2200 = 1;
+					// rotate clockwise
+					BeaconRotationDirection = CW;
+				
+					// If first beacon aligned TRUE && aligned1250 TRUE
+					if ( (firstIRBeaconAlignment == 1) && (aligned1250 == 1) )
+					{
+						// set aligned1250 FALSE
+						aligned1250 = 0;
+					}
+				}
+			}
+			
+			// If on the RED side
+			else if ( GetTeamColor() == RED )
+			{
+				// If aligned1700 TRUE
+				if ( aligned1700 == 1 )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// set aligned1700 TRUE
+					aligned1700 = 1;
+					// rotate counterclockwise
+					BeaconRotationDirection = CCW;
+		
+					// If first beacon aligned TRUE && aligned1950 TRUE
+					if ( (firstIRBeaconAlignment == 1) && (aligned1950 == 1) )
+					{
+						// set aligned1950 FALSE
+						aligned1950 = 0;
+					}
+				}
+				
+				// If aligned1950 TRUE
+				else if ( aligned1950 == 1 )
+				{
+					// set first beacon aligned TRUE
+					firstIRBeaconAlignment = 1;
+					// set aligned1950 TRUE
+					aligned1950 = 1;
+					// rotate clockwise
+					BeaconRotationDirection = CW;
+		
+					// If first beacon aligned TRUE && aligned1700 TRUE
+					if ( (firstIRBeaconAlignment == 1) && (aligned1700 == 1) )
+					{
+						// set aligned1700 FALSE
+						aligned1700 = 0;
+					}
+				}
+			}
+			
+			// If we are looking at a bucket then move to next state
+			if(Back_MeasuredIRPeriodCode == BucketCode)
+			{
+				// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
+				ES_Event QueryEvent;
+				QueryEvent.EventType = ROBOT_STATUS;
+			}
+
+			// Else, restart the timer
+			else
+			{
+				ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+			}					
+    }
+	return ReturnEvent;
+}
+
 static ES_Event DuringCalibrating( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
@@ -258,46 +421,32 @@ static ES_Event DuringCalibrating( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) ||
          (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-			  EnableFrontIRInterrupt();
-			
-			  // Start Rotating
-			  start2rotate(CCW,80);
-			
-			  // Start the timer to periodically check the IR frequency
-        ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+        
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // Stop Rotating
 			  stop();      
     }
-		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
-    {
-        // Read the detected IR frequency
-			  uint8_t MeasuredIRFreqCode = Front_GetIRCodeArray();
-			
-				// Get desired IR frequency from LOC
-				ES_Event QueryEvent;
-				//QueryEvent
-			  
-				// If we detect the frequency we are looking for, post READY2SHOOT event
-			  if(MeasuredIRFreqCode == 0xff)  				
-				{
-					ES_Event Event2Post;
-					Event2Post.EventType = READY2SHOOT;
-					Event2Post.EventParam = MeasuredIRFreqCode;
-					PostRobotTopSM(Event2Post);
-				}
-			  // Else, restart the timer
-				else
-				{
-					ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
-				}					
-				
-    }
-		else
+		else //DURING
 		{
+
+			// Get the goal position from the LOC response			
+			uint16_t LOCResponse = Event.EventParam;
+			uint16_t bucketNumber = GetGoalOrStagePositionFromStatus(LOCResponse);
+			
+			// Get current staging area
+			CurrentStagingAreaPosition = GetCurrentStagingAreaPosition();
+			
+			// If we detect the frequency we are looking for, post READY2SHOOT event
+			
+			if (setSpeedReady == 1)
+			{
+				ES_Event Event2Post;
+				Event2Post.EventType = READY2SHOOT;
+				Event2Post.EventParam = Back_MeasuredIRPeriodCode;
+				PostRobotTopSM(Event2Post);
+			}
 			
 		}
     // return either Event, if you don't want to allow the lower level machine
@@ -313,10 +462,16 @@ static ES_Event DuringLoadingBall( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
         // Start spinning flywheel for ball pushing
+			  SetFlyDuty(80);                               //////////////////Change it !!!!!!!!!!!!!!!!!!!!!!!!!
     }
     else if ( Event.EventType == ES_EXIT )
     {
         // Turn off both the pushing flywheel and the separation servo
+			SetServoDuty(0);
+			SetFlyDuty(0);
+			
+			// SEE ME. Is this the right place?
+			ReturnEvent.EventType = BALL_FLYING;
     }
 		else // do the 'during' function for this state
     {

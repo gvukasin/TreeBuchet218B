@@ -10,7 +10,7 @@
    next lower level in the hierarchy that are sub-machines to this machine
 */
 
-// #define TEST 
+//#define TEST 
 
 #include "ES_Configure.h"
 #include "ES_Framework.h"
@@ -63,7 +63,7 @@
 #define R_CW_MOTOR_PIN BIT6HI
 #define R_CCW_MOTOR_PIN BIT7HI
 #define ServoMotorPin BIT4HI //PE4, alt function 5
-#define FlyWheelMotorPin BIT5HI //PE5```````s
+#define FlyWheelMotorPin BIT5HI //PE5
 #define IRPin BIT1HI //PF1
 #define ExtraPWMPin BIT0HI //PF0
 
@@ -176,7 +176,7 @@ void InitializeAltPWM(void){
 	HWREG(PWM1_BASE + PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ZERO;
 	HWREG(PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ZERO;
 	HWREG(PWM1_BASE + PWM_O_2_GENA) = PWM_2_GENA_ACTZERO_ZERO;
-	HWREG(PWM1_BASE + PWM_O_3_GENB) = PWM_2_GENB_ACTZERO_ZERO;
+	HWREG(PWM1_BASE + PWM_O_2_GENB) = PWM_2_GENB_ACTZERO_ZERO;
 	
 	// Enable the PWM outputs  2, 3, 4, 5
 	HWREG(PWM1_BASE + PWM_O_ENABLE) |= (PWM_ENABLE_PWM2EN | PWM_ENABLE_PWM3EN | PWM_ENABLE_PWM4EN | PWM_ENABLE_PWM5EN);
@@ -349,7 +349,7 @@ void SetFlyDuty( uint16_t DatDooty ){
 	// restore pwm 
 		HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM1_GenB_Normal;
 		 
-		// set duty cycle to 25%
+		// set duty cycle to DatDooty
 		HWREG( PWM1_BASE + PWM_O_1_CMPB) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((DatDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
 	
 }

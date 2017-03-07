@@ -277,16 +277,17 @@ typedef enum {  ES_NO_EVENT = 0,
 								HALL_EFFECT_EDGE,
 								QUERY_AGAIN,
 								REPORT_SECOND_TIME,
+								RESTART_HALL_EFFECT,
 								/* Robot and LOC com. exchange events */
 								TEAM_COLOR, //26
 								ROBOT_STATUS,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
 								COM_STATUS,
-								//COM_FREQ_REPORT, 
 								COM_QUERY_RESPONSE, //31
 								COM_GAME_READY,
 								/* Shooting SM events */
+								ALIGNED2BUCKET,
 								READY2SHOOT,
 								BALL_FLYING,
 								SHOOTING_TIMEOUT, //35

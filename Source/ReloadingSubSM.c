@@ -206,7 +206,7 @@ void StartReloadingSM ( ES_Event CurrentEvent )
    }
 	 
 	 // Initialize timer
-	 //ES_Timer_SetTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
+	 //ES_Timer_SetTimer(Waiting4Ball_TIMER, TimeWaiting4Ball);
 	 
    // call the entry function (if any) for the ENTRY_STATE
    RunReloadingSM(CurrentEvent);
