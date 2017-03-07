@@ -340,7 +340,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-				if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
+				if ((CurrentEvent.EventType == ES_TIMEOUT) && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{
 					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
 					 // Internal self transition
