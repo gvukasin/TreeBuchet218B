@@ -59,6 +59,12 @@
 #include "PWMmodule.h"
 #include "LEDModule.h"
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
 
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
@@ -332,7 +338,7 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
 		{
 			// Read the detected IR frequency
-			Back_MeasuredIRPeriodCode = Front_GetIRCodeArray();  //SEE ME: POSSIBLE BACK AND FRONT BUG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			Back_MeasuredIRPeriodCode = Back_GetIRCode();  
 		
 			// DETECT A GOAL
 			GoalFound = DetectAGoal();
@@ -479,15 +485,6 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
 ****************************************************************************/
 
 /****************************************************************************************
-	SetServoAndFlyWheelSpeed
-	- Spin the separation wheel 180 degrees
-	- Set the flywheel speed depending on current location and goal
-*******************************************************************************************/
-static void SetServoAndFlyWheelSpeed()
-{
-}
-
-/****************************************************************************************
 	AlignWithGoal
 	- Find an active goal and return true if you found it
 *******************************************************************************************/
@@ -497,7 +494,7 @@ static bool DetectAGoal()
 		if ( firstIRBeaconAlignment == 1 )
 		{
 			// If aligned1450 TRUE - Ready to move on to next state
-			if ( aligned1450 == 1 )				
+			if ( Back_MeasuredIRPeriodCode ==  )				
 				return true;
 			else
 				return false;
@@ -616,3 +613,6 @@ uint8_t GetBallCount()
 {
 	return BallCount;
 }
+
+
+

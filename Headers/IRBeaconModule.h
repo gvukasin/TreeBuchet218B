@@ -17,7 +17,7 @@ void EnableFrontIRInterrupt( void );
 void EnableBackIRInterrupt( void );
 void InputCaptureForFrontIRDetection( void );
 void InputCaptureForBackIRDetection( void );
-uint8_t Front_GetIRCodeArray( void );
-uint8_t Back_GetIRCodeArray( void );
+uint8_t Front_GetIRCode( void );
+uint8_t Back_GetIRCode( void );
 
 #endif 
