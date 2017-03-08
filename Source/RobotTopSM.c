@@ -918,6 +918,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 								// stop the motors, this is the correct station 
 								stop();
 								
+								//Reset # correct report
+								NumberOfCorrectReports = 0;
+								
 								//Go to SHOOTING
 								PostEvent.EventType = CHECK_IN_SUCCESS;
 								PostRobotTopSM(PostEvent);	
