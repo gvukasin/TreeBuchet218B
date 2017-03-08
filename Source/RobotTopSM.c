@@ -96,15 +96,14 @@
 
 // query byte masks
 #define GAME_STATUS_BIT BIT7HI
-#define RESPONSE_READY 0x0000
-#define RESPONSE_NOT_READY 0xAA00
+#define RESPONSE_READY 0xAA00
+#define RESPONSE_NOT_READY 0x0000
 #define RESPONSE_READY_MASK 0xff00
 
 // report status byte masks
-#define ACK1_HI BIT15HI
-#define ACK0_HI BIT14HI
-#define ACK1_LO BIT15LO
-#define ACK0_LO BIT14LO
+#define ACK_MASK 0
+#define Inactive_MASK (BIT7HI)
+#define NACK_MASK (BIT7HI|BIT6HI)
 
 // status byte 1 masks
 #define G1 BIT12HI //GREEN goal #i
@@ -252,7 +251,8 @@ bool InitRobotTopSM ( uint8_t Priority )
 	InitGameTimer();
 	
 	// Initialize get away one-shot timer
-	InitGetAwayTimer();
+	//SEE ME	
+	//InitGetAwayTimer();
 
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
@@ -329,7 +329,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				// CASE 2/8				 
 			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
 			 // During function
-			 printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
 			 
 
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
@@ -355,7 +355,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				printf("\r\n checking in %i \r\n",CurrentEvent.EventType);
+				printf("\r\n checking in %i, %i \r\n",CurrentEvent.EventType,CurrentEvent.EventParam);
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -469,7 +469,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
     //   If we are making a state transition
     if (MakeTransition == true)
     {
-			 printf("\r\n T %i\r\n",CurrentState);
+			printf("\r\n Transition: current %i,next %i\r\n",CurrentState,NextState);
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunRobotTopSM(CurrentEvent);
@@ -507,7 +507,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	//Initial state
 	// SEE ME
 //CurrentState = ENDING_STRATEGY;
-	CurrentState = WAITING2START;
+	CurrentState = DRIVING2STAGING;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -552,6 +552,8 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				
 				//Turn on TeamColor LEDs
 				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);	
+				
+				//SetFlyDuty(80);
 
 				//printf("\r\n Team Color (1 red): %i", TeamColor);
 				
@@ -614,16 +616,19 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
-			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
-				// Clear flag
-				HallEffectFlag = 0;
-				printf("\r\n clear flag ");
-				
-			} else {
-				// enable Hall Effect Interrupt
-				EnableStagingAreaISR(1);
-				printf("\r\n en hall int");
-			}
+			EnableStagingAreaISR(1);
+			
+			//SEE ME
+//			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
+//				// Clear flag
+//				HallEffectFlag = 0;
+//				printf("\r\n clear flag ");
+//				
+//			} else {
+//				// enable Hall Effect Interrupt
+//				EnableStagingAreaISR(1);
+//				printf("\r\n en hall int");
+//			}
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -631,8 +636,11 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Stop the motor 
 			//stop();
 			
+			//getchar();
 			// instead, drive straight
-			driveSeperate(40,40,FORWARD);
+			//SEE ME
+			//driveSeperate(40,40,FORWARD);
+			
     }
 		
 		// do the 'during' function for this state
@@ -729,7 +737,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
-				printf("\r\n pcode %x",PeriodCode);
+				printf("\r\n ------------STATION_REACHED posted, pcode----------- %x",PeriodCode);
 				PostRobotTopSM(Event2Post);
 			}
     }
@@ -755,7 +763,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
 			// ENTRY won't be run if we just want to query again about the same report
-			
+			printf("\r\n Enter Checking in, %i", NumberOfCorrectReports);
 			// Valid second code defaults to 1
 			ValidSecondCode = 1;
 			
@@ -766,13 +774,15 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							2) it is a valid code 
 				*/
 				newRead = GetStagingAreaCodeArray();
+				printf("\r\nnewRead: %i\r\n",newRead);
 				
 				// this bool will be 0 if the second freq we've read doesn't fulfill both conditions
 				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
+				printf("\r\nValidSecondCode: %i\r\n",ValidSecondCode);
 			}
 			
-			// (1) REPORT and (2) START TIMER
-			if (ValidSecondCode) //report the second time ONLY if the code is incorrect
+			// (1) REPORT and (2) START TIMER (SEE ME: MAY NOT BE CHECKING FOR THE RIGHT CONDITIONS)
+			if (ValidSecondCode == 1) //report the second time ONLY if the code is incorrect
 			{			
 				if (NumberOfCorrectReports == 1) //update code value before reporting 
 				{
@@ -788,6 +798,13 @@ static ES_Event DuringCheckIn( ES_Event Event)
 			 
 				//Start 200ms timer
 				ES_Timer_StartTimer(FrequencyReport_TIMER);	
+			}
+			else if (ValidSecondCode == 0 && NumberOfCorrectReports == 1)
+			{
+					//read again
+					printf("\r\nSomething dumb\r\n");
+					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
+					PostRobotTopSM(PostEvent);
 			}
     }
 		
@@ -815,17 +832,19 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				//(4) Has the LOC received our frequency and is it correct? 
 				else if (Event.EventType == COM_QUERY_RESPONSE)
 				{
+					printf("\r\n HERE %i\r\n",Event.EventParam);
 					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
 					{
+						printf("\r\nResponse NOT ready\r\n");
 						PostEvent.EventType = QUERY_AGAIN;
 						PostRobotTopSM(PostEvent);
 					}
 					else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
 					{
 						printf("\r\nResponse ready\r\n");
-						
+						printf("\r\nReport status: %x\r\n", Event.EventParam);
 						// NACK - wrong frequency
-						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam & ACK0_HI) == ACK0_HI))
+						if(((Event.EventParam & NACK_MASK) == NACK_MASK))
 						{
 							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
 							
@@ -835,30 +854,34 @@ static ES_Event DuringCheckIn( ES_Event Event)
 						}
 						
 						// INACTIVE - wrong staging area
-						if(((Event.EventParam & ACK1_HI) == ACK1_HI) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						if((Event.EventParam & NACK_MASK) == Inactive_MASK)
 						{
-							
+							printf("\r\n -------INACTIVE");
 							// record current driving stage (we will need next staging area too to know which direction to drive in!)
 							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
 							
-							// Set Flag for disabling interrupt for the hall effect sensor
-							HallEffectFlag = 1;
+							//// Set Flag for disabling interrupt for the hall effect sensor
+							//HallEffectFlag = 1;
 							
 							// Disable Hall Effect Interrupt
-							EnableStagingAreaISR(0);
+							// SEE ME
+							//EnableStagingAreaISR(0);
 							
 							// Enable GetAwayTimer Interrupt
-							EnableGetAwayTimer(GetAwayTimeoutMS);
+							//SEE ME
+							//EnableGetAwayTimer(GetAwayTimeoutMS);
 							
 							//Go to DRIVING2STAGING
 							PostEvent.EventType = KEEP_DRIVING;
 							PostRobotTopSM(PostEvent);	
+							printf("\r\n---------KEEPDRIVING POSTED-------\r\n");
+							
 						}
 						
 						// ACK - all good! 
-						if(((Event.EventParam | ACK1_LO) == ACK1_LO) && ((Event.EventParam | ACK0_LO) == ACK0_LO))
+						if((Event.EventParam & NACK_MASK) == ACK_MASK)
 						{
-							
+							printf("\r\n ---------ACTIVE");
 							// Add 1 to number of correct reports
 							NumberOfCorrectReports++;
 							
@@ -913,6 +936,8 @@ static ES_Event DuringShooting( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
 
+				//SEE ME
+			  stop();
         //Set shooting flag to true
 				ShootingFlag = 1;
 			
