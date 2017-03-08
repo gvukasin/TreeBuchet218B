@@ -85,8 +85,8 @@
 #define LEDS_OFF 0
 
 #define FlyWheelDuty 80
-#define SeparatorDuty 20
-#define SeparatorONTime 150 //ms
+#define SeparatorDuty 50
+#define SeparatorONTime 1000 //ms
 
 // IR frequency codes
 #define code800us 0x00 // 1250Hz (Green supply depot)
@@ -457,8 +457,6 @@ static ES_Event DuringLooking4Bucket( ES_Event Event)
 	return ReturnEvent;
 }
 
-
-
 /***************************************************************************
 DuringSettingBallSpeed
 ***************************************************************************/
@@ -473,7 +471,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			SetFlyDuty(FlyWheelDuty);	
 			
 			// Start timer to allow the flywheel to reach desired speed
-			ES_Timer_InitTimer(IRAligning_TIMER,FlyWheel_TIME);
+			ES_Timer_InitTimer(FlyWheel_TIMER,FlyWheel_TIME);
 		}
     else if ( Event.EventType == ES_EXIT )
     {  			
@@ -482,9 +480,18 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 		//DURING
 		else 
 		{
-			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
+			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == FlyWheel_TIMER))
 			{
+					//start servo motor 
+					SetServoDuty(SeparatorDuty);
+				
+					// start timer to turn off servo
+					ES_Timer_InitTimer(Servo_TIMER,SeparatorONTime);
 					
+			} else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Servo_TIMER)) 
+			{
+				// stop servo motor
+				SetServoDuty(0);
 			}
 		}
 		
@@ -519,7 +526,7 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
     }
 		else //DURING - Scored, Missed, or No Balls?
     {  
-			// For 3/8/2017, don't check if scored
+			// SEE ME: For 3/8/2017, don't check if scored
 			// Post Event to indicate shooting complete when timer expires
 			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 			{
@@ -725,6 +732,3 @@ uint8_t GetBallCount()
 {
 	return BallCount;
 }
-
-
-

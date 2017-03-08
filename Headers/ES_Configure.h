@@ -360,8 +360,8 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER7_RESP_FUNC PostRobotTopSM
 #define TIMER8_RESP_FUNC PostRobotTopSM
 #define TIMER9_RESP_FUNC PostRobotTopSM
-#define TIMER10_RESP_FUNC TIMER_UNUSED
-#define TIMER11_RESP_FUNC TIMER_UNUSED
+#define TIMER10_RESP_FUNC PostRobotTopSM
+#define TIMER11_RESP_FUNC PostRobotTopSM
 #define TIMER12_RESP_FUNC TIMER_UNUSED
 #define TIMER13_RESP_FUNC TIMER_UNUSED
 #define TIMER14_RESP_FUNC TIMER_UNUSED
@@ -384,5 +384,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define Waiting4Shot_TIMER 7
 #define ReportInterval_TIMER 8
 #define IRAligning_TIMER 9
+#define Servo_TIMER 10
+#define FlyWheel_TIMER 11
 
 #endif /* CONFIGURE_H */
