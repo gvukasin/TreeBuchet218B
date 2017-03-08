@@ -266,12 +266,12 @@ typedef enum {  ES_NO_EVENT = 0,
 								START, 
 								KEEP_DRIVING,
 								STATION_REACHED,
-								CHECK_IN_SUCCESS, //14
+								CHECK_IN_SUCCESS, //15
 								FINISH_STRONG, 
 								MISSED_SHOT,
 								NO_BALLS,
 								RELOAD_BALLS,
-								BALLS_AVAILABLE, //19
+								BALLS_AVAILABLE, //20
 								SCORED,
 								GAME_OVER,
 								IR_BEACON_SENSED,
@@ -279,12 +279,12 @@ typedef enum {  ES_NO_EVENT = 0,
 								QUERY_AGAIN,
 								REPORT_SECOND_TIME,
 								/* Robot and LOC com. exchange events */
-								TEAM_COLOR, //26
+								TEAM_COLOR, //27
 								ROBOT_STATUS,
 								ROBOT_FREQ_RESPONSE,
 								ROBOT_QUERY,
 								COM_STATUS,
-								COM_QUERY_RESPONSE, //31
+								COM_QUERY_RESPONSE, //32
 								COM_GAME_READY,
 								/* Shooting SM events */
 								//ALIGNED2BUCKET,
