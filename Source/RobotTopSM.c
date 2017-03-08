@@ -137,7 +137,10 @@
 
 // IR frequency codes
 #define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
 #define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
 
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
@@ -152,6 +155,10 @@
 // MotorActionDefines
 #define FORWARD 1
 #define BACKWARD 0
+
+#define CW 1
+#define CCW 0
+#define BeaconRotationDutyCycle 80
 
 /*---------------------------- Module Functions ---------------------------*/
 static ES_Event DuringWaiting2Start( ES_Event Event);
@@ -187,6 +194,8 @@ static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
 static bool FirstTimeDriving = 1;
+static bool OrientedWithWire_Driving2Wire;
+static bool OrientedWithWire_Driving2Reload;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -620,6 +629,18 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
+			// Always initially set the orientation flag to 0
+			OrientedWithWire_Driving2Wire = 0;
+			
+			if ( FirstTimeDriving == 0 )
+			{
+				// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+				EnableFrontIRInterrupt();
+				
+				// Start Rotating
+				start2rotate(CW,BeaconRotationDutyCycle);
+			}
+			
 			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
 				// Clear flag
 				HallEffectFlag = 0;
@@ -642,49 +663,150 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			driveSeperate(40,40,FORWARD);
     }
 		
+		// SEE ME (not sure if checking for beacon signal comes here (before 'during' function))
+		// look for readings from the IR sensor
+		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Looking4Beacon_TIMER))
+		{
+			// if this is not the first time driving, orient the robot
+			if ( FirstTimeDriving == 0)
+			{				
+				if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+				{
+					// Read the detected IR frequency
+					Front_MeasuredIRPeriodCode = Front_GetIRCode(); 
+					
+					// if on the GREEN side
+					if ( TeamColor == GREEN )
+					{
+						// if the current staging area is 1
+						if ( CurrentStagingArea == 1 )
+						{
+							// if the next staging area is 1
+								// stay in place
+							// else if the next staging area is > 1
+							if ( NextStagingArea > CurrentStagingArea )
+							{
+								// align with 2200 Hz
+								if ( Front_MeasuredIRPeriodCode == code455us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+						// else if the current staging area is 2
+						else if ( CurrentStagingArea == 2 )
+						{
+							// if the next staging area is 2
+								// stay in place
+							// else if the next staging area is < 2
+							if ( NextStagingArea < CurrentStagingArea )
+							{
+								// align with 1250 Hz
+								if ( Front_MeasuredIRPeriodCode == code800us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+							// else if the next staging area is > 2
+							else if ( NextStagingArea > CurrentStagingArea )
+							{
+								// align with 2200 Hz
+								if ( Front_MeasuredIRPeriodCode == code455us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+						// else if the current staging area is 3
+						else if ( CurrentStagingArea == 3 )
+						{
+							// if the next staging area is 3
+								// stay in place
+							// else if the next staging area is < 3
+							if ( NextStagingArea < CurrentStagingArea )
+							{
+								// align with 1250 Hz
+								if ( Front_MeasuredIRPeriodCode == code800us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+					}
+					
+					// if on the RED side
+					if ( TeamColor == RED )
+					{
+						// if the current staging area is 1
+						if ( CurrentStagingArea == 1 )
+						{
+							// if the next staging area is 1
+								// stay in place
+							// else if the next staging area is > 1
+							if ( NextStagingArea > CurrentStagingArea )
+							{
+								// align with 1700 Hz
+								if ( Front_MeasuredIRPeriodCode == code588us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+						// else if the current staging area is 2
+						else if ( CurrentStagingArea == 2 )
+						{
+							// if the next staging area is 2
+								// stay in place
+							// else if the next staging area is < 2
+							if ( NextStagingArea < CurrentStagingArea )
+							{
+								// align with 1950 Hz
+								if ( Front_MeasuredIRPeriodCode == code513us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+							// else if the next staging area is > 2
+							else if ( NextStagingArea > CurrentStagingArea )
+							{
+								// align with 1700 Hz
+								if ( Front_MeasuredIRPeriodCode == code588us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+						// else if the current staging area is 3
+						else if ( CurrentStagingArea == 3 )
+						{
+							// if the next staging area is 3
+								// stay in place
+							// else if the next staging area is < 3
+							if ( NextStagingArea < CurrentStagingArea )
+							{
+								// align with 1950 Hz
+								if ( Front_MeasuredIRPeriodCode == code513us )
+								{
+									OrientedWithWire_Driving2Wire = 1;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		// do the 'during' function for this state
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
+			// Need CurrentStagingArea and NextStagingArea. Are these set correctly by the time we enter this part of the code?
 			
-			
-			// Not sure if this is where we want to align with the appropriate beacon, but I will add the pseudo code here
-			// if on the GREEN side
-				// if the current staging area is 1
-					// if the next staging area is 1
-						// stay in place
-					// else if the next staging area is > 1
-						// align with 2200 Hz
-				// else if the current staging area is 2
-					// if the next staging area is 2
-						// stay in place
-					// else if the next staging area is < 2
-						// align with 1250 Hz
-					// else if the next staging area is > 2
-						// align with 2200 Hz
-				// else if the current staging area is 3
-					// if the next staging area is 3
-						// stay in place
-					// else if the next staging area is < 3
-						// align with 1250 Hz
-			
-			// if on the RED side
-				// if the current staging area is 1
-					// if the next staging area is 1
-						// stay in place
-					// else if the next staging area is > 1
-						// align with 1700 Hz
-				// else if the current staging area is 2
-					// if the next staging area is 2
-						// stay in place
-					// else if the next staging area is < 2
-						// align with 1950 Hz
-					// else if the next staging area is > 2
-						// align with 1700 Hz
-				// else if the current staging area is 3
-					// if the next staging area is 3
-						// stay in place
-					// else if the next staging area is < 3
-						// align with 1950 Hz
+			// if this is the first time driving, do not worry about orienting the robot
+			if ( FirstTimeDriving == 1 )
+			{
+				FirstTimeDriving = 0;
+				OrientedWithWire_Driving2Wire = 1;
+			}
 			
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
@@ -741,7 +863,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 					PWMLeft = 0;
 				}
 			}
-			  
+				
 			//Clamp the value to 0-100
 			if(PWMLeft < 0){
 				PWMLeft = 0;
@@ -754,12 +876,16 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			}else if(PWMRight > 100){
 				PWMRight = 100;
 			}
-			 
-			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+				 
+				// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
-			// Drive the motors using new PWM duty cycles
-			driveSeperate(PWMLeft,PWMRight,FORWARD);
-			//printf("\r\ndrive\r\n");
+			// Do not send PWM to the wheel motors unless the robot is oriented with the wire
+			if ( OrientedWithWire_Driving2Wire == 1 )
+			{
+				// Drive the motors using new PWM duty cycles
+				driveSeperate(PWMLeft,PWMRight,FORWARD);
+				//printf("\r\ndrive\r\n");
+			}
 			
 			// Restart the timer
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
@@ -781,10 +907,11 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PostRobotTopSM(Event2Post);
 			}
     }
+		
+		LastPeriodCode = PeriodCode;
 
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
-		LastPeriodCode = PeriodCode;
     return(ReturnEvent);
 }
 
@@ -1028,45 +1155,56 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
+			// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+			EnableFrontIRInterrupt();
+				
+			// Start Rotating
+			start2rotate(CW,BeaconRotationDutyCycle);
+			
+			// Always set the orientation flag to 0 on entry
+			OrientedWithWire_Driving2Reload = 0;
     }
     else if ( Event.EventType == ES_EXIT )
     {
     }
 		
-		// do the 'during' function for this state
-		else 
-    {
-      // do any activity that is repeated as long as we are in this state
-			// Drive2Reload();
+		// SEE ME (similar to Driving2Staging, not sure if checking for beacon signal comes here (before 'during' function))
+		// do any activity that is repeated as long as we are in this state
+		// Drive2Reload();
+		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+		{
+			// Read the detected IR frequency
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();
 			
-			 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
-			 {
-				// Read the detected IR frequency
-				Front_MeasuredIRPeriodCode = Front_GetIRCode();
-				
-				// if on the GREEN side, align with 1250 Hz
-				// if on the RED side, align with 1950 Hz
-				 
-				if ( GetTeamColor() == GREEN )
+			// if on the GREEN side, align with 1250 Hz
+			// if on the RED side, align with 1950 Hz
+			 
+			if ( TeamColor == GREEN )
+			{
+				if ( Front_MeasuredIRPeriodCode == code800us )
 				{
-					if ( Front_MeasuredIRPeriodCode == code800us )
-					{
-						// drive along wire until limit switch is triggered
-						// after switch is triggered, send IR pulses
-					}
+					OrientedWithWire_Driving2Reload = 1;
+					// drive along wire until limit switch is triggered
+					// after switch is triggered, send IR pulses
 				}
-				
-				else if ( GetTeamColor() == RED )
-				{
-					if ( Front_MeasuredIRPeriodCode == code513us )
-					{
-						// drive along wire until limit switch is triggered
-						// after switch is triggered, send IR pulses
-					}
-				}
-				
 			}
 			
+			else if ( TeamColor == RED )
+			{
+				if ( Front_MeasuredIRPeriodCode == code513us )
+				{
+					OrientedWithWire_Driving2Reload = 1;
+					// drive along wire until limit switch is triggered
+					// after switch is triggered, send IR pulses
+				}
+			}
+		}
+		
+		// do the 'during' function for this state
+		else 
+    { 
+			// Now, copy the wire following code from Driving2Staging
+			// Only send PWM to wheel motors if OrientedWithWire_Driving2Reload == 1
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
