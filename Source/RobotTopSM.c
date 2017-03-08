@@ -329,7 +329,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-	 //printf("\r\n event : %i\r\n", CurrentEvent.EventType);
+	 printf("\r\n Run TOP event : %i\r\n", CurrentEvent.EventType);
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -388,6 +388,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // Process events			 
 			 if (CurrentEvent.EventType == CHECK_IN_SUCCESS) 
        {
+				 printf("\r\nReceive CHECK_IN_SUCCESS event\r\n");
 					NextState = SHOOTING;
 					MakeTransition = true; 
 			 }
@@ -395,7 +396,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				 	NextState = DRIVING2STAGING;
 					MakeTransition = true;
 			 }
-
+			 break;
+			 
 			 // CASE 4/8				 
 			 case SHOOTING:
 			 // During function
@@ -502,7 +504,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 
  Description
      Does any required initialization for this state machine
- Notes
+ Notesd
 
  Author
      J. Edward Carryer, 02/06/12, 22:15
@@ -512,6 +514,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	//Initial state
 	// SEE ME
   //CurrentState = ENDING_STRATEGY;
+	//CurrentState = DRIVING2STAGING;
 	CurrentState = WAITING2START;
 	
   // now we need to let the Run function init the lower level state machines
@@ -615,7 +618,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			printf("\r\n Driving2Staging ENTRY \r\n");
+			//printf("\r\n Driving2Staging ENTRY \r\n");
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
@@ -629,7 +632,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			if ( FirstTimeDriving == 0 )
 			{
-				 printf("\r\n NOT first time driving \r\n");
+				 //printf("\r\n NOT first time driving \r\n");
 				
 				// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
 				EnableFrontIRInterrupt();
@@ -880,7 +883,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Do not send PWM to the wheel motors unless the robot is oriented with the wire
 			if ( OrientedWithWire_Driving2Wire == 1 )
@@ -939,7 +942,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
     else if ( Event.EventType == ES_EXIT)
     {
-			RunShootingSM(Event);
+			RunCheckingInSM(Event);
     }
 		
 		/***********************************************************************************/
@@ -947,7 +950,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		/***********************************************************************************/
 		else 
     {	
-			RunShootingSM(Event);
+			RunCheckingInSM(Event);
     }
 		
     // return either Event, if you don't want to allow the lower level machine

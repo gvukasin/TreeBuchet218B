@@ -16,7 +16,7 @@ typedef enum { FirstReportDone, Waiting4FirstResponseReady, SecondReportDone } C
 
 // Public Function Prototypes
 
-ES_Event RunShootingSM( ES_Event CurrentEvent );
+ES_Event RunCheckingInSM( ES_Event CurrentEvent );
 void StartCheckingInSM ( ES_Event CurrentEvent );
 
 #endif /*ShootingSubSM_H */

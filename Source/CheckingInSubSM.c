@@ -151,14 +151,20 @@ ES_Event RunCheckingInSM( ES_Event CurrentEvent )
          break;
 				 
 				// CASE 3/3				 
-			  case SecondReportDone :  
-				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
+			  case SecondReportDone :  			 		 
 			    // During function
 				  CurrentEvent = DuringSecondReportDone(CurrentEvent);
 				  // Process events	
 				
 			    // Internal Transition
           if (CurrentEvent.EventType == COM_QUERY_RESPONSE) 
+          {       
+             NextState = SecondReportDone;
+             MakeTransition = false; 
+             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+           }
+					// Internal Transition
+          if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == ReportInterval_TIMER))
           {       
              NextState = SecondReportDone;
              MakeTransition = false; 
@@ -275,7 +281,7 @@ static ES_Event DuringFirstReportDone( ES_Event Event)
 }
 
 /***************************************************************************
-DuringSettingBallSpeed
+DuringWaiting4FirstResponseReady
 ***************************************************************************/
 static ES_Event DuringWaiting4FirstResponseReady( ES_Event Event)
 {
@@ -339,7 +345,7 @@ static ES_Event DuringWaiting4FirstResponseReady( ES_Event Event)
 }
 
 /***************************************************************************
-DuringWaiting4ShotComplete
+DuringSecondReportDone
  ***************************************************************************/
 static ES_Event DuringSecondReportDone( ES_Event Event)  
 {
@@ -364,10 +370,8 @@ static ES_Event DuringSecondReportDone( ES_Event Event)
 				Event2Post.EventParam = newRead;
 				PostSPIService(Event2Post);
 				
-        // Query     
-				printf("\r\n ROBOT_QUERY to SPI after the second report\r\n");
-	      Event2Post.EventType = ROBOT_QUERY;
-		    PostSPIService(Event2Post);
+				// Start the 200ms Timer
+		    ES_Timer_InitTimer(ReportInterval_TIMER,ReportInterval_TIME);
     }
     else if ( Event.EventType == ES_EXIT )
     {    
@@ -376,7 +380,7 @@ static ES_Event DuringSecondReportDone( ES_Event Event)
 		else 
     {  
 			if (Event.EventType == COM_QUERY_RESPONSE)
-		 {
+		  {
 			 //Check if response ready
 			 //If Yes, post events accordingly
 			 //If not, query again
@@ -404,7 +408,14 @@ static ES_Event DuringSecondReportDone( ES_Event Event)
 			    PostEvent.EventType = ROBOT_QUERY;
 			    PostSPIService(PostEvent);
 		   }
-		 }	
+		  }
+			if(Event.EventType == ES_TIMEOUT && (Event.EventParam == ReportInterval_TIMER))
+			{
+					//Query
+				  printf("\r\n ROBOT_QUERY to SPI after the second report\r\n");
+					Event2Post.EventType = ROBOT_QUERY;
+					PostSPIService(Event2Post);
+			}
     }
     return(ReturnEvent);
 }
