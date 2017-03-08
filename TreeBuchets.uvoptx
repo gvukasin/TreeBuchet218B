@@ -923,7 +923,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>D:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</PathWithFileName>
+      <PathWithFileName>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</PathWithFileName>
       <FilenameWithoutPath>driverlib.lib</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>

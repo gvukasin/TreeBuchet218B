@@ -840,29 +840,29 @@ static ES_Event DuringCheckIn( ES_Event Event)
 					// Report and assume correct
 					
 					//Report frequency
-				printf("\r\n Report freq posted to spi \r\n");
-				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-				PostEvent.EventParam = newRead;
-				PostSPIService(PostEvent);
+					printf("\r\n Report freq posted to spi \r\n");
+					PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+					PostEvent.EventParam = newRead;
+					PostSPIService(PostEvent);
 					
 					// stop the motors, this is the correct station 
 					stop(); 
 					printf("\r\nSTOP\r\n");
 								
 				 //Reset # correct report
-								NumberOfCorrectReports = 0;
+					NumberOfCorrectReports = 0;
 								
-								//Go to SHOOTING
-								PostEvent.EventType = CHECK_IN_SUCCESS;
-								PostRobotTopSM(PostEvent);	
+					//Go to SHOOTING
+					PostEvent.EventType = CHECK_IN_SUCCESS;
+					PostRobotTopSM(PostEvent);	
 					
 				}
 				
-				else{
+				else{ //NumberOfCorrectReports == 0
 				//Report frequency
 				printf("\r\n Report freq posted to spi \r\n");
 				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-				PostEvent.EventParam = PeriodCode;
+				PostEvent.EventParam = PeriodCode; 
 				PostSPIService(PostEvent);						
 				}
 				
