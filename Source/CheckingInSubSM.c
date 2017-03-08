@@ -313,7 +313,10 @@ static ES_Event DuringWaiting4FirstResponseReady( ES_Event Event)
 				  printf("\r\n---------Response Ready---------\r\n");
 				  if((Event.EventParam & NACK_MASK) == NACK_MASK)
 					{
-							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
+							printf("\r\n -------NACK"); 
+						  // Post KEEP_DRIVING Event and get out of SubSM
+						  Event2Post.EventType = KEEP_DRIVING;
+							PostRobotTopSM(Event2Post);
 					}
 					else if((Event.EventParam & NACK_MASK) == Inactive_MASK)
 					{

@@ -388,7 +388,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // Process events			 
 			 if (CurrentEvent.EventType == CHECK_IN_SUCCESS) 
        {
-				 printf("\r\nReceive CHECK_IN_SUCCESS event\r\n");
+				  printf("\r\nReceive CHECK_IN_SUCCESS event\r\n");
 					NextState = SHOOTING;
 					MakeTransition = true; 
 			 }
