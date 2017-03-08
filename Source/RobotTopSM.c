@@ -1036,8 +1036,11 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
+			// Start ISR for IR frequency detection (SEE ME: not sure we need this here)
 			EnableFrontIRInterrupt();
+			
+			// Re-enable Driving Timer 
+			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 				
 			// Start Rotating
 			start2rotate(CW,BeaconRotationDutyCycle);
@@ -1049,10 +1052,7 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     {
     }
 		
-		// SEE ME (similar to Driving2Staging, not sure if checking for beacon signal comes here (before 'during' function))
-		// do any activity that is repeated as long as we are in this state
-		// Drive2Reload();
-		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIME))
 		{
 			// Read the detected IR frequency
 			Front_MeasuredIRPeriodCode = Front_GetIRCode();

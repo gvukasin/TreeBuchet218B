@@ -385,6 +385,8 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) ||(Event.EventType == ES_ENTRY_HISTORY) )
 		{
+			// turn on fly wheel 
+			SetFlyDuty(FlyWheelDuty);	
 		}
     else if ( Event.EventType == ES_EXIT )
     {  			
@@ -407,7 +409,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			//	 - servo speed is fixed 
 			// 	 - flywheel as a function of where we are  /////SEE ME - If we have time!!			
 			SetServoDuty(SeparatorDuty); 
-			SetFlyDuty(FlyWheelDuty);	
+			
 		}
 		
     // return either Event, if you don't want to allow the lower level machine

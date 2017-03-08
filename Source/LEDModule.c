@@ -8,6 +8,8 @@
 
 /*----------------------------- Include Files -----------------------------*/
 
+#define TEST 
+
 #include "ES_Configure.h"
 #include "ES_Framework.h"
 #include "RobotTopSM.h"
@@ -38,10 +40,11 @@
 
 /*----------------------------- Module Defines ----------------------------*/
 #define ON 1
+#define OFF 0
 #define GREEN 0
 #define YELLOW_ON 0x40 //01000000
-#define RED_ON 0x08 //00001000
-#define GREEN_ON 0x10 //00010000
+#define RED_ON 0x10 //00010000
+#define GREEN_ON 0x08 //00001000
 #define BLUE_ON 0x04 //00000100
 #define LEDS_OFF 0x00
 
@@ -126,3 +129,21 @@ static void InitializeLEDHardware(void)
 	// Init shift register
 	SR_Init();
 }
+
+#ifdef TEST
+#include "termio.h"
+#define clrScrn() 	printf("\x1b[2J")
+int main(void){
+	
+// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
+	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
+			| SYSCTL_XTAL_16MHZ);
+	TERMIO_Init();
+	clrScrn();
+	printf("\r\n pwm test module \r\n");
+	TurnOnOFFTeamColorLEDs(ON,GREEN);
+	TurnOnOffBlueLEDs(1,GREEN);
+	TurnOnOffYellowLEDs(1,GREEN);
+	
+}
+#endif
