@@ -134,6 +134,10 @@
 #define code500us (BIT3HI|BIT2HI|BIT1HI|BIT0HI) //1111;
 #define codeInvalidStagingArea 0xff
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+
 // Wire Following Control Defines
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
@@ -142,7 +146,7 @@
 #define PWMProportionalGain 0.15 //0.10
 #define PWMDerivativeGain 0.1
 #define NoWireDetectedReading 2000
-// Good try: Timer=1/50s, offset=70, Propertional=0.15, Derivative=0.1
+// Good try: Timer=1/50s, offset=70, Proportional=0.15, Derivative=0.1
 
 // MotorActionDefines
 #define FORWARD 1
@@ -181,6 +185,7 @@ static int LastPositionDifference = 0;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
+static bool FirstTimeDriving = 1;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -201,6 +206,8 @@ static bool HallEffectFlag = 0;
 static uint16_t OldScore;
 static uint16_t NewScore;
 static bool ShootingFlag = 0;
+
+static uint8_t Front_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -374,8 +381,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 						 case COM_QUERY_RESPONSE:
 								NextState = CHECKING_IN; // Internal Self transition
 								break;
-
-						case KEEP_DRIVING :
+						case KEEP_DRIVING:
 							 NextState = DRIVING2STAGING;
 							 MakeTransition = true;
 							 break;		
@@ -615,7 +621,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
-			
+
 			EnableStagingAreaISR(1);
 			
 			//SEE ME
@@ -629,6 +635,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 //				EnableStagingAreaISR(1);
 //				printf("\r\n en hall int");
 //			}
+
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -646,6 +653,47 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// do the 'during' function for this state
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
+			
+			
+			// Not sure if this is where we want to align with the appropriate beacon, but I will add the pseudo code here
+			// if on the GREEN side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 2200 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1250 Hz
+					// else if the next staging area is > 2
+						// align with 2200 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1250 Hz
+			
+			// if on the RED side
+				// if the current staging area is 1
+					// if the next staging area is 1
+						// stay in place
+					// else if the next staging area is > 1
+						// align with 1700 Hz
+				// else if the current staging area is 2
+					// if the next staging area is 2
+						// stay in place
+					// else if the next staging area is < 2
+						// align with 1950 Hz
+					// else if the next staging area is > 2
+						// align with 1700 Hz
+				// else if the current staging area is 3
+					// if the next staging area is 3
+						// stay in place
+					// else if the next staging area is < 3
+						// align with 1950 Hz
+			
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
 			RLCReading_Right = RLCReading[1];
@@ -715,7 +763,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				PWMRight = 100;
 			}
 			 
-			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);
@@ -893,6 +941,9 @@ static ES_Event DuringCheckIn( ES_Event Event)
 								// stop the motors, this is the correct station 
 								stop();
 								
+								//Reset # correct report
+								NumberOfCorrectReports = 0;
+								
 								//Go to SHOOTING
 								PostEvent.EventType = CHECK_IN_SUCCESS;
 								PostRobotTopSM(PostEvent);	
@@ -1010,8 +1061,37 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 		// do the 'during' function for this state
 		else 
     {
-        // do any activity that is repeated as long as we are in this state
-				Drive2Reload();
+      // do any activity that is repeated as long as we are in this state
+			// Drive2Reload();
+			
+			 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+			 {
+				// Read the detected IR frequency
+				Front_MeasuredIRPeriodCode = Front_GetIRCode();
+				
+				// if on the GREEN side, align with 1250 Hz
+				// if on the RED side, align with 1950 Hz
+				 
+				if ( GetTeamColor() == GREEN )
+				{
+					if ( Front_MeasuredIRPeriodCode == code800us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+				else if ( GetTeamColor() == RED )
+				{
+					if ( Front_MeasuredIRPeriodCode == code513us )
+					{
+						// drive along wire until limit switch is triggered
+						// after switch is triggered, send IR pulses
+					}
+				}
+				
+			}
+			
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
@@ -1034,7 +1114,16 @@ static ES_Event DuringReloading( ES_Event Event)
     else if ( Event.EventType == ES_EXIT )
     {
         // on exit, give the lower levels a chance to clean up first
-        RunReloadingSM(Event); 
+        RunReloadingSM(Event);
+			
+			// either rotate 180 deg (EASIER)
+			
+			// or, align with beacon on opposite side of reloader
+			
+			// if on the GREEN side
+				// align with 2200 Hz
+			// else if on the RED side
+				// align with 1700 Hz
     }
 		
 		// do the 'during' function for this state

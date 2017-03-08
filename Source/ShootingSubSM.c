@@ -59,13 +59,6 @@
 #include "PWMmodule.h"
 #include "LEDModule.h"
 
-// IR frequency codes
-#define code800us 0x00 // 1250Hz (Green supply depot)
-#define code690us 0x01 // 1450Hz (Bucket nav beacon)
-#define code588us 0x02 // 1700Hz (Red nav beacon)
-#define code513us 0x03 // 1950Hz (Red supply depot)
-#define code455us 0x04 // 2200Hz (Green nav beacon)
-
 /*----------------------------- Module Defines ----------------------------*/
 // define constants for the states for this machine
 // and any other local defines
@@ -90,6 +83,13 @@
 #define SeparatorDuty 30
 #define SeparatorONTime 150 //ms
 
+// IR frequency codes
+#define code800us 0x00 // 1250Hz (Green supply depot)
+#define code690us 0x01 // 1450Hz (Bucket nav beacon)
+#define code588us 0x02 // 1700Hz (Red nav beacon)
+#define code513us 0x03 // 1950Hz (Red supply depot)
+#define code455us 0x04 // 2200Hz (Green nav beacon)
+
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -101,7 +101,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
 
 static bool DetectAGoal();
-static void SetServoAndFlyWheelSpeed();
+// static void SetServoAndFlyWheelSpeed(); // Do we still need this?
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
