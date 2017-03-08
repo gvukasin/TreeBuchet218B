@@ -371,7 +371,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				printf("\r\n checking in %i, %i \r\n",CurrentEvent.EventType,CurrentEvent.EventParam);
+				 printf("\r\n RUN checking in. Type: %i, Param: %i \r\n",CurrentEvent.EventType,CurrentEvent.EventParam);
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -522,7 +522,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	//Initial state
 	// SEE ME
 //CurrentState = ENDING_STRATEGY;
-	CurrentState = DRIVING2STAGING;
+	CurrentState = WAITING2START;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -898,8 +898,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			}else if(PWMRight > 100){
 				PWMRight = 100;
 			}
-				 
-				// printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
+			 
+			printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
 			// Do not send PWM to the wheel motors unless the robot is oriented with the wire
 			if ( OrientedWithWire_Driving2Wire == 1 )
@@ -952,22 +952,22 @@ static ES_Event DuringCheckIn( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
 			// ENTRY won't be run if we just want to query again about the same report
-			printf("\r\n Enter Checking in, %i", NumberOfCorrectReports);
+			printf("\r\n DURING. Enter Checking in, #CORRECT REPORTS: %i", NumberOfCorrectReports);
 			// Valid second code defaults to 1
 			ValidSecondCode = 1;
 			
 			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
 			{
 				/* Before reporting the second new read period we must check that:
-							1) it is different to the previous one 
+							1) it is different to the previous one (the freq will be changed after one valid check in)
 							2) it is a valid code 
 				*/
 				newRead = GetStagingAreaCodeArray();
-				printf("\r\nnewRead: %i\r\n",newRead);
+				printf("\r\n 2ND REPORT newRead: %i\r\n",newRead);
 				
 				// this bool will be 0 if the second freq we've read doesn't fulfill both conditions
 				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
-				printf("\r\nValidSecondCode: %i\r\n",ValidSecondCode);
+				printf("\r\nValidSecondCode = %i (1 means YES)\r\n",ValidSecondCode);
 			}
 			
 			// (1) REPORT and (2) START TIMER (SEE ME: MAY NOT BE CHECKING FOR THE RIGHT CONDITIONS)
@@ -976,22 +976,44 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				if (NumberOfCorrectReports == 1) //update code value before reporting 
 				{
 					// Update code 
-					PeriodCode = newRead;
+					//PeriodCode = newRead;
+					
+					// Report and assume correct
+					
+					//Report frequency
+				printf("\r\n Report freq posted to spi \r\n");
+				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
+				PostEvent.EventParam = newRead;
+				PostSPIService(PostEvent);
+					
+					// stop the motors, this is the correct station 
+					stop(); 
+					printf("\r\nSTOP\r\n");
+								
+				 //Reset # correct report
+								NumberOfCorrectReports = 0;
+								
+								//Go to SHOOTING
+								PostEvent.EventType = CHECK_IN_SUCCESS;
+								PostRobotTopSM(PostEvent);	
+					
 				}
-			
+				
+				else{
 				//Report frequency
 				printf("\r\n Report freq posted to spi \r\n");
 				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
 				PostEvent.EventParam = PeriodCode;
 				PostSPIService(PostEvent);						
-			 
+				}
+				
 				//Start 200ms timer
 				ES_Timer_StartTimer(FrequencyReport_TIMER);	
 			}
 			else if (ValidSecondCode == 0 && NumberOfCorrectReports == 1)
 			{
 					//read again
-					printf("\r\nSomething dumb\r\n");
+					//printf("\r\nSomething dumb\r\n");
 					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
 					PostRobotTopSM(PostEvent);
 			}
@@ -1011,7 +1033,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 
 				/* (3) If there has been a timeout -which means the reporting process 
 							 has had time to be completed- QUERY until LOC returns a Response Ready */
-				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN))
+				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN) || (Event.EventType == ES_ERROR))
 				{
 					printf("\r\n ROBOT_QUERY to SPI\r\n");
 					PostEvent.EventType = ROBOT_QUERY;
@@ -1021,7 +1043,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 				//(4) Has the LOC received our frequency and is it correct? 
 				else if (Event.EventType == COM_QUERY_RESPONSE)
 				{
-					printf("\r\n HERE %i\r\n",Event.EventParam);
+					//printf("\r\n HERE %i\r\n",Event.EventParam);
 					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
 					{
 						printf("\r\nResponse NOT ready\r\n");
@@ -1038,7 +1060,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
 							
 							//Try reporting again
-							PostEvent.EventType = STATION_REACHED; // SEE ME - should change to something besides station reached
+							PostEvent.EventType = REPORT_SECOND_TIME; // SEE ME - should change to something besides station reached
 							PostRobotTopSM(PostEvent);
 						}
 						
@@ -1074,11 +1096,15 @@ static ES_Event DuringCheckIn( ES_Event Event)
 							// Add 1 to number of correct reports
 							NumberOfCorrectReports++;
 							
+							printf("\r\nAll good and #correct reports = %i\r\n", NumberOfCorrectReports);
+							
 							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
 							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
 							
 							if (NumberOfCorrectReports == 2)
 							{	
+								printf("\r\nSUCCESSFUL\r\n");
+								
 								// stop the motors, this is the correct station 
 								stop();
 								
