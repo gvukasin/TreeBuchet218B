@@ -633,7 +633,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 
 			EnableStagingAreaISR(1);
 			
-<<<<<<< HEAD
+
 			// Always initially set the orientation flag to 0
 			OrientedWithWire_Driving2Wire = 0;
 			
@@ -646,18 +646,6 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				start2rotate(CW,BeaconRotationDutyCycle);
 			}
 			
-			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
-				// Clear flag
-				HallEffectFlag = 0;
-				printf("\r\n clear flag ");
-				
-			} else {
-				// enable Hall Effect Interrupt
-				EnableStagingAreaISR(1);
-				printf("\r\n en hall int");
-			}
-			
-=======
 			//SEE ME
 //			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
 //				// Clear flag
@@ -670,7 +658,6 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 //				printf("\r\n en hall int");
 //			}
 
->>>>>>> e76b0f76ee9772e389dd0633a31c7f0ec813313e
     }
     else if ( Event.EventType == ES_EXIT )
     {
