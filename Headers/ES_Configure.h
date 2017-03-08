@@ -44,7 +44,7 @@
 // the name of the run function
 #define SERV_0_RUN RunSPIService
 // How big should this services Queue be?
-#define SERV_0_QUEUE_SIZE 5
+#define SERV_0_QUEUE_SIZE 15
 
 /****************************************************************************/
 // The following sections are used to define the parameters for each of the
@@ -60,7 +60,7 @@
 // the name of the run function
 #define SERV_1_RUN RunRobotTopSM
 // How big should this services Queue be?
-#define SERV_1_QUEUE_SIZE 5
+#define SERV_1_QUEUE_SIZE 20
 #endif
 
 /****************************************************************************/
@@ -295,7 +295,9 @@ typedef enum {  ES_NO_EVENT = 0,
 								FINISHED_SHOT,
 								//SHOOTING_TIMEOUT, //35
 								/* SPI Event*/
-								EOTEvent
+								EOTEvent,
+								ACK,
+								InActive
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
@@ -351,7 +353,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER5_RESP_FUNC PostRobotTopSM
 #define TIMER6_RESP_FUNC PostRobotTopSM
 #define TIMER7_RESP_FUNC PostRobotTopSM
-#define TIMER8_RESP_FUNC TIMER_UNUSED
+#define TIMER8_RESP_FUNC PostRobotTopSM
 #define TIMER9_RESP_FUNC TIMER_UNUSED
 #define TIMER10_RESP_FUNC TIMER_UNUSED
 #define TIMER11_RESP_FUNC TIMER_UNUSED
@@ -375,5 +377,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define Waitin4Ball_TIMER 5
 #define SendingIRPulses_TIMER 6
 #define Waiting4Shot_TIMER 7
+#define ReportInterval_TIMER 8
 
 #endif /* CONFIGURE_H */

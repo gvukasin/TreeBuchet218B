@@ -49,6 +49,7 @@
 #include "MotorActionsModule.h"
 #include "PWMModule.h"
 #include "EventCheckers.h"
+#include "CheckingInSubSM.h"
 
 // the common headers for C99 types 
 #include <stdint.h>
@@ -216,6 +217,8 @@ static uint16_t OldScore;
 static uint16_t NewScore;
 static bool ShootingFlag = 0;
 
+static uint8_t CurrentStagingCode = codeInvalidStagingArea;
+
 static uint8_t Front_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
@@ -379,40 +382,19 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-				 printf("\r\n RUN checking in. Type: %i, Param: %i \r\n",CurrentEvent.EventType,CurrentEvent.EventParam);
+
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
-			 if ( CurrentEvent.EventType != ES_NO_EVENT ) //If an event is active
-       {				 
-					switch (CurrentEvent.EventType)
-					{
-						 case CHECK_IN_SUCCESS : 
-								NextState = SHOOTING;
-								MakeTransition = true; 
-								break;
-						 case ES_TIMEOUT:
-								if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == FrequencyReport_TIMER))
-									NextState = CHECKING_IN; // Internal Self transition
-								break;
-						 case COM_QUERY_RESPONSE:
-								NextState = CHECKING_IN; // Internal Self transition
-								break;
-						case KEEP_DRIVING:
-							 NextState = DRIVING2STAGING;
-							 MakeTransition = true;
-							 break;		
-						case REPORT_SECOND_TIME: // External self transition
-							 NextState = CHECKING_IN;
-							 MakeTransition = true;
-							 break;	
-						 default:
-							 if(ES_ENTRY|ES_EXIT){} //SEE ME: This might actually throw an error (Elena). And it's in other states too
-							 else
-								printf("\r\nERROR: Robot is in CHECKING_IN and EVENT NOT VALID\n");
-					}
-				}
-				break;
+			 if (CurrentEvent.EventType == CHECK_IN_SUCCESS) 
+       {
+					NextState = SHOOTING;
+					MakeTransition = true; 
+			 }
+			 if(CurrentEvent.EventType == KEEP_DRIVING){
+				 	NextState = DRIVING2STAGING;
+					MakeTransition = true;
+			 }
 
 			 // CASE 4/8				 
 			 case SHOOTING:
@@ -529,7 +511,7 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
 	// SEE ME
-//CurrentState = ENDING_STRATEGY;
+  //CurrentState = ENDING_STRATEGY;
 	CurrentState = WAITING2START;
 	
   // now we need to let the Run function init the lower level state machines
@@ -917,6 +899,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			if(PeriodCode != codeInvalidStagingArea && PeriodCode != LastPeriodCode)
 			{ 
+				CurrentStagingCode = PeriodCode;
+				
 				// save last period code 
 				LastPeriodCode = PeriodCode;
 				
@@ -950,76 +934,12 @@ static ES_Event DuringCheckIn( ES_Event Event)
 	/***********************************************************************************/
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     { 
-			// ENTRY won't be run if we just want to query again about the same report
-			printf("\r\n DURING. Enter Checking in, #CORRECT REPORTS: %i", NumberOfCorrectReports);
-			// Valid second code defaults to 1
-			ValidSecondCode = 1;
-			
-			if (NumberOfCorrectReports == 1) //SECOND REPORT - read new frequency and update PeriodCode
-			{
-				/* Before reporting the second new read period we must check that:
-							1) it is different to the previous one (the freq will be changed after one valid check in)
-							2) it is a valid code 
-				*/
-				newRead = GetStagingAreaCodeArray();
-				printf("\r\n 2ND REPORT newRead: %i\r\n",newRead);
-				
-				// this bool will be 0 if the second freq we've read doesn't fulfill both conditions
-				ValidSecondCode = ((newRead != codeInvalidStagingArea) & (newRead != PeriodCode));
-				printf("\r\nValidSecondCode = %i (1 means YES)\r\n",ValidSecondCode);
-			}
-			
-			// (1) REPORT and (2) START TIMER (SEE ME: MAY NOT BE CHECKING FOR THE RIGHT CONDITIONS)
-			if (ValidSecondCode == 1) //report the second time ONLY if the code is incorrect
-			{			
-				if (NumberOfCorrectReports == 1) //update code value before reporting 
-				{
-					// Update code 
-					//PeriodCode = newRead;
-					
-					// Report and assume correct
-					
-					//Report frequency
-					printf("\r\n Report freq posted to spi \r\n");
-					PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-					PostEvent.EventParam = newRead;
-					PostSPIService(PostEvent);
-					
-					// stop the motors, this is the correct station 
-					stop(); 
-					printf("\r\nSTOP\r\n");
-								
-				 //Reset # correct report
-					NumberOfCorrectReports = 0;
-								
-					//Go to SHOOTING
-					PostEvent.EventType = CHECK_IN_SUCCESS;
-					PostRobotTopSM(PostEvent);	
-					
-				}
-				
-				else{ //NumberOfCorrectReports == 0
-				//Report frequency
-				printf("\r\n Report freq posted to spi \r\n");
-				PostEvent.EventType = ROBOT_FREQ_RESPONSE;
-				PostEvent.EventParam = PeriodCode; 
-				PostSPIService(PostEvent);						
-				}
-				
-				//Start 200ms timer
-				ES_Timer_StartTimer(FrequencyReport_TIMER);	
-			}
-			else if (ValidSecondCode == 0 && NumberOfCorrectReports == 1)
-			{
-					//read again
-					//printf("\r\nSomething dumb\r\n");
-					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
-					PostRobotTopSM(PostEvent);
-			}
+			StartCheckingInSM(Event);
     }
 		
     else if ( Event.EventType == ES_EXIT)
     {
+			RunShootingSM(Event);
     }
 		
 		/***********************************************************************************/
@@ -1027,113 +947,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		/***********************************************************************************/
 		else 
     {	
-			if (ValidSecondCode == 1) // During the first report this will be 1 so we will go into this during
-			{
-
-				/* (3) If there has been a timeout -which means the reporting process 
-							 has had time to be completed- QUERY until LOC returns a Response Ready */
-				if (((Event.EventType == ES_TIMEOUT) && (Event.EventParam == FrequencyReport_TIMER)) || (Event.EventType == QUERY_AGAIN) || (Event.EventType == ES_ERROR))
-				{
-					printf("\r\n ROBOT_QUERY to SPI\r\n");
-					PostEvent.EventType = ROBOT_QUERY;
-					PostSPIService(PostEvent);
-				}    
-
-				//(4) Has the LOC received our frequency and is it correct? 
-				else if (Event.EventType == COM_QUERY_RESPONSE)
-				{
-					//printf("\r\n HERE %i\r\n",Event.EventParam);
-					if((Event.EventParam & RESPONSE_READY_MASK)== RESPONSE_NOT_READY) // Did NOT receive
-					{
-						printf("\r\nResponse NOT ready\r\n");
-						PostEvent.EventType = QUERY_AGAIN;
-						PostRobotTopSM(PostEvent);
-					}
-					else if((Event.EventParam & RESPONSE_READY_MASK) == RESPONSE_READY) // YES received
-					{
-						printf("\r\nResponse ready\r\n");
-						printf("\r\nReport status: %x\r\n", Event.EventParam);
-						// NACK - wrong frequency
-						if(((Event.EventParam & NACK_MASK) == NACK_MASK))
-						{
-							printf("\r\nERROR: Reported the WRONG FREQUENCY! We will REPORT AGAIN\r\n"); 
-							
-							//Try reporting again
-							PostEvent.EventType = REPORT_SECOND_TIME; // SEE ME - should change to something besides station reached
-							PostRobotTopSM(PostEvent);
-						}
-						
-						// INACTIVE - wrong staging area
-						if((Event.EventParam & NACK_MASK) == Inactive_MASK)
-						{
-							printf("\r\n -------INACTIVE");
-							// record current driving stage (we will need next staging area too to know which direction to drive in!)
-							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
-							
-							//// Set Flag for disabling interrupt for the hall effect sensor
-							//HallEffectFlag = 1;
-							
-							// Disable Hall Effect Interrupt
-							// SEE ME
-							//EnableStagingAreaISR(0);
-							
-							// Enable GetAwayTimer Interrupt
-							//SEE ME
-							//EnableGetAwayTimer(GetAwayTimeoutMS);
-							
-							//Go to DRIVING2STAGING
-							PostEvent.EventType = KEEP_DRIVING;
-							PostRobotTopSM(PostEvent);	
-							printf("\r\n---------KEEPDRIVING POSTED-------\r\n");
-							
-						}
-						
-						// ACK - all good! 
-						if((Event.EventParam & NACK_MASK) == ACK_MASK)
-						{
-							printf("\r\n ---------ACTIVE");
-							// Add 1 to number of correct reports
-							NumberOfCorrectReports++;
-							
-							printf("\r\nAll good and #correct reports = %i\r\n", NumberOfCorrectReports);
-							
-							// record current driving stage (SEE ME: might set the next staging area as the current staging area)
-							CurrentStagingArea = GetGoalOrStagePositionFromStatus(Event.EventParam);
-							
-							if (NumberOfCorrectReports == 2)
-							{	
-								printf("\r\nSUCCESSFUL\r\n");
-								
-								// stop the motors, this is the correct station 
-								stop();
-								
-								//Reset # correct report
-								NumberOfCorrectReports = 0;
-								
-								//Go to SHOOTING
-								PostEvent.EventType = CHECK_IN_SUCCESS;
-								PostRobotTopSM(PostEvent);	
-							}
-							else if (NumberOfCorrectReports == 1)							
-							{ 							
-								//Read new frequency and Report again --> repeat CHECKING IN
-								PostEvent.EventType = REPORT_SECOND_TIME; //This will lead to an external self transition
-								PostRobotTopSM(PostEvent);
-							}
-							else
-							{
-								printf("\r\nWARNING: The number of correct reports is a WEIRD #: %i", NumberOfCorrectReports);
-							}
-						}
-					} 
-				}
-			}
-			else if (ValidSecondCode == 0)
-			{
-					//read again
-					PostEvent.EventType = REPORT_SECOND_TIME; //external self transition
-					PostRobotTopSM(PostEvent);
-			}
+			RunShootingSM(Event);
     }
 		
     // return either Event, if you don't want to allow the lower level machine
@@ -1155,6 +969,7 @@ static ES_Event DuringShooting( ES_Event Event)
 
 				//SEE ME
 			  stop();
+			
         //Set shooting flag to true
 				ShootingFlag = 1;
 			
@@ -1195,7 +1010,9 @@ static ES_Event DuringShooting( ES_Event Event)
 					PostEvent.EventType = SCORED;
 					
 				else
-					PostEvent.EventType = MISSED_SHOT;			
+					PostEvent.EventType = MISSED_SHOT;	
+
+				PostRobotTopSM(PostEvent);
 			}
 			else
 			{
@@ -1610,6 +1427,10 @@ void GetAwayISR()
 		//stop ball separator
 		SetServoDuty(0);
 	}
+}
+
+uint8_t returnCurrentStageCode(){
+	return CurrentStagingCode;
 }
 
 /****************************************************************************
