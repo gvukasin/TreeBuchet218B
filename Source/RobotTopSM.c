@@ -366,6 +366,14 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 NextState = DRIVING2STAGING;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
+				
+				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER))
+				{
+					 // External self transition
+					 NextState = DRIVING2STAGING;
+					 MakeTransition = true;
+					 ReturnEvent.EventType = ES_NO_EVENT;
+				}
 
 				break;
 				
@@ -639,6 +647,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			if ( FirstTimeDriving == 0 )
 			{
+				 printf("\r\n NOT first time driving \r\n");
+				
 				// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
 				EnableFrontIRInterrupt();
 				
@@ -676,128 +686,129 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// look for readings from the IR sensor
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Looking4Beacon_TIMER))
 		{
+			printf("\r\n DURING ---- Looking4Beacon_TIMER \r\n");
+			
+			// Read the detected IR frequency
+			Front_MeasuredIRPeriodCode = Front_GetIRCode(); 
+			printf("\r\n Front_MeasuredIRPeriodCode = %i \r\n", Front_MeasuredIRPeriodCode);
+
+			
 			// if this is not the first time driving, orient the robot
 			if ( FirstTimeDriving == 0)
 			{				
-				if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+				// if on the GREEN side
+				if ( TeamColor == GREEN )
 				{
-					// Read the detected IR frequency
-					Front_MeasuredIRPeriodCode = Front_GetIRCode(); 
-					
-					// if on the GREEN side
-					if ( TeamColor == GREEN )
+					// if the current staging area is 1
+					if ( CurrentStagingArea == 1 )
 					{
-						// if the current staging area is 1
-						if ( CurrentStagingArea == 1 )
+						// if the next staging area is 1
+							// stay in place
+						// else if the next staging area is > 1
+						if ( NextStagingArea > CurrentStagingArea )
 						{
-							// if the next staging area is 1
-								// stay in place
-							// else if the next staging area is > 1
-							if ( NextStagingArea > CurrentStagingArea )
+							// align with 2200 Hz
+							if ( Front_MeasuredIRPeriodCode == code455us )
 							{
-								// align with 2200 Hz
-								if ( Front_MeasuredIRPeriodCode == code455us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
-							}
-						}
-						// else if the current staging area is 2
-						else if ( CurrentStagingArea == 2 )
-						{
-							// if the next staging area is 2
-								// stay in place
-							// else if the next staging area is < 2
-							if ( NextStagingArea < CurrentStagingArea )
-							{
-								// align with 1250 Hz
-								if ( Front_MeasuredIRPeriodCode == code800us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
-							}
-							// else if the next staging area is > 2
-							else if ( NextStagingArea > CurrentStagingArea )
-							{
-								// align with 2200 Hz
-								if ( Front_MeasuredIRPeriodCode == code455us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
-							}
-						}
-						// else if the current staging area is 3
-						else if ( CurrentStagingArea == 3 )
-						{
-							// if the next staging area is 3
-								// stay in place
-							// else if the next staging area is < 3
-							if ( NextStagingArea < CurrentStagingArea )
-							{
-								// align with 1250 Hz
-								if ( Front_MeasuredIRPeriodCode == code800us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
+								OrientedWithWire_Driving2Wire = 1;
 							}
 						}
 					}
-					
-					// if on the RED side
-					if ( TeamColor == RED )
+					// else if the current staging area is 2
+					else if ( CurrentStagingArea == 2 )
 					{
-						// if the current staging area is 1
-						if ( CurrentStagingArea == 1 )
+						// if the next staging area is 2
+							// stay in place
+						// else if the next staging area is < 2
+						if ( NextStagingArea < CurrentStagingArea )
 						{
-							// if the next staging area is 1
-								// stay in place
-							// else if the next staging area is > 1
-							if ( NextStagingArea > CurrentStagingArea )
+							// align with 1250 Hz
+							if ( Front_MeasuredIRPeriodCode == code800us )
 							{
-								// align with 1700 Hz
-								if ( Front_MeasuredIRPeriodCode == code588us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
+								OrientedWithWire_Driving2Wire = 1;
 							}
 						}
-						// else if the current staging area is 2
-						else if ( CurrentStagingArea == 2 )
+						// else if the next staging area is > 2
+						else if ( NextStagingArea > CurrentStagingArea )
 						{
-							// if the next staging area is 2
-								// stay in place
-							// else if the next staging area is < 2
-							if ( NextStagingArea < CurrentStagingArea )
+							// align with 2200 Hz
+							if ( Front_MeasuredIRPeriodCode == code455us )
 							{
-								// align with 1950 Hz
-								if ( Front_MeasuredIRPeriodCode == code513us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
-							}
-							// else if the next staging area is > 2
-							else if ( NextStagingArea > CurrentStagingArea )
-							{
-								// align with 1700 Hz
-								if ( Front_MeasuredIRPeriodCode == code588us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
+								OrientedWithWire_Driving2Wire = 1;
 							}
 						}
-						// else if the current staging area is 3
-						else if ( CurrentStagingArea == 3 )
+					}
+					// else if the current staging area is 3
+					else if ( CurrentStagingArea == 3 )
+					{
+						// if the next staging area is 3
+							// stay in place
+						// else if the next staging area is < 3
+						if ( NextStagingArea < CurrentStagingArea )
 						{
-							// if the next staging area is 3
-								// stay in place
-							// else if the next staging area is < 3
-							if ( NextStagingArea < CurrentStagingArea )
+							// align with 1250 Hz
+							if ( Front_MeasuredIRPeriodCode == code800us )
 							{
-								// align with 1950 Hz
-								if ( Front_MeasuredIRPeriodCode == code513us )
-								{
-									OrientedWithWire_Driving2Wire = 1;
-								}
+								OrientedWithWire_Driving2Wire = 1;
+							}
+						}
+					}
+				}
+				
+				// if on the RED side
+				if ( TeamColor == RED )
+				{
+					// if the current staging area is 1
+					if ( CurrentStagingArea == 1 )
+					{
+						// if the next staging area is 1
+							// stay in place
+						// else if the next staging area is > 1
+						if ( NextStagingArea > CurrentStagingArea )
+						{
+							// align with 1700 Hz
+							if ( Front_MeasuredIRPeriodCode == code588us )
+							{
+								OrientedWithWire_Driving2Wire = 1;
+							}
+						}
+					}
+					// else if the current staging area is 2
+					else if ( CurrentStagingArea == 2 )
+					{
+						// if the next staging area is 2
+							// stay in place
+						// else if the next staging area is < 2
+						if ( NextStagingArea < CurrentStagingArea )
+						{
+							// align with 1950 Hz
+							if ( Front_MeasuredIRPeriodCode == code513us )
+							{
+								OrientedWithWire_Driving2Wire = 1;
+							}
+						}
+						// else if the next staging area is > 2
+						else if ( NextStagingArea > CurrentStagingArea )
+						{
+							// align with 1700 Hz
+							if ( Front_MeasuredIRPeriodCode == code588us )
+							{
+								OrientedWithWire_Driving2Wire = 1;
+							}
+						}
+					}
+					// else if the current staging area is 3
+					else if ( CurrentStagingArea == 3 )
+					{
+						// if the next staging area is 3
+							// stay in place
+						// else if the next staging area is < 3
+						if ( NextStagingArea < CurrentStagingArea )
+						{
+							// align with 1950 Hz
+							if ( Front_MeasuredIRPeriodCode == code513us )
+							{
+								OrientedWithWire_Driving2Wire = 1;
 							}
 						}
 					}
@@ -809,7 +820,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
 			// Need CurrentStagingArea and NextStagingArea. Are these set correctly by the time we enter this part of the code?
-			
+						printf("\r\n DURING ---- WireFollow_TIMER \r\n");
+
 			// if this is the first time driving, do not worry about orienting the robot
 			if ( FirstTimeDriving == 1 )
 			{
@@ -893,7 +905,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			{
 				// Drive the motors using new PWM duty cycles
 				driveSeperate(PWMLeft,PWMRight,FORWARD);
-				//printf("\r\ndrive\r\n");
+				printf("\r\ndrive\r\n");
 			}
 			
 			// Restart the timer
@@ -912,7 +924,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 				ES_Event Event2Post;
 				Event2Post.EventType = STATION_REACHED;
 				Event2Post.EventParam = PeriodCode;
-				printf("\r\n ------------STATION_REACHED posted, pcode----------- %x",PeriodCode);
+				printf("\r\n ------------STATION_REACHED posted, pcode-----------   %x",PeriodCode);
 				PostRobotTopSM(Event2Post);
 			}
     }
@@ -1320,7 +1332,7 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
         // on the lower level
 			
 			//SEE ME: get rid of this, just for testing shooter
-			SetFlyDuty(80);
+			//SetFlyDuty(80);
     }
     else if ( Event.EventType == ES_EXIT )
     {
@@ -1332,12 +1344,7 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
     }
 		else // do the 'during' function for this state
     {
-        // run any lower level state machine
-        // ReturnEvent = RunLowerLevelSM(Event);
-      
-        // repeat for any concurrent lower level machines
-      
-        // do any activity that is repeated as long as we are in this state
+        stop();
     }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
