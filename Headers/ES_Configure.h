@@ -297,7 +297,12 @@ typedef enum {  ES_NO_EVENT = 0,
 								/* SPI Event*/
 								EOTEvent,
 								ACK,
-								InActive
+								InActive,
+								GoalAligned,
+								BucketAligned,
+								ReloadingGoalAligned,
+								ShotComplete
+								
                 } ES_EventTyp_t ;
 
 /****************************************************************************/
@@ -354,7 +359,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER6_RESP_FUNC PostRobotTopSM
 #define TIMER7_RESP_FUNC PostRobotTopSM
 #define TIMER8_RESP_FUNC PostRobotTopSM
-#define TIMER9_RESP_FUNC TIMER_UNUSED
+#define TIMER9_RESP_FUNC PostRobotTopSM
 #define TIMER10_RESP_FUNC TIMER_UNUSED
 #define TIMER11_RESP_FUNC TIMER_UNUSED
 #define TIMER12_RESP_FUNC TIMER_UNUSED
@@ -378,5 +383,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define SendingIRPulses_TIMER 6
 #define Waiting4Shot_TIMER 7
 #define ReportInterval_TIMER 8
+#define IRAligning_TIMER 9
 
 #endif /* CONFIGURE_H */

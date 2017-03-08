@@ -182,6 +182,9 @@ static void InitGetAwayTimer(void);
 // everybody needs a state variable, though if the top level state machine
 // is just a single state container for orthogonal regions, you could get
 // away without it
+
+static bool TeamColor = GREEN;
+
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
 static uint16_t PeriodCode;
@@ -198,7 +201,7 @@ static bool OrientedWithWire_Driving2Wire;
 static bool OrientedWithWire_Driving2Reload;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
-static bool TeamColor;
+
 static uint8_t BallCount = 3; //We will start with 3 balls
 static uint8_t CurrentStagingArea;
 static uint8_t NextStagingArea;
@@ -403,7 +406,15 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 // During function
        CurrentEvent = DuringShooting(CurrentEvent);
 			 // Process events	
-			 //(1)			 
+			 //(1)
+
+			  //The following event is for 3/8/2017		 
+			 	if (CurrentEvent.EventType == ReloadingGoalAligned )
+				{
+					NextState = DRIVING2STAGING; // EXTERNAL Self transition
+					MakeTransition = true; 
+				}
+				
 				if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
 				{
 					NextState = SHOOTING; // INTERNAL Self transition

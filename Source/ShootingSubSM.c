@@ -66,6 +66,10 @@
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
 #define Looking4Beacon_TIME ONE_SEC/100 
+#define IRAligning_TIME ONE_SEC/20
+#define FlyWheel_TIME ONE_SEC*4
+
+#define AligningSpeed 40
 
 #define RED 0
 #define GREEN 1
@@ -73,14 +77,15 @@
 #define CW 1
 #define CCW 0
 
-#define Wait4ShotTime 10000 //10sec
+//#define Wait4ShotTime 10000 //10sec
+#define Wait4ShotTime ONE_SEC*15 //15sec
 #define BucketCode 0x01
 #define BeaconRotationDutyCycle 80
 #define GOAL_BYTE_MASK 0x00ff
 #define LEDS_OFF 0
 
-#define FlyWheelDuty 90
-#define SeparatorDuty 30
+#define FlyWheelDuty 80
+#define SeparatorDuty 20
 #define SeparatorONTime 150 //ms
 
 // IR frequency codes
@@ -89,7 +94,7 @@
 #define code588us 0x02 // 1700Hz (Red nav beacon)
 #define code513us 0x03 // 1950Hz (Red supply depot)
 #define code455us 0x04 // 2200Hz (Green nav beacon)
-
+#define BucketCode 0x01 // 1450Hz
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this machine, things like during
@@ -97,8 +102,11 @@
    behavior of this state machine
 */
 static ES_Event DuringLooking4Goal( ES_Event Event);
+static ES_Event DuringLooking4Bucket( ES_Event Event);
 static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
+static ES_Event DuringCheatRotating2Reload( ES_Event Event);
+
 
 static bool DetectAGoal();
 // static void SetServoAndFlyWheelSpeed(); // Do we still need this?
@@ -124,6 +132,10 @@ static bool NoBalls = 0;
 static bool ScoreHasBeenSaved = 0;
 static uint16_t ScoreBeforeShooting;
 
+static bool TeamColor;
+static uint8_t GoalCode;
+static uint8_t Front_MeasuredIRPeriodCode;
+static bool rotationDirection;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -168,60 +180,101 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 	 
    switch ( CurrentState )
    {
-			 // CASE 1/3
+			 // CASE 1/5
 			 case LOOKING4GOAL :
 				 printf("\r\n LOOKING4GOAL \r\n");
 				 // Execute During function 
          CurrentEvent = DuringLooking4Goal(CurrentEvent);				 
 				 // process events
-				 if (CurrentEvent.EventType == COM_STATUS)
+				 if (CurrentEvent.EventType == GoalAligned)
+				 {
+					 NextState = LOOKING4BUCKET;
+					 MakeTransition = true;
+					 ReturnEvent.EventType = ES_NO_EVENT;
+				 }
+				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
+				 {
+					  // Internal Transition
+						NextState = LOOKING4GOAL;
+					  MakeTransition = false;
+						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+				 }
+				 break;
+
+			 // CASE 2/5			 
+			 case LOOKING4BUCKET :
+				 printf("\r\n LOOKING4GOAL \r\n");
+				 // Execute During function 
+         CurrentEvent = DuringLooking4Bucket(CurrentEvent);				 
+				 // process events
+				 if (CurrentEvent.EventType == BucketAligned)
 				 {
 					 NextState = SETTING_BALL_SPEED;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				 }
-				  else if (CurrentEvent.EventType == LOOK4GOAL_AGAIN) // External Self Transition
+				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
 				 {
-						NextState = LOOKING4GOAL;
-					  MakeTransition = true;
+					  // Internal Transition
+						NextState = LOOKING4BUCKET;
+					  MakeTransition = false;
 						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
 				 }
 				 break;
-		 
-		   // CASE 2/3
+				 
+		   // CASE 3/5
        case SETTING_BALL_SPEED : 
 				 printf("\r\n SETTING_BALL_SPEED \r\n");				 
          // Execute During function 
          CurrentEvent = DuringSettingBallSpeed(CurrentEvent);
          //process any events
-         if ( CurrentEvent.EventType == BALL_FLYING ) 
+			 
+				 // Wait for the flywheel to rotate for a while to reach desired speed
+         if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
          {       
             NextState = WATING4SHOT_COMPLETE;
             MakeTransition = true; 
             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-          }
-				 else if ( CurrentEvent.EventType == ES_NO_EVENT )// Current Event is now ES_NO_EVENT. Correction 2/20/17 
-         {     																						//Probably means that CurrentEvent was consumed by lower level
-            ReturnEvent = CurrentEvent; // in that case update ReturnEvent too
          }
          break;
 				 
-				// CASE 3/3				 
-			  case WATING4SHOT_COMPLETE :  //SEE ME - not sure how to get out of the sub SM. Hope this works
+				// CASE 4/5			 
+			  case WATING4SHOT_COMPLETE :  
 				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
 			    // During function
 				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
 				  // Process events	
-					if (CurrentEvent.EventType == KEEP_WAITING4SHOT) //Internal self transition
-					{
-						NextState = WATING4SHOT_COMPLETE;
-            ReturnEvent.EventType = ES_NO_EVENT;
-					}					
-				  else if (CurrentEvent.EventType == FINISHED_SHOT)
-					{ 
-						ReturnEvent.EventType = FINISHED_SHOT; //re-map this event for the upper level state machine
-					}								
+			 
+				 if (CurrentEvent.EventType == ShotComplete)
+         {  
+            NextState = CheatRotating2Reload;
+            MakeTransition = true; 
+            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+         }
+         else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
+         {  
+						// Internal Transition
+            NextState = WATING4SHOT_COMPLETE;
+            MakeTransition = false; 
+            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+         }							
 				 break;
+				 
+			 // CASE 5/5
+			 case CheatRotating2Reload :
+				 printf("\r\n CheatRotating2Reload \r\n");
+				 // Execute During function 
+         CurrentEvent = DuringCheatRotating2Reload(CurrentEvent);				 
+				 // process events
+				 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
+				 {
+					  // Internal Transition
+						NextState = CheatRotating2Reload;
+					  MakeTransition = false;
+						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+				 }
+				 break;
+				 
     }
     //   If we are making a state transition
     if (MakeTransition == true)
@@ -303,23 +356,24 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 	// ****************** ENTRY
 	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
   {
-		if(ScoreHasBeenSaved == 0)
-		{
-			// Ask for our current score
-			Event2Post.EventType = ROBOT_STATUS;
-			PostSPIService(Event2Post);			
+		// Set the frequency we are looking for
+		TeamColor = GetTeamColor();
+		if(TeamColor == GREEN){
+			GoalCode = code513us; //1950 Hz
+			rotationDirection = CCW;
+		}else if(TeamColor == RED){
+		  GoalCode = code800us; //1250 Hz
+			rotationDirection = CW;
 		}
-		else
-		{
-		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-		EnableBackIRInterrupt();
 		
-		// Start Rotating
-		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
-
-		// Start the timer to periodically check the IR frequency   SEE ME - THERE IS ALREADY AN INTERRUPT
-		//ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
-		}
+		//Enable ISR for front IR (Initialized in TopSM Initialization)
+		EnableFrontIRInterrupt();
+		
+		//Start rotating slowly
+		start2rotate(rotationDirection, AligningSpeed);
+		
+		// Start the timer to periodically check the IR frequency   
+		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
 	}
 	// ****************** EXIT
 	else if ( Event.EventType == ES_EXIT )
@@ -331,49 +385,79 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 	// ****************** DURING
 	else
 	{
-		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Looking4Beacon_TIMER))
+		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 		{
 			// Read the detected IR frequency
-			Back_MeasuredIRPeriodCode = Back_GetIRCode();  
-		
-			// DETECT A GOAL
-			GoalFound = DetectAGoal();
-			printf("Goal found = %i", GoalFound);
-			
-			// If we are looking at a bucket then query LOC which will trigger moving to the next state
-			if(GoalFound == true)
-			{
-				// Ask for the desired IR frequency from LOC by looking at what goal is active in Status Byte 1
-				Event2Post.EventType = ROBOT_STATUS;
-				PostSPIService(Event2Post);
-				
-				// Reset save score flag
-				ScoreHasBeenSaved = 1;
-			}
-			// If we haven't found an active bucket - EXTERNAL SELF TRANSITION to start looking for beacon again
-			else
-			{
-				printf("\r\nLook 4 goal again\r\n");		
-				Event2Post.EventType = LOOK4GOAL_AGAIN;
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
+
+			// If Goal Freq detected, post event; Otherwise restart timer
+			if(Front_MeasuredIRPeriodCode == GoalCode){
+				Event2Post.EventType = GoalAligned;
+				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
 				PostRobotTopSM(Event2Post);
-			}					
+      }else{
+				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+			}				
 		}
-		
-		else if (Event.EventType == COM_STATUS)
-		{
-			//Save current score 
-			ScoreBeforeShooting = GetMyScoreFromStatusResponse(Event.EventParam);
-			
-			//set flag
-			ScoreHasBeenSaved = 1;
-			
-			//make an external self transition
-			Event2Post.EventType = LOOK4GOAL_AGAIN;
-			PostRobotTopSM(Event2Post);
-		}
-	}
+	}	
 	return ReturnEvent;
 }
+
+
+/***************************************************************************
+  DuringLooking4Bucket
+ ***************************************************************************/
+
+static ES_Event DuringLooking4Bucket( ES_Event Event)  
+{
+	ES_Event ReturnEvent = Event; 
+	ES_Event Event2Post;
+	
+	// ****************** ENTRY
+	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
+  {
+		// Set the direction we are rotating
+		if(TeamColor == GREEN){
+			rotationDirection = CCW;
+		}else if(TeamColor == RED){
+			rotationDirection = CW;
+		}
+		
+		//Start rotating slowly
+		start2rotate(rotationDirection, AligningSpeed);
+		
+		// Start the timer to periodically check the IR frequency   
+		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+	}
+	// ****************** EXIT
+	else if ( Event.EventType == ES_EXIT )
+  {
+		// Stop Rotating
+		stop(); 		
+	}
+	
+	// ****************** DURING
+	else
+	{
+		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
+		{
+			// Read the detected IR frequency
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
+
+			// If Goal Freq detected, post event; Otherwise restart timer
+			if(Front_MeasuredIRPeriodCode == BucketCode){
+				Event2Post.EventType = BucketAligned;
+				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
+				PostRobotTopSM(Event2Post);
+      }else{
+				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+			}				
+		}
+	}	
+	return ReturnEvent;
+}
+
+
 
 /***************************************************************************
 DuringSettingBallSpeed
@@ -387,29 +471,21 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 		{
 			// turn on fly wheel 
 			SetFlyDuty(FlyWheelDuty);	
+			
+			// Start timer to allow the flywheel to reach desired speed
+			ES_Timer_InitTimer(IRAligning_TIMER,FlyWheel_TIME);
 		}
     else if ( Event.EventType == ES_EXIT )
     {  			
-			// Speed has been set so the ball is flying towards the goal	
-			ES_Event Event2Post;
-			Event2Post.EventType = BALL_FLYING;
-			PostRobotTopSM(Event2Post);
+			
     }
 		//DURING
 		else 
 		{
-			// Get the goal position from the LOC response			
-			LOCResponse = Event.EventParam;
-			bucketNumber = GetGoalOrStagePositionFromStatus(LOCResponse);
-			
-			// Get current staging area
-			CurrentStagingAreaPosition = GetCurrentStagingAreaPosition();
-			
-			// Set the speed 
-			//	 - servo speed is fixed 
-			// 	 - flywheel as a function of where we are  /////SEE ME - If we have time!!			
-			SetServoDuty(SeparatorDuty); 
-			
+			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
+			{
+					
+			}
 		}
 		
     // return either Event, if you don't want to allow the lower level machine
@@ -417,10 +493,11 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
     return(ReturnEvent);
 }
 
+
 /***************************************************************************
 DuringWaiting4ShotComplete
  ***************************************************************************/
-static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THEN GET OUT OF SUB SM
+static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 		ES_Event Event2Post;
@@ -428,52 +505,112 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)  //JUST WAIT AND THE
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-				// start 10sec timer
-				ES_Timer_InitTimer(Waiting4Shot_TIMER, Wait4ShotTime);	
-
-				// Turn OFF LEDs
-				TurnOnOffYellowLEDs(LEDS_OFF, GetTeamColor());	
-
-				// Turn off both the pushing flywheel and the separation servo
-				SetServoDuty(0);
-				SetFlyDuty(0);			
+				// Start to rotate the seperator very slowly
+				SetServoDuty(SeparatorDuty);
+			
+			  // start timer to load balls and shoot
+				ES_Timer_InitTimer(IRAligning_TIMER, Wait4ShotTime);				
     }
     else if ( Event.EventType == ES_EXIT )
     {    
+				// Turn off both the pushing flywheel and the separation servo
+				SetServoDuty(0);
+				SetFlyDuty(0);	
     }
 		else //DURING - Scored, Missed, or No Balls?
     {  
-			// If shot is done				
-			if((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Waiting4Shot_TIMER))
+			// For 3/8/2017, don't check if scored
+			// Post Event to indicate shooting complete when timer expires
+			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 			{
-					// Substract 1 from ball count independetly of whether we scored or not. 			
-					BallCount = BallCount - 1;
-					printf("\r\n #balls = %i\r\n", BallCount);
-					
-					if (BallCount == 0) // go to RELOADING
-					{
-						printf("\r\n No balls after shooting\r\n");
-						Event2Post.EventType = NO_BALLS;
-						PostRobotTopSM(Event2Post);
-					}
-					else // Go back to the robot top state machine and from there post SCORED or MISSED
-					{
-						printf("\r\n Finished shooting\r\n");
-						Event2Post.EventType = FINISHED_SHOT;
-						PostRobotTopSM(Event2Post);
-					}
-				}
+					Event2Post.EventType = ShotComplete;
+					PostRobotTopSM(Event2Post);
+			}
 			
-			// If shot is NOT done - keep waiting
-			{
-				//internal self transition
-				Event2Post.EventType = KEEP_WAITING4SHOT;
-				PostRobotTopSM(Event2Post);
-			}			
+//			// If shot is done				
+//			if((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Waiting4Shot_TIMER))
+//			{
+//					// Substract 1 from ball count independetly of whether we scored or not. 			
+//					BallCount = BallCount - 1;
+//					printf("\r\n #balls = %i\r\n", BallCount);
+//					
+//					if (BallCount == 0) // go to RELOADING
+//					{
+//						printf("\r\n No balls after shooting\r\n");
+//						Event2Post.EventType = NO_BALLS;
+//						PostRobotTopSM(Event2Post);
+//					}
+//					else // Go back to the robot top state machine and from there post SCORED or MISSED
+//					{
+//						printf("\r\n Finished shooting\r\n");
+//						Event2Post.EventType = FINISHED_SHOT;
+//						PostRobotTopSM(Event2Post);
+//					}
+//				}
+//			
+//			// If shot is NOT done - keep waiting
+//			{
+//				//internal self transition
+//				Event2Post.EventType = KEEP_WAITING4SHOT;
+//				PostRobotTopSM(Event2Post);
+//			}			
     }
     return(ReturnEvent);
 }
 		
+
+static ES_Event DuringCheatRotating2Reload( ES_Event Event)  
+{
+	ES_Event ReturnEvent = Event; 
+	ES_Event Event2Post;
+	
+	// ****************** ENTRY
+	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
+  {
+		// Set the frequency we are looking for
+		TeamColor = GetTeamColor();
+		if(TeamColor == GREEN){
+			GoalCode = code800us; //1250 Hz
+			rotationDirection = CW;
+		}else if(TeamColor == RED){
+		  GoalCode = code513us; //1950 Hz
+			rotationDirection = CCW;
+		}
+		
+		//Start rotating slowly
+		start2rotate(rotationDirection, AligningSpeed);
+		
+		// Start the timer to periodically check the IR frequency   
+		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+	}
+	// ****************** EXIT
+	else if ( Event.EventType == ES_EXIT )
+  {
+		// Stop Rotating
+		stop(); 		
+	}
+	
+	// ****************** DURING
+	else
+	{
+		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
+		{
+			// Read the detected IR frequency
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
+
+			// If Goal Freq detected, post event; Otherwise restart timer
+			if(Front_MeasuredIRPeriodCode == GoalCode){
+				Event2Post.EventType = ReloadingGoalAligned;
+				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
+				PostRobotTopSM(Event2Post);
+      }else{
+				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+			}				
+		}
+	}	
+	return ReturnEvent;
+}
+
 
 /****************************************************************************
 ****************************************************************************

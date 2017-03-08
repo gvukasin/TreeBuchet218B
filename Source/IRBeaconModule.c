@@ -474,7 +474,7 @@ uint8_t Front_GetIRCode(void){
 			return codeInvalidIRFreq;
 		}
 	}
-	printf("\r\n--------------ValidCode--------%u\r\n",returnCode);
+	//printf("\r\n--------------ValidCode--------%u\r\n",returnCode);
 	return returnCode;
 	
 }
@@ -501,11 +501,11 @@ uint8_t Back_GetIRCode(void){
 	uint8_t i = 0;
 	uint8_t returnCode = Back_GetIRCodeSingle(Back_PeriodBuffer[0]);
 	//printf("\r\n%u\r\n",returnCode);
-	printf("\r\n!!!!!!!!!!!Period0=%d\r\n",Back_PeriodBuffer[0]);
-	printf("\r\n!!!!!!!!!!!Period1=%d\r\n",Back_PeriodBuffer[1]);
-	printf("\r\n!!!!!!!!!!!Period2=%d\r\n",Back_PeriodBuffer[2]);
-	printf("\r\n!!!!!!!!!!!Period3=%d\r\n",Back_PeriodBuffer[3]);
-	printf("\r\n!!!!!!!!!!!Period4=%d\r\n",Back_PeriodBuffer[4]);
+  //	printf("\r\n!!!!!!!!!!!Period0=%d\r\n",Back_PeriodBuffer[0]);
+  //	printf("\r\n!!!!!!!!!!!Period1=%d\r\n",Back_PeriodBuffer[1]);
+  //	printf("\r\n!!!!!!!!!!!Period2=%d\r\n",Back_PeriodBuffer[2]);
+  //	printf("\r\n!!!!!!!!!!!Period3=%d\r\n",Back_PeriodBuffer[3]);
+  //	printf("\r\n!!!!!!!!!!!Period4=%d\r\n",Back_PeriodBuffer[4]);
 	
 	for(i = 1; i < SampleSize; i++){
 		if(Back_GetIRCodeSingle(Back_PeriodBuffer[i]) != returnCode){
