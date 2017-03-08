@@ -186,6 +186,7 @@ static int LastPositionDifference = 0;
 static int PositionDifference_dt;
 static bool CheckOnWireFlag_Left;
 static bool CheckOnWireFlag_Right;
+static bool FirstTimeDriving = 1;
 static uint16_t CurrentButtonState;
 static uint16_t LastButtonState;
 static bool TeamColor;
@@ -644,6 +645,8 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		// do the 'during' function for this state
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
+			
+			
 			// Not sure if this is where we want to align with the appropriate beacon, but I will add the pseudo code here
 			// if on the GREEN side
 				// if the current staging area is 1
