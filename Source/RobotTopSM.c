@@ -334,7 +334,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-	 printf("\r\n Run TOP event : %i\r\n", CurrentEvent.EventType);
+	 //printf("\r\n Run TOP event : %i\r\n", CurrentEvent.EventType);
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -387,8 +387,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				 stop();
 				 getchar();
 			 }
-			 if(CurrentEvent.EventType == KEEP_DRIVING){
-				  CurrentStagingCode4Redriving = CurrentEvent.EventParam; //Better Way?
+			 if(CurrentEvent.EventType == KEEP_DRIVING)
+			 {
 				 	NextState = DRIVING2STAGING;
 					MakeTransition = true;
 			 }
@@ -682,7 +682,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if((PeriodCode != codeInvalidStagingArea) && (PeriodCode != LastPeriodCode)&&(PeriodCode != CurrentStagingCode4Redriving))
+			if((PeriodCode != codeInvalidStagingArea) && (PeriodCode != LastPeriodCode))//&&(PeriodCode != CurrentStagingCode4Redriving))
 			{ 
 				CurrentStagingCode = PeriodCode;
 				
