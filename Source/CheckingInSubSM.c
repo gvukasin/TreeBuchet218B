@@ -323,6 +323,7 @@ static ES_Event DuringWaiting4FirstResponseReady( ES_Event Event)
 							printf("\r\n -------INACTIVE");
 						  // Post KEEP_DRIVING Event and get out of SubSM
 						  Event2Post.EventType = KEEP_DRIVING;
+						  Event2Post.EventParam = CurrentStageCode;
 							PostRobotTopSM(Event2Post);
 					}
 					else if((Event.EventParam & NACK_MASK) == ACK_MASK)

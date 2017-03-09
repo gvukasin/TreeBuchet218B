@@ -203,7 +203,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 
 			 // CASE 2/5			 
 			 case LOOKING4BUCKET :
-				 printf("\r\n LOOKING4GOAL \r\n");
+				 printf("\r\n LOOKING4Bucket \r\n");
 				 // Execute During function 
          CurrentEvent = DuringLooking4Bucket(CurrentEvent);				 
 				 // process events
@@ -279,6 +279,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
     //   If we are making a state transition
     if (MakeTransition == true)
     {
+			printf("\r\n--------Shooting transition made from %u to %u---------\r\n",CurrentState,NextState);
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunShootingSM(CurrentEvent);
