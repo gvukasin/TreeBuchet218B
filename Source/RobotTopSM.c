@@ -349,11 +349,8 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
         break;
 			
 				// CASE 2/8				 
-			 case DRIVING2STAGING:   //USE TEAM_OPTION VARIABLE FOR DIFFERENT DRIVING			 	 
-			 // During function
-			 //printf("\r\n driving event: %i",CurrentEvent.EventType);
+			 case DRIVING2STAGING:  	 	 
 			 
-
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
 			 // Process events	
 				
@@ -366,18 +363,9 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				}
 
 				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
-				{
-					 //printf("\r\nReceived TIME_OUT event at DRIVING2STAGING state \r\n");			
+				{		
 					 // Internal self transition
 					 NextState = DRIVING2STAGING;
-					 ReturnEvent.EventType = ES_NO_EVENT;
-				}
-				
-				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == Looking4Beacon_TIMER))
-				{
-					 // External self transition
-					 NextState = DRIVING2STAGING;
-					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
 
@@ -629,257 +617,42 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-			//printf("\r\n Driving2Staging ENTRY \r\n");
+			printf("\r\n Driving2Staging ENTRY \r\n");
+			
+			// Look for staging area (hall effect)
+			EnableStagingAreaISR(1);
 			
 			// When getting into this state from other states,
 			// Start the timer to periodically read the sensor values
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 
-			EnableStagingAreaISR(1);
-			
-
-			// Always initially set the orientation flag to 0
-			OrientedWithWire_Driving2Wire = 0;
-			
-			if ( FirstTimeDriving == 0 )
-			{
-				 //printf("\r\n NOT first time driving \r\n");
-				
-				// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-				EnableFrontIRInterrupt();
-				
-				// Start Rotating
-				start2rotate(CW,BeaconRotationDutyCycle);
-			}
-			
-			//SEE ME
-//			if(HallEffectFlag == 1){ //HallEffectFlag = true --> don't enable the ISR that looks for staging area frequency
-//				// Clear flag
-//				HallEffectFlag = 0;
-//				printf("\r\n clear flag ");
-//				
-//			} else {
-//				// enable Hall Effect Interrupt
-//				EnableStagingAreaISR(1);
-//				printf("\r\n en hall int");
-//			}
-
     }
     else if ( Event.EventType == ES_EXIT )
     {
-			// SEE ME: commented this out because we do not want to stop the motors at a staging area we are not sure is correct
-			// Stop the motor 
-			//stop();
-			
-			//getchar();
-			// instead, drive straight
-			//SEE ME
-			//driveSeperate(40,40,FORWARD);
-			
+		
     }
 		
-		// SEE ME (not sure if checking for beacon signal comes here (before 'during' function))
-		// look for readings from the IR sensor
-		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == Looking4Beacon_TIMER))
-		{
-			printf("\r\n DURING ---- Looking4Beacon_TIMER \r\n");
-			
-			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode(); 
-			printf("\r\n Front_MeasuredIRPeriodCode = %i \r\n", Front_MeasuredIRPeriodCode);
 
-			
-			// if this is not the first time driving, orient the robot
-			if ( FirstTimeDriving == 0)
-			{				
-				// if on the GREEN side
-				if ( TeamColor == GREEN )
-				{
-					// if the current staging area is 1
-					if ( CurrentStagingArea == 1 )
-					{
-						// if the next staging area is 1
-							// stay in place
-						// else if the next staging area is > 1
-						if ( NextStagingArea > CurrentStagingArea )
-						{
-							// align with 2200 Hz
-							if ( Front_MeasuredIRPeriodCode == code455us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-					// else if the current staging area is 2
-					else if ( CurrentStagingArea == 2 )
-					{
-						// if the next staging area is 2
-							// stay in place
-						// else if the next staging area is < 2
-						if ( NextStagingArea < CurrentStagingArea )
-						{
-							// align with 1250 Hz
-							if ( Front_MeasuredIRPeriodCode == code800us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-						// else if the next staging area is > 2
-						else if ( NextStagingArea > CurrentStagingArea )
-						{
-							// align with 2200 Hz
-							if ( Front_MeasuredIRPeriodCode == code455us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-					// else if the current staging area is 3
-					else if ( CurrentStagingArea == 3 )
-					{
-						// if the next staging area is 3
-							// stay in place
-						// else if the next staging area is < 3
-						if ( NextStagingArea < CurrentStagingArea )
-						{
-							// align with 1250 Hz
-							if ( Front_MeasuredIRPeriodCode == code800us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-				}
-				
-				// if on the RED side
-				if ( TeamColor == RED )
-				{
-					// if the current staging area is 1
-					if ( CurrentStagingArea == 1 )
-					{
-						// if the next staging area is 1
-							// stay in place
-						// else if the next staging area is > 1
-						if ( NextStagingArea > CurrentStagingArea )
-						{
-							// align with 1700 Hz
-							if ( Front_MeasuredIRPeriodCode == code588us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-					// else if the current staging area is 2
-					else if ( CurrentStagingArea == 2 )
-					{
-						// if the next staging area is 2
-							// stay in place
-						// else if the next staging area is < 2
-						if ( NextStagingArea < CurrentStagingArea )
-						{
-							// align with 1950 Hz
-							if ( Front_MeasuredIRPeriodCode == code513us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-						// else if the next staging area is > 2
-						else if ( NextStagingArea > CurrentStagingArea )
-						{
-							// align with 1700 Hz
-							if ( Front_MeasuredIRPeriodCode == code588us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-					// else if the current staging area is 3
-					else if ( CurrentStagingArea == 3 )
-					{
-						// if the next staging area is 3
-							// stay in place
-						// else if the next staging area is < 3
-						if ( NextStagingArea < CurrentStagingArea )
-						{
-							// align with 1950 Hz
-							if ( Front_MeasuredIRPeriodCode == code513us )
-							{
-								OrientedWithWire_Driving2Wire = 1;
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		// do the 'during' function for this state
+		// ----- DURING
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
 			// Need CurrentStagingArea and NextStagingArea. Are these set correctly by the time we enter this part of the code?
 						printf("\r\n DURING ---- WireFollow_TIMER \r\n");
 
-			// if this is the first time driving, do not worry about orienting the robot
-			if ( FirstTimeDriving == 1 )
-			{
-				FirstTimeDriving = 0;
-				OrientedWithWire_Driving2Wire = 1;
-			}
-			
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
 			RLCReading_Right = RLCReading[1];
 			RLCReading_Left = RLCReading[0];
+			
 			// Positive when too left (right at higher voltage)
 			// Negative when too right (left at higher ovltage)
 			PositionDifference = RLCReading_Right - RLCReading_Left;
 			PositionDifference_dt = (PositionDifference - LastPositionDifference);
 			LastPositionDifference = PositionDifference;
 			
-			// Set flags to determine if either side is on the wire
-			// Check if left side is on the wire
-			// SEE ME
-			if ( RLCReading_Left > (int)NoWireDetectedReading ){
-				CheckOnWireFlag_Left = 1;
-			}
-			else{
-				CheckOnWireFlag_Left = 0;
-			}
-			// Check if right side is on the wire
-			if ( RLCReading_Right > (int)NoWireDetectedReading ){
-				CheckOnWireFlag_Right = 1;
-			}
-			else{
-				CheckOnWireFlag_Right = 0;
-			}
-			
-			// P Control
-//			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference;
-//			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference;
-//			//printf("\r\n R,L: %i,%i",PWMLeft, PWMRight);
-			
-			
-			// SEE ME
-
 			// PD Control
 			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
 			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
-			
-			// SEE ME
-			// If either side is on the wire, check if either side is off the wire
-			// Then, if either side is off the wire, turn off the side that is on the wire
-			if ( CheckOnWireFlag_Left || CheckOnWireFlag_Right )
-			{
-				// If left side is off the wire, turn off the right motor
-				if ( CheckOnWireFlag_Left == 0 ){
-					// turn right wheel off
-					PWMRight = 0;
-				}
-				// If right side is off the wire, turn off the left motor
-				else if ( CheckOnWireFlag_Right == 0 ){
-					// turn left wheel off
-					PWMLeft = 0;
-				}
-			}
 				
 			//Clamp the value to 0-100
 			if(PWMLeft < 0){
@@ -893,16 +666,9 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			}else if(PWMRight > 100){
 				PWMRight = 100;
 			}
-			 
-			//printf("\r\nRLC:Left=%d,Right=%d,Difference=%d,LeftDuty=%u,RightDuty=%u,LeftWire=%i,RightWire=%i\r\n",RLCReading[0],RLCReading[1],PositionDifference,PWMLeft,PWMRight,CheckOnWireFlag_Left,CheckOnWireFlag_Right);
 			
-			// Do not send PWM to the wheel motors unless the robot is oriented with the wire
-			if ( OrientedWithWire_Driving2Wire == 1 )
-			{
-				// Drive the motors using new PWM duty cycles
-				driveSeperate(PWMLeft,PWMRight,FORWARD);
-				printf("\r\ndrive\r\n");
-			}
+			// Drive the motors using new PWM duty cycles
+			driveSeperate(PWMLeft,PWMRight,FORWARD);		
 			
 			// Restart the timer
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
