@@ -516,10 +516,10 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
-	// SEE ME
   //CurrentState = ENDING_STRATEGY;
 	//CurrentState = DRIVING2STAGING;
 	CurrentState = WAITING2START;
+	//CurrentState = SHOOTING;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -567,7 +567,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				
 				//SetFlyDuty(80);
 
-				//printf("\r\n Team Color (1 red): %i", TeamColor);
+				//printf("\r\n Team Color (0 red): %i", TeamColor);
 				
     }
     else if ( Event.EventType == ES_EXIT )
@@ -752,7 +752,6 @@ static ES_Event DuringShooting( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-
 				//SEE ME
 			  stop();
 			
@@ -1015,6 +1014,7 @@ Function
 ************************************************************************/
 bool GetTeamColor()
 {
+	printf("\r\n get color: %i\r\n", TeamColor);
 	return TeamColor;
 }
 

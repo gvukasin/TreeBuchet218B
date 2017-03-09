@@ -66,7 +66,7 @@
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 976
 #define Looking4Beacon_TIME ONE_SEC/100 
-#define IRAligning_TIME ONE_SEC/20
+#define IRAligning_TIME 100//ONE_SEC/20
 #define FlyWheel_TIME ONE_SEC*4
 
 #define AligningSpeed 40
@@ -132,7 +132,7 @@ static bool NoBalls = 0;
 static bool ScoreHasBeenSaved = 0;
 static uint16_t ScoreBeforeShooting;
 
-static bool TeamColor;
+static bool TeamColor = GREEN;
 static uint8_t GoalCode;
 static uint8_t Front_MeasuredIRPeriodCode;
 static bool rotationDirection;
@@ -188,6 +188,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 				 // process events
 				 if (CurrentEvent.EventType == GoalAligned)
 				 {
+					 //NextState = SETTING_BALL_SPEED;
 					 NextState = LOOKING4BUCKET;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -357,26 +358,43 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 	// ****************** ENTRY
 	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
   {
-		// Set the frequency we are looking for
-		TeamColor = GetTeamColor();
-		if(TeamColor == GREEN){
-			GoalCode = code513us; //1950 Hz
-			rotationDirection = CCW;
-		}else if(TeamColor == RED){
-		  GoalCode = code800us; //1250 Hz
-			rotationDirection = CW;
-		}
+//		// Set the frequency we are looking for
+//		TeamColor = GetTeamColor();
+//		if(TeamColor == GREEN){
+//			GoalCode = code513us; //1950 Hz
+//			rotationDirection = CCW;
+//			//printf("\r\nin here\r\n");
+//		}else if(TeamColor == RED){
+//		  GoalCode = code800us; //1250 Hz
+//			rotationDirection = CW;
+//		}
+//		printf("\r\nColor=%u,GoalCode=%u\r\n",TeamColor,GoalCode);
+		
+		//RED
+		//GoalCode = code800us; //1250 Hz
+		//rotationDirection = CW;
+
+		
+		//GREEN
+		GoalCode = code513us; //1950 Hz
+		rotationDirection = CCW;
+		//printf("\r\nColor=%u,GoalCode=%u\r\n",TeamColor,GoalCode);
 		
 		//Enable ISR for front IR (Initialized in TopSM Initialization)
 		EnableFrontIRInterrupt();
+		//printf("\r\nISR Enabled\r\n");
 		
 		//Start rotating slowly
 		start2rotate(rotationDirection, AligningSpeed);
+				//printf("\r\nStarted Rotating\r\n");
 		
 		// Start the timer to periodically check the IR frequency   
 		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
+				//printf("\r\nTIMER\r\n");
+
 	}
-	// ****************** EXIT
+	
+	// ****************** EXIT	
 	else if ( Event.EventType == ES_EXIT )
   {
 		// Stop Rotating
@@ -389,7 +407,8 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 		{
 			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();
+      //printf("\r\n-----IR Code = %u,looking for %u------\r\n",Front_MeasuredIRPeriodCode,GoalCode);			
 
 			// If Goal Freq detected, post event; Otherwise restart timer
 			if(Front_MeasuredIRPeriodCode == GoalCode){
@@ -445,6 +464,8 @@ static ES_Event DuringLooking4Bucket( ES_Event Event)
 			// Read the detected IR frequency
 			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
 
+			printf("\r\n-----IR Code = %u,looking for Bucket%u------\r\n",Front_MeasuredIRPeriodCode,BucketCode);		
+			
 			// If Goal Freq detected, post event; Otherwise restart timer
 			if(Front_MeasuredIRPeriodCode == BucketCode){
 				Event2Post.EventType = BucketAligned;

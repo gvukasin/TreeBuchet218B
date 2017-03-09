@@ -143,6 +143,7 @@ void InitInputCaptureForFrontIRDetection( void )
 	//Make sure interrupts are enabled globally
 	__enable_irq();
 	
+	
 }
 
 /****************************************************************************
@@ -252,10 +253,10 @@ void EnableBackIRInterrupt(void)
 void InputCaptureForFrontIRDetection( void )  
 {
 	//Clear the source of the interrupt, the input capture event
-	HWREG(WTIMER3_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
+	HWREG(WTIMER1_BASE + TIMER_O_ICR) = TIMER_ICR_CAECINT;
 	
 	// grab captured value and calc period 
-	Front_CurrentEdge = HWREG(WTIMER3_BASE + TIMER_O_TAR);
+	Front_CurrentEdge = HWREG(WTIMER1_BASE + TIMER_O_TAR);
 	
 	Front_MeasuredIRSignalPeriod = Front_CurrentEdge - Front_LastEdge;
 	Front_MeasuredIRSignalPeriod = 1000*Front_MeasuredIRSignalPeriod/TicksPerMS; // Unit: us
