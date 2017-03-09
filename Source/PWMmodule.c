@@ -10,7 +10,7 @@
    next lower level in the hierarchy that are sub-machines to this machine
 */
 
-//#define TEST 
+#define TEST 
 
 #include "ES_Configure.h"
 #include "ES_Framework.h"
@@ -66,6 +66,7 @@
 #define FlyWheelMotorPin BIT5HI //PE5
 #define IRPin BIT1HI //PF1
 #define ExtraPWMPin BIT0HI //PF0
+#define FlyWheelEnablePin BIT7HI //PD7
 
 #define FORWARD 1
 #define BACKWARD 0
@@ -79,6 +80,7 @@
 static void Set100DC(uint8_t SelectedPin);
 static void Set0DC(uint8_t SelectedPin);
 static void RestoreDC(uint8_t SelectedPin);
+static void EnableFlyWheel( bool );
 
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable
@@ -142,7 +144,6 @@ void InitializePWM(void)
 }
 
 void InitializeAltPWM(void){
-	//EDIT THIS
 	// Enable the clock to the PWM Module (PWM1)
 	HWREG(SYSCTL_RCGCPWM) |= SYSCTL_RCGCPWM_R1;
 	
@@ -207,7 +208,19 @@ void InitializeAltPWM(void){
 	HWREG(PWM1_BASE+ PWM_O_1_CTL) = (PWM_1_CTL_MODE | PWM_1_CTL_ENABLE | PWM_1_CTL_GENAUPD_LS | PWM_1_CTL_GENBUPD_LS);
 	HWREG(PWM1_BASE+ PWM_O_2_CTL) = (PWM_2_CTL_MODE | PWM_2_CTL_ENABLE | PWM_2_CTL_GENAUPD_LS | PWM_2_CTL_GENBUPD_LS);
 	
-	printf("\r\n got thru init");
+	// initialize Fly Wheel Enable Pin
+		//Initialize Port D
+		HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R3;
+		
+		// Wait for Port to be ready
+		while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R3) != SYSCTL_PRGPIO_R3);
+		
+		//Enable pin 2 on Port D for digital I/O
+		HWREG(GPIO_PORTD_BASE + GPIO_O_DEN) |= FlyWheelEnablePin;
+		
+		//make pin 2 on Port D into an output
+		HWREG(GPIO_PORTD_BASE + GPIO_O_DIR) |= FlyWheelEnablePin;
+		printf("\r\n got thru alt pwm init");
 }
 
 void SetPWMDutyCycle(uint8_t DutyCycle, bool direction, bool wheelSide)
@@ -339,23 +352,78 @@ void EmitIR( bool OnOrOff ){
 }
 
 void SetServoDuty( uint16_t TheDooty ){
-	// restore pwm 
-		HWREG( PWM1_BASE + PWM_O_1_GENA) = PWM1_GenA_Normal;
+	
+	if (TheDooty == 0)
+		{
+			// set duty cycle to 0
+			HWREG(PWM1_BASE + PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ZERO;
+
+		}
+		else if (TheDooty == 100)
+		{
+			// set duty cycle to 100
+			HWREG( PWM1_BASE+PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ONE;
+		}
+		else if ((TheDooty > 0) && (TheDooty < 100))
+		{
+			// restore pwm 
+			HWREG( PWM1_BASE + PWM_O_1_GENA) = PWM1_GenA_Normal;
 		 
-		// set duty cycle to 25%
-		HWREG( PWM1_BASE + PWM_O_1_CMPA) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((TheDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
-}
-void SetFlyDuty( uint16_t DatDooty ){
-	// restore pwm 
-		HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM1_GenB_Normal;
-		 
-		// set duty cycle to DatDooty
-		HWREG( PWM1_BASE + PWM_O_1_CMPB) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((DatDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
+			// set duty cycle to 25%
+			HWREG( PWM1_BASE + PWM_O_1_CMPA) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((TheDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
+		}
 	
 }
+void SetFlyDuty( uint16_t DatDooty ){
+	
+	if (DatDooty == 0)
+		{
+			// disable H-bridge
+			EnableFlyWheel(0);
+			
+			// set duty cycle to 0
+			HWREG(PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ZERO;
+
+		}
+		else if (DatDooty == 100)
+		{
+			// enable H-bridge
+			EnableFlyWheel(1);
+			
+			// set duty cycle to 100
+			HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ONE;
+		}
+		else if ((DatDooty > 0) && (DatDooty < 100))
+		{
+			// enable H-bridge
+			EnableFlyWheel(1);
+			
+			// restore pwm 
+			HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM1_GenB_Normal;
+		 
+			// set duty cycle to DatDooty
+			HWREG( PWM1_BASE + PWM_O_1_CMPB) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((DatDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
+		}
+	
+}
+
+
 /***************************************************************************
  private functions
  ***************************************************************************/
+static void EnableFlyWheel( bool OnOrOff ){
+	
+	if(OnOrOff){
+		// enable H-bridge by setting enable pin Hi
+		HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) |= FlyWheelEnablePin;
+		
+	} else {
+		// disable H-bridge by setting enable pin Lo
+		HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= (~FlyWheelEnablePin);
+		
+	}
+}
+
 static void Set100DC(uint8_t SelectedPin){
 
 	// Program 100% DC - set the action on Zero to set the output to one
@@ -461,9 +529,11 @@ int main(void){
 //	Set100DC(R_CW_MOTOR_PIN);
 //	Set0DC(R_CCW_MOTOR_PIN);
 	InitializeAltPWM();
-	EmitIR( 0 );
-	SetFlyDuty(50);
+	//EmitIR( 0 );
+	SetFlyDuty(80);
+	//HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= (~FlyWheelEnablePin);
 	SetServoDuty(60); 
+	//EnableFlyWheel(0);
 	
 }
 #endif
