@@ -222,6 +222,8 @@ static bool ShootingFlag = 0;
 
 static uint8_t CurrentStagingCode = codeInvalidStagingArea;
 
+static uint8_t CurrentStagingCode4Redriving = codeInvalidStagingArea;
+
 static uint8_t Front_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
@@ -394,8 +396,11 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				  printf("\r\nReceive CHECK_IN_SUCCESS event\r\n");
 					NextState = SHOOTING;
 					MakeTransition = true; 
+				 stop();
+				 getchar();
 			 }
 			 if(CurrentEvent.EventType == KEEP_DRIVING){
+				  CurrentStagingCode4Redriving = CurrentEvent.EventParam; //Better Way?
 				 	NextState = DRIVING2STAGING;
 					MakeTransition = true;
 			 }
@@ -816,7 +821,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
 			// Need CurrentStagingArea and NextStagingArea. Are these set correctly by the time we enter this part of the code?
-						printf("\r\n DURING ---- WireFollow_TIMER \r\n");
+						//printf("\r\n DURING ---- WireFollow_TIMER \r\n");
 
 			// if this is the first time driving, do not worry about orienting the robot
 			if ( FirstTimeDriving == 1 )
@@ -911,7 +916,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			PeriodCode = GetStagingAreaCodeArray();
 			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
-			if(PeriodCode != codeInvalidStagingArea && PeriodCode != LastPeriodCode)
+			if((PeriodCode != codeInvalidStagingArea) && (PeriodCode != LastPeriodCode)&&(PeriodCode != CurrentStagingCode4Redriving))
 			{ 
 				CurrentStagingCode = PeriodCode;
 				
@@ -953,6 +958,7 @@ static ES_Event DuringCheckIn( ES_Event Event)
 		
     else if ( Event.EventType == ES_EXIT)
     {
+			stop();
 			RunCheckingInSM(Event);
     }
 		
