@@ -385,7 +385,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					NextState = SHOOTING;
 					MakeTransition = true; 
 				 stop();
-				 getchar();
+				 //getchar();
 			 }
 			 if(CurrentEvent.EventType == KEEP_DRIVING)
 			 {

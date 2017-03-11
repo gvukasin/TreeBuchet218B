@@ -78,7 +78,7 @@
 #define CCW 0
 
 //#define Wait4ShotTime 10000 //10sec
-#define Wait4ShotTime ONE_SEC*15 //15sec
+#define Wait4ShotTime  ONE_SEC*7 //15sec
 #define BucketCode 0x01
 #define BeaconRotationDutyCycle 80
 #define GOAL_BYTE_MASK 0x00ff
