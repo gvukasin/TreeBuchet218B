@@ -177,6 +177,8 @@ static void InitGameTimer(void);
 static void SetTimeoutAndStartGameTimer( uint32_t GameTimerTimeoutMS );
 static void InitGetAwayTimer(void);
 
+static void Drivin( void );
+
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, though if the top level state machine
@@ -225,6 +227,7 @@ static uint8_t CurrentStagingCode = codeInvalidStagingArea;
 static uint8_t CurrentStagingCode4Redriving = codeInvalidStagingArea;
 
 static uint8_t Front_MeasuredIRPeriodCode;
+static uint8_t Back_MeasuredIRPeriodCode;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -408,12 +411,12 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					MakeTransition = true; 
 				}
 				
-				if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
+				else if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
 				{
 					NextState = SHOOTING; // INTERNAL Self transition
 				}
 				//(2)			 
-				if (CurrentEvent.EventType == COM_STATUS) 
+				else if (CurrentEvent.EventType == COM_STATUS) 
 				{
 					NextState = SHOOTING; // INTERNAL Self transition
 				}
@@ -427,6 +430,12 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				else if (CurrentEvent.EventType == MISSED_SHOT )
 				{
 					NextState = SHOOTING; // EXTERNAL Self transition
+					MakeTransition = true; 
+					break;
+				}
+				else if (CurrentEvent.EventType ==  NO_BALLS)
+				{
+					NextState = DRIVING2RELOAD; // SEE ME: may just be Driving2Stage or maybe DRIVING2RELOAD should be a copy of 
 					MakeTransition = true; 
 					break;
 				}
@@ -650,7 +659,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			RLCReading_Left = RLCReading[0];
 			
 			// Positive when too left (right at higher voltage)
-			// Negative when too right (left at higher ovltage)
+			// Negative when too right (left at higher voltage)
 			PositionDifference = RLCReading_Right - RLCReading_Left;
 			PositionDifference_dt = (PositionDifference - LastPositionDifference);
 			LastPositionDifference = PositionDifference;
@@ -822,56 +831,74 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
 			// Start ISR for IR frequency detection (SEE ME: not sure we need this here)
-			EnableFrontIRInterrupt();
+			EnableBackIRInterrupt();
 			
-			// Re-enable Driving Timer 
-			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
+			// Enable Input capture for limit switch (SEE ME: finish)
 				
 			// Start Rotating
 			start2rotate(CW,BeaconRotationDutyCycle);
 			
 			// Always set the orientation flag to 0 on entry
 			OrientedWithWire_Driving2Reload = 0;
+			
+			// Re-enable Driving Timer 
+			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
     }
     else if ( Event.EventType == ES_EXIT )
     {
+			// disable BackIRInterrupt (SEE ME: finish)
     }
-		
-		else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIME))
-		{
-			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode();
-			
-			// if on the GREEN side, align with 1250 Hz
-			// if on the RED side, align with 1950 Hz
-			 
-			if ( TeamColor == GREEN )
-			{
-				if ( Front_MeasuredIRPeriodCode == code800us )
-				{
-					OrientedWithWire_Driving2Reload = 1;
-					// drive along wire until limit switch is triggered
-					// after switch is triggered, send IR pulses
-				}
-			}
-			
-			else if ( TeamColor == RED )
-			{
-				if ( Front_MeasuredIRPeriodCode == code513us )
-				{
-					OrientedWithWire_Driving2Reload = 1;
-					// drive along wire until limit switch is triggered
-					// after switch is triggered, send IR pulses
-				}
-			}
-		}
 		
 		// do the 'during' function for this state
 		else 
-    { 
-			// Now, copy the wire following code from Driving2Staging
-			// Only send PWM to wheel motors if OrientedWithWire_Driving2Reload == 1
-    }
+		{
+			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == WireFollow_TIME))
+			{
+				
+				// Read the detected IR frequency
+				Back_MeasuredIRPeriodCode = Front_GetIRCode();
+				
+				if (OrientedWithWire_Driving2Reload == 0){
+					// if on the GREEN side, align with 1250 Hz
+					// if on the RED side, align with 1950 Hz
+					if ( TeamColor == GREEN )
+					{
+						if ( Back_MeasuredIRPeriodCode == code800us )
+						{
+							// stop rotating
+							stop();
+							
+							// set flag so that you can drive to station
+							OrientedWithWire_Driving2Reload = 1;
+							
+						}
+					}else if ( TeamColor == RED )
+					{
+						if ( Front_MeasuredIRPeriodCode == code513us )
+						{
+							// stop rotating 
+							stop();
+							
+							// set flag so that you can drive to station
+							OrientedWithWire_Driving2Reload = 1;
+						}
+					}
+			} else if (OrientedWithWire_Driving2Reload == 1) 
+				{
+					// Drive
+					Drivin();
+				}
+				
+				// Reinitialize timer
+				ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
+		}
+		}
+		
+//		else 
+//    { 
+//			// Now, copy the wire following code from Driving2Staging
+//			// Only send PWM to wheel motors if OrientedWithWire_Driving2Reload == 1
+//    }
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
@@ -1018,7 +1045,6 @@ bool GetTeamColor()
 	return TeamColor;
 }
 
-
 /******************************************************************
 Function 
 	GetCurrentStagingAreaPosition
@@ -1027,7 +1053,6 @@ uint8_t GetCurrentStagingAreaPosition()
 {
 	return CurrentStagingArea ;
 }
-
 
 /****************************************************************************
  GetGoalOrStagePositionFromStatus
@@ -1218,7 +1243,45 @@ void GetAwayISR()
 uint8_t returnCurrentStageCode(){
 	return CurrentStagingCode;
 }
+static void Drivin( void ){
 
+			// Read the RLC sensor values
+			ReadRLCSensor(RLCReading);
+			RLCReading_Right = RLCReading[1];
+			RLCReading_Left = RLCReading[0];
+			
+			// Positive when too left (right at higher voltage)
+			// Negative when too right (left at higher ovltage)
+			PositionDifference = RLCReading_Right - RLCReading_Left;
+			PositionDifference_dt = (PositionDifference - LastPositionDifference);
+			LastPositionDifference = PositionDifference;
+			
+			// PD Control
+			int PWMLeft = (float)PWMOffset + (float)PWMProportionalGain * PositionDifference + (float)PWMDerivativeGain * PositionDifference_dt;
+			int PWMRight = (float)PWMOffset - (float)PWMProportionalGain * PositionDifference - (float)PWMDerivativeGain * PositionDifference_dt;
+				
+			//Clamp the value to 0-100
+			if(PWMLeft < 0){
+				PWMLeft = 0;
+			}else if(PWMLeft > 100){
+				PWMLeft = 100;
+			}
+				
+			if(PWMRight < 0){
+				PWMRight = 0;
+			}else if(PWMRight > 100){
+				PWMRight = 100;
+			}
+			
+			// Drive the motors using new PWM duty cycles
+			driveSeperate(PWMLeft,PWMRight,FORWARD);		
+			
+			// Restart the timer
+			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
+			
+			// Check if a staging area has been reached
+			PeriodCode = GetStagingAreaCodeArray();
+}
 /****************************************************************************
 TESTS
 ****************************************************************************/
