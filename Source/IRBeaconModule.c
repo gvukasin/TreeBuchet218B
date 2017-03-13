@@ -67,7 +67,7 @@ static int Back_IRSignalPeriod = 0;
 static int Back_IRSignalPeriodAddition = 0;
 static uint16_t Back_PeriodBuffer[5];
 
-static int SampleSize = 5;
+static int SampleSize = 4;
 static uint8_t CaptureIndex = 0;
 
 // Valid periods from IR beacons in us
@@ -352,13 +352,13 @@ uint8_t Front_GetIRCodeSingle( uint16_t thePeriod )
 {
 		if( (thePeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) && (thePeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) ){
 			if ( (thePeriod > (ValidIRSignalPeriods[0] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[0] + Front_IRSignalCode_Tolerance)) ){
-				Front_IRSignalCode = code455us;
-				printf("\r\n code455 %x",Front_IRSignalCode);
+				Front_IRSignalCode = code800us;
+				printf("\r\n code800 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[1] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[1] + Front_IRSignalCode_Tolerance)) ){
-				Front_IRSignalCode = code513us;
-				printf("\r\n code513 %x",Front_IRSignalCode);
+				Front_IRSignalCode = code690us;
+				printf("\r\n code690 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[2] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[2] + Front_IRSignalCode_Tolerance)) ){
@@ -367,13 +367,13 @@ uint8_t Front_GetIRCodeSingle( uint16_t thePeriod )
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[3] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[3] + Front_IRSignalCode_Tolerance)) ){
-				Front_IRSignalCode = code690us;
-				printf("\r\n code690 %x",Front_IRSignalCode);
+				Front_IRSignalCode = code513us;
+				printf("\r\n code513 %x",Front_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[4] - Front_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[4] + Front_IRSignalCode_Tolerance)) ){
-				Front_IRSignalCode = code800us;
-				printf("\r\n code800 %x",Front_IRSignalCode);
+				Front_IRSignalCode = code455us;
+				printf("\r\n code455 %x",Front_IRSignalCode);
 			}
 		}
 		else{
@@ -407,28 +407,28 @@ uint8_t Back_GetIRCodeSingle( uint16_t thePeriod )
 {
 		if( (thePeriod < (ValidIRSignalPeriods[0] + Back_IRSignalCode_Tolerance)) && (thePeriod > (ValidIRSignalPeriods[4] - Back_IRSignalCode_Tolerance)) ){
 			if ( (thePeriod > (ValidIRSignalPeriods[0] - Back_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[0] + Back_IRSignalCode_Tolerance)) ){
-				Back_IRSignalCode = code455us;
-				//printf("\r\n code1333 %x",Back_IRSignalCode);
+				Back_IRSignalCode = code800us;
+				//printf("\r\n code800 %x",Back_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[1] - Back_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[1] + Back_IRSignalCode_Tolerance)) ){
-				Back_IRSignalCode = code513us;
-				//printf("\r\n code1277 %x",Back_IRSignalCode);
+				Back_IRSignalCode = code690us;
+				//printf("\r\n code690 %x",Back_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[2] - Back_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[2] + Back_IRSignalCode_Tolerance)) ){
 				Back_IRSignalCode = code588us;
-				//printf("\r\n code1222 %x",Back_IRSignalCode);
+				//printf("\r\n code588 %x",Back_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[3] - Back_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[3] + Back_IRSignalCode_Tolerance)) ){
-				Back_IRSignalCode = code690us;
-				//printf("\r\n code1166 %x",Back_IRSignalCode);
+				Back_IRSignalCode = code513us;
+				//printf("\r\n code513 %x",Back_IRSignalCode);
 			}
 
 			else if ( (thePeriod > (ValidIRSignalPeriods[4] - Back_IRSignalCode_Tolerance)) && (thePeriod < (ValidIRSignalPeriods[4] + Back_IRSignalCode_Tolerance)) ){
-				Back_IRSignalCode = code800us;
-				//printf("\r\n code1111 %x",Back_IRSignalCode);
+				Back_IRSignalCode = code455us;
+				//printf("\r\n code455 %x",Back_IRSignalCode);
 			}
 		}
 		else{
