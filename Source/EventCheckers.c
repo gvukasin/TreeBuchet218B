@@ -102,7 +102,9 @@ bool Check4Keystroke(void)
 			//stop();
 			SetServoDuty(70); 
 		} else if (ThisEvent.EventParam == 'd') {
-			SetServoDuty(0); 
+			CommandEvent.EventType = ES_TIMEOUT;
+			CommandEvent.EventParam = Waiting4Shot_TIMER;
+			PostRobotTopSM(CommandEvent);
 		}
 		else{   // otherwise post to Service 0 for processing
    
