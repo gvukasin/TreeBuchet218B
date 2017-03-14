@@ -6,8 +6,7 @@
    1.0.1
 
  Description
-   This is the first service for the Test Harness under the 
-   Gen2 Events and Services Framework.
+   This is a service that communicates with a command generator (pic) over SPI. 
 
  Notes
 
@@ -60,8 +59,8 @@
 // SCR divisor for SSI clock rate (99)
 #define SCR 0x63
 
-// SPI period 
-#define SPIPeriod 2 //2ms
+// SPI period (ms)
+#define SPIPeriod 2 
 
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
@@ -71,6 +70,8 @@
 
 // number of bytes sent/received to/from LOC with each interaction with the LOC
 #define numReceivedBytes 4
+
+
 
 // Commands to send to the LOC
 // Status command
@@ -84,6 +85,9 @@
 
 // Number of bits to shift 8 bit number to the top of a 16 bit number
 #define NumResponseBits 8
+
+ // Number of lines of data received per transaction with LOC
+ #define ReceivedData = 5;
 
 
 /*---------------------------- Module Functions ---------------------------*/
@@ -113,7 +117,7 @@ static ES_Event LastEvent;
 // Last response byte from the LOC
 static uint8_t LastResponse;
 
-// variable defining red or green team
+// variables defining red or green team
 static uint8_t RED = 0;
 static uint8_t GREEN = 1;
 static uint8_t TeamColor;
@@ -122,7 +126,7 @@ static uint8_t TeamColor;
 static uint8_t ByteCount = 0;
 
 // create a local variable for data to return
-	uint16_t Data2Return = 0;
+static uint16_t Data2Return = 0;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -130,13 +134,14 @@ static uint8_t ByteCount = 0;
      InitSPIService
 
  Parameters
-     void
+     Priority
 
  Returns
-     void
+     boolean
 
  Description
-     Initializes this service to be the top level state of the HSM
+     Initializes this service's hardware to enable SPI communication (as 
+     a master)
  Notes
 
  Author
@@ -150,15 +155,13 @@ bool InitSPIService ( uint8_t Priority )
 	 InitSerialHardware();
 	 
 	// Initialize shorttimer 
-	//ES_Timer_SetTimer(SPI_TIMER,SPIPeriod);
+	ES_Timer_SetTimer(SPI_TIMER,SPIPeriod);
 	
 	// Initialize team color as red
 	TeamColor = RED;
 	
 	// Initialize current state
 	CurrentState = WAITING2TRANSMIT;
-	
-	printf("\r\n end init SPI \r\n");
 	
 	 return true;
 }
@@ -174,7 +177,7 @@ bool InitSPIService ( uint8_t Priority )
      ES_Event ThisEvent
 
  Description
-     Xmits info
+     This is the run function for this service. It transmits infor
  Notes
 
  Author
@@ -182,7 +185,6 @@ bool InitSPIService ( uint8_t Priority )
 ****************************************************************************/
 ES_Event RunSPIService ( ES_Event CurrentEvent )
 {	
-	//printf("\r\n Run SPI: %i \r\n",CurrentEvent.EventType);
   // define return event if no errors persist 
   ES_Event ReturnEvent;
 	ReturnEvent.EventType = ES_NO_EVENT;
@@ -190,14 +192,11 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
   // WAITING2TRANSMIT State
   if(CurrentState == WAITING2TRANSMIT)
   {
-		// change state to WAITING4TIMEOUT
-		//CurrentState = WAITING4TIMEOUT;
 
 			if(CurrentEvent.EventType == TEAM_COLOR){
 			
 			// set team color from the parameter of the TEAM_COLOR event
 			TeamColor = CurrentEvent.EventParam;
-				printf("\r\n team color is %i \r\n",TeamColor);
 				
 			// change state to WAITING2TRANSMIT
 			CurrentState = WAITING2TRANSMIT;
@@ -218,7 +217,6 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				Transmit2LOC( QueryCommand );
 				
 			} else if (CurrentEvent.EventType == ROBOT_FREQ_RESPONSE) {
-			//	printf("\r\n ROBOT_FREQ_RESPONSE \r\n");
 				
 				// set LastEvent to the current event
 				LastEvent.EventType = CurrentEvent.EventType;
@@ -230,7 +228,6 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				Transmit2LOC( FCommand );
 
 			} else if (CurrentEvent.EventType == ROBOT_STATUS){
-				//printf("\r\n ROBOT_STATUS \r\n");
 				
 				// set LastEvent to the current event
 				LastEvent.EventType = CurrentEvent.EventType;
@@ -241,9 +238,11 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 			} else if(CurrentEvent.EventType == EOTEvent) {
 				// Change State to WAITING4TIMEOUT
 				CurrentState = WAITING4TIMEOUT;
-					for(int i=0; i<5;i++){
-						ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
-						}
+
+				// Read lines of last received data	
+				for(int i=0; i<ReceivedLines;i++){
+					ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
+				}
 	
 			// reset timer 
 			ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
@@ -271,7 +270,7 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
      PostSPIService
 
  Parameters
-     EF_Event ThisEvent ,the event to post to the queue
+     ES_Event ThisEvent, the event to post to the queue
 
  Returns
 		 bool false if the Enqueue operation failed, true otherwise
@@ -309,12 +308,7 @@ void SPI_InterruptResponse( void )
 	// clear interrupt
 	HWREG(SSI0_BASE + SSI_O_IM) &= (~SSI_IM_TXIM);
 
-	// read command and store response from data register
-//	for(int i=0; i<5;i++){
-//	ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
-//	}
-
-	// post eot event
+	// post EOT event
 	ES_Event Event2Post;
 	Event2Post.EventType = EOTEvent;
 	PostSPIService(Event2Post);
@@ -336,7 +330,8 @@ private functions
      void
 
  Description
-     writes the first 8 bits on Tx line, then 0 four more times
+     This writes the first 8 bits on the Tx line, then 0x00 four more times. 
+     This protocol is needed to communicate with the LOC. 
 
  Author
      Team 16, 02/04/17, 23:00
@@ -366,7 +361,7 @@ static void Transmit2LOC( uint8_t Command )
      void
 
  Description
-     keeps the service init more readable
+     This function initializes the SPI hardware on the Tiva. 
 
  Author
      Team 16, 02/04/17, 16:00
@@ -456,7 +451,11 @@ static void InitSerialHardware(void)
      void
 
  Description
-     sends the correct response to the TopRobotSM
+     This function sends the coresponding response from the LOC to the 
+     TopRobotSM depending on the type of command (i.e. query or status) that 
+     the TopRobotSM has requested. The frequency command is not handeled
+     because there is no useful information from the response of the LOC 
+     for the TopRobotSM.  
 
  Author
      Team 16, 02/04/17, 16:00
@@ -472,7 +471,7 @@ static void SendData(void){
 	{		
 		// set post event type to COM_QUERY_RESPONSE
 		PostEvent.EventType = COM_QUERY_RESPONSE;
-		printf("com query response\n\r");
+
 		// set ReturnedData to Response Ready byte (shifted by 8) and Report Status Byte
 		Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]);
 	}	
@@ -493,25 +492,9 @@ static void SendData(void){
 	}
 	
 		// Post event to RobotTopSM
-		//printf("\r\n D2R %x \r\n", Data2Return);
 		PostEvent.EventParam = Data2Return;
 		PostRobotTopSM(PostEvent);
 }
 
-#ifdef TEST
-int main(void)
-{
-	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
-			| SYSCTL_XTAL_16MHZ);
-	TERMIO_Init();
-	clrScrn();
-	printf("\r\n Starting SPI Test \r\n");
-	
-	InitSerialHardware();
-	Transmit2LOC();
-	
-	return 0;
-}
-#endif
 /*------------------------------- Footnotes -------------------------------*/
 /*------------------------------ End of file ------------------------------*/
