@@ -105,7 +105,7 @@ static uint8_t MyPriority;
 static SPIState_t CurrentState;
 
 // received data from data register
-static uint8_t ReceivedData;
+static uint8_t ReceivedLines;
 static uint8_t ReceivedLOCData[5];
 
 // ISR events

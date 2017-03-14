@@ -239,7 +239,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          }							
 				 break;
 				 
-			 // CASE 5/5  SEE ME! Get rid of this state
+			 // CASE 5/5  -------------------------------------SEE ME! Get rid of this state
 			 case CheatRotating2Reload :
 //				 printf("\r\n CheatRotating2Reload \r\n");
 //				 // Execute During function 
@@ -323,6 +323,11 @@ ShootingState_t QueryShootingSM ( void )
 {
    return(CurrentState);
 }
+/***************************************************************************
+***************************************************************************
+***************************************************************************
+ ***************************************************************************/
+
 
 /***************************************************************************
   DuringLooking4Bucket
