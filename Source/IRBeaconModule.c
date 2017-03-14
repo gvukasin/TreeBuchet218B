@@ -7,7 +7,7 @@ Events to receive:
   None
  
 Events to post:
-	IRBeaconSensed (to ActionService)
+	IRBeaconSensed
 ****************************************************************************/
 
 /*----------------------------- Include Files -----------------------------*/
@@ -21,7 +21,6 @@ Events to post:
 #include "driverlib/gpio.h"
 #include "inc/hw_timer.h"
 #include "inc/hw_nvic.h"
-#include "ActionService.h"
 #include "MotorActionsModule.h"
 
 

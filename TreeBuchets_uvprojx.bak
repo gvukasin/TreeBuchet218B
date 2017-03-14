@@ -10,7 +10,6 @@
       <TargetName>BaseFrameworkTarget</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>TM4C123GH6PM</Device>
@@ -694,6 +693,11 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\CheckingInSubSM.h</FilePath>
             </File>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -709,11 +713,6 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
-            <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>
@@ -1691,6 +1690,11 @@
               <FileType>5</FileType>
               <FilePath>.\Headers\CheckingInSubSM.h</FilePath>
             </File>
+            <File>
+              <FileName>ShootingSubSM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1706,11 +1710,6 @@
         <Group>
           <GroupName>Startup</GroupName>
           <Files>
-            <File>
-              <FileName>ShootingSubSM.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Headers\ShootingSubSM.h</FilePath>
-            </File>
             <File>
               <FileName>startup_rvmdk.S</FileName>
               <FileType>2</FileType>

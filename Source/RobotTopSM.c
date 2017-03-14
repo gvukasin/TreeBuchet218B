@@ -44,7 +44,6 @@
 #include "WireSensingModule.h"
 #include "IRBeaconModule.h"
 #include "LEDModule.h"
-#include "DrivingModule.h"
 #include "ReloadingSubSM.h"
 #include "MotorActionsModule.h"
 #include "PWMModule.h"
