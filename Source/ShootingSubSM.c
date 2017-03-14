@@ -101,7 +101,6 @@
    functions, entry & exit functions.They should be functions relevant to the
    behavior of this state machine
 */
-static ES_Event DuringLooking4Goal( ES_Event Event);
 static ES_Event DuringLooking4Bucket( ES_Event Event);
 static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
@@ -162,8 +161,8 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
    ES_Event EntryEventKind = { ES_ENTRY, 0 }; // default to normal entry to new state
    ES_Event ReturnEvent = CurrentEvent; // assume we are not consuming event
 
-	 /*
-	 LOOKING4GOAL
+	 /*	 
+	 LOOKING4BUCKET
 		- Rotate and find an active goal, then stop
 		- It has to be the correct goal because only one is active at a time
 		- Query status and exit
@@ -180,29 +179,8 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 	 
    switch ( CurrentState )
    {
-			 // CASE 1/5
-			 case LOOKING4GOAL :
-				 printf("\r\n LOOKING4GOAL \r\n");
-				 // Execute During function 
-         CurrentEvent = DuringLooking4Goal(CurrentEvent);				 
-				 // process events
-				 if (CurrentEvent.EventType == GoalAligned)
-				 {
-					 //NextState = SETTING_BALL_SPEED;
-					 NextState = LOOKING4BUCKET;
-					 MakeTransition = true;
-					 ReturnEvent.EventType = ES_NO_EVENT;
-				 }
-				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
-				 {
-					  // Internal Transition
-						NextState = LOOKING4GOAL;
-					  MakeTransition = false;
-						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-				 }
-				 break;
-
-			 // CASE 2/5			 
+			
+			 // CASE 1/3			 
 			 case LOOKING4BUCKET :
 				 printf("\r\n LOOKING4Bucket \r\n");
 				 // Execute During function 
@@ -223,7 +201,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 				 }
 				 break;
 				 
-		   // CASE 3/5
+		   // CASE 2/3
        case SETTING_BALL_SPEED : 
 				 printf("\r\n SETTING_BALL_SPEED \r\n");				 
          // Execute During function 
@@ -239,7 +217,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          }
          break;
 				 
-				// CASE 4/5			 
+				// CASE 3/3			 
 			  case WATING4SHOT_COMPLETE :  
 				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
 			    // During function
@@ -261,22 +239,22 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
          }							
 				 break;
 				 
-			 // CASE 5/5
+			 // CASE 5/5  SEE ME! Get rid of this state
 			 case CheatRotating2Reload :
-				 printf("\r\n CheatRotating2Reload \r\n");
-				 // Execute During function 
-         CurrentEvent = DuringCheatRotating2Reload(CurrentEvent);				 
-				 // process events
-				 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
-				 {
-					  // Internal Transition
-						NextState = CheatRotating2Reload;
-					  MakeTransition = false;
-						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-				 }
-				 break;
-				 
+//				 printf("\r\n CheatRotating2Reload \r\n");
+//				 // Execute During function 
+//         CurrentEvent = DuringCheatRotating2Reload(CurrentEvent);				 
+//				 // process events
+//				 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
+//				 {
+//					  // Internal Transition
+//						NextState = CheatRotating2Reload;
+//					  MakeTransition = false;
+//						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+//				 }
+  			break;				 
     }
+	 
     //   If we are making a state transition
     if (MakeTransition == true)
     {
@@ -318,7 +296,7 @@ void StartShootingSM ( ES_Event CurrentEvent )
    // is started
    if ( ES_ENTRY_HISTORY != CurrentEvent.EventType )
    {
-        CurrentState = LOOKING4GOAL;
+        CurrentState = LOOKING4BUCKET;
    }
    // call the entry function (if any) for the ENTRY_STATE
    RunShootingSM(CurrentEvent);
@@ -347,10 +325,10 @@ ShootingState_t QueryShootingSM ( void )
 }
 
 /***************************************************************************
-  DuringLooking4Goal
+  DuringLooking4Bucket
  ***************************************************************************/
 
-static ES_Event DuringLooking4Goal( ES_Event Event)  
+static ES_Event DuringLooking4Bucket( ES_Event Event)  
 {
 	ES_Event ReturnEvent = Event; 
 	ES_Event Event2Post;
@@ -358,27 +336,16 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 	// ****************** ENTRY
 	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
   {
-//		// Set the frequency we are looking for
-//		TeamColor = GetTeamColor();
-//		if(TeamColor == GREEN){
-//			GoalCode = code513us; //1950 Hz
-//			rotationDirection = CCW;
-//			//printf("\r\nin here\r\n");
-//		}else if(TeamColor == RED){
-//		  GoalCode = code800us; //1250 Hz
-//			rotationDirection = CW;
-//		}
-//		printf("\r\nColor=%u,GoalCode=%u\r\n",TeamColor,GoalCode);
-		
-		//RED
-		//GoalCode = code800us; //1250 Hz
-		//rotationDirection = CW;
-
-		
-		//GREEN
-		GoalCode = code513us; //1950 Hz
-		rotationDirection = CCW;
-		//printf("\r\nColor=%u,GoalCode=%u\r\n",TeamColor,GoalCode);
+		// Set the frequency we are looking for
+		TeamColor = GetTeamColor();
+		if(TeamColor == GREEN){
+			GoalCode = code513us; //1950 Hz
+			rotationDirection = CCW;
+			//printf("\r\nin here\r\n");
+		}else if(TeamColor == RED){
+		  GoalCode = code800us; //1250 Hz
+			rotationDirection = CW;
+		}
 		
 		//Enable ISR for front IR (Initialized in TopSM Initialization)
 		EnableFrontIRInterrupt();
@@ -423,61 +390,6 @@ static ES_Event DuringLooking4Goal( ES_Event Event)
 	return ReturnEvent;
 }
 
-
-/***************************************************************************
-  DuringLooking4Bucket
- ***************************************************************************/
-
-static ES_Event DuringLooking4Bucket( ES_Event Event)  
-{
-	ES_Event ReturnEvent = Event; 
-	ES_Event Event2Post;
-	
-	// ****************** ENTRY
-	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-  {
-		// Set the direction we are rotating
-		if(TeamColor == GREEN){
-			rotationDirection = CCW;
-		}else if(TeamColor == RED){
-			rotationDirection = CW;
-		}
-		
-		//Start rotating slowly
-		start2rotate(rotationDirection, AligningSpeed);
-		
-		// Start the timer to periodically check the IR frequency   
-		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
-	}
-	// ****************** EXIT
-	else if ( Event.EventType == ES_EXIT )
-  {
-		// Stop Rotating
-		stop(); 		
-	}
-	
-	// ****************** DURING
-	else
-	{
-		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
-		{
-			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
-
-			printf("\r\n-----IR Code = %u,looking for Bucket%u------\r\n",Front_MeasuredIRPeriodCode,BucketCode);		
-			
-			// If Goal Freq detected, post event; Otherwise restart timer
-			if(Front_MeasuredIRPeriodCode == BucketCode){
-				Event2Post.EventType = BucketAligned;
-				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
-				PostRobotTopSM(Event2Post);
-      }else{
-				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
-			}				
-		}
-	}	
-	return ReturnEvent;
-}
 
 /***************************************************************************
 DuringSettingBallSpeed
