@@ -526,8 +526,8 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 	//Initial state
   //CurrentState = ENDING_STRATEGY;
 	//CurrentState = DRIVING2STAGING;
-	CurrentState = WAITING2START;
-	//CurrentState = SHOOTING;
+	//CurrentState = WAITING2START;
+	CurrentState = DRIVING2RELOAD;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -862,10 +862,11 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 					// if on the RED side, align with 1950 Hz
 					if ( TeamColor == GREEN )
 					{
-						if ( Back_MeasuredIRPeriodCode == code800us )
+						if ( Back_MeasuredIRPeriodCode == code800us ) // SEE ME: change code
 						{
 							// stop rotating
 							stop();
+							printf("\r\n stopping green");
 							
 							// set flag so that you can drive to station
 							OrientedWithWire_Driving2Reload = 1;
@@ -873,10 +874,11 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 						}
 					}else if ( TeamColor == RED )
 					{
-						if ( Front_MeasuredIRPeriodCode == code513us )
+						if ( Back_MeasuredIRPeriodCode == code513us ) // SEE ME: change code
 						{
 							// stop rotating 
 							stop();
+							printf("\r\n stopping red");
 							
 							// set flag so that you can drive to station
 							OrientedWithWire_Driving2Reload = 1;
@@ -885,6 +887,7 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 			} else if (OrientedWithWire_Driving2Reload == 1) 
 				{
 					// Drive
+					printf("\r\n drivin");
 					Drivin();
 				}
 				
