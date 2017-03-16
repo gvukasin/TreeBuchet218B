@@ -104,8 +104,6 @@
 static ES_Event DuringLooking4Bucket( ES_Event Event);
 static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
-static ES_Event DuringCheatRotating2Reload( ES_Event Event);
-
 
 static bool DetectAGoal();
 // static void SetServoAndFlyWheelSpeed(); // Do we still need this?
@@ -222,12 +220,9 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
 			    // During function
 				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-				  // Process events	
-			 
+				  // Process events		 
 				 if (CurrentEvent.EventType == ShotComplete)
          {  
-            NextState = CheatRotating2Reload;
-            MakeTransition = true; 
             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
          }
          else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
@@ -238,21 +233,7 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
             ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
          }							
 				 break;
-				 
-			 // CASE 5/5  -------------------------------------SEE ME! Get rid of this state
-			 case CheatRotating2Reload :
-//				 printf("\r\n CheatRotating2Reload \r\n");
-//				 // Execute During function 
-//         CurrentEvent = DuringCheatRotating2Reload(CurrentEvent);				 
-//				 // process events
-//				 if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
-//				 {
-//					  // Internal Transition
-//						NextState = CheatRotating2Reload;
-//					  MakeTransition = false;
-//						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
-//				 }
-  			break;				 
+				 			 
     }
 	 
     //   If we are making a state transition
@@ -346,7 +327,6 @@ static ES_Event DuringLooking4Bucket( ES_Event Event)
 		if(TeamColor == GREEN){
 			GoalCode = code513us; //1950 Hz
 			rotationDirection = CCW;
-			//printf("\r\nin here\r\n");
 		}else if(TeamColor == RED){
 		  GoalCode = code800us; //1250 Hz
 			rotationDirection = CW;
@@ -354,15 +334,12 @@ static ES_Event DuringLooking4Bucket( ES_Event Event)
 		
 		//Enable ISR for front IR (Initialized in TopSM Initialization)
 		EnableFrontIRInterrupt();
-		//printf("\r\nISR Enabled\r\n");
 		
 		//Start rotating slowly
 		start2rotate(rotationDirection, AligningSpeed);
-				//printf("\r\nStarted Rotating\r\n");
 		
 		// Start the timer to periodically check the IR frequency   
 		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
-				//printf("\r\nTIMER\r\n");
 
 	}
 	
@@ -505,59 +482,6 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
 }
 		
 
-static ES_Event DuringCheatRotating2Reload( ES_Event Event)  
-{
-	ES_Event ReturnEvent = Event; 
-	ES_Event Event2Post;
-	
-	// ****************** ENTRY
-	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-  {
-		// Set the frequency we are looking for
-		TeamColor = GetTeamColor();
-		if(TeamColor == GREEN){
-			GoalCode = code800us; //1250 Hz
-			rotationDirection = CW;
-		}else if(TeamColor == RED){
-		  GoalCode = code513us; //1950 Hz
-			rotationDirection = CCW;
-		}
-		
-		//Start rotating slowly
-		start2rotate(rotationDirection, AligningSpeed);
-		
-		// Start the timer to periodically check the IR frequency   
-		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
-	}
-	// ****************** EXIT
-	else if ( Event.EventType == ES_EXIT )
-  {
-		// Stop Rotating
-		stop(); 		
-	}
-	
-	// ****************** DURING
-	else
-	{
-		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
-		{
-			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode();  
-
-			// If Goal Freq detected, post event; Otherwise restart timer
-			if(Front_MeasuredIRPeriodCode == GoalCode){
-				Event2Post.EventType = ReloadingGoalAligned;
-				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
-				PostRobotTopSM(Event2Post);
-      }else{
-				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
-			}				
-		}
-	}	
-	return ReturnEvent;
-}
-
-
 /****************************************************************************
 ****************************************************************************
 ****************************************************************************
@@ -571,11 +495,7 @@ static ES_Event DuringCheatRotating2Reload( ES_Event Event)
 *******************************************************************************************/
 static bool DetectAGoal()
 {
-		// If first beacon aligned TRUE   
-	
-		// SEE ME - I'm not actually sure what firstIRBeaconAlignment does. I guess make sure that
-		// you have aligned with a non-goal type beacon previously
-	
+		
 		if ( firstIRBeaconAlignment == 1 )
 		{
 			// reset flag

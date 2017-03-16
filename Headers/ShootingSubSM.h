@@ -14,7 +14,7 @@
 
 // typedefs for the states
 // State definitions for use with the query function
-typedef enum { LOOKING4BUCKET, SETTING_BALL_SPEED, WATING4SHOT_COMPLETE,CheatRotating2Reload } ShootingState_t ;
+typedef enum { LOOKING4BUCKET, SETTING_BALL_SPEED, WATING4SHOT_COMPLETE} ShootingState_t ;
 
 // Public Function Prototypes
 
