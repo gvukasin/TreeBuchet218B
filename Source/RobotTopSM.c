@@ -510,9 +510,9 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
   //CurrentState = ENDING_STRATEGY;
-	//CurrentState = DRIVING2STAGING;
+	CurrentState = DRIVING2STAGING;
 	//CurrentState = WAITING2START;
-	CurrentState = DRIVING2RELOAD;
+	//CurrentState = DRIVING2RELOAD;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -658,6 +658,7 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);		
+			printf("\r\nLeft=%d,Right=%d,PWM Left=%d,PWM Right=%d\r\n",RLCReading_Left,RLCReading_Right,PWMLeft,PWMRight);
 			
 			// Restart the timer
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
