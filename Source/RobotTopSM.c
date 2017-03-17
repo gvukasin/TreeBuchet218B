@@ -275,14 +275,9 @@ bool InitRobotTopSM ( uint8_t Priority )
 	
 	// Initialize game timer,  one-shot
 	InitGameTimer();
-	
-	// Initialize get away one-shot timer
-	//SEE ME	
-	//InitGetAwayTimer();
 
 	// Initialize Fly wheel, IR emitter, and servo pwm
 	InitializeAltPWM();
-	printf("\r\n thru inits");
 
 	// Start the Master State machine
   StartRobotTopSM( ThisEvent );
@@ -336,7 +331,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
    RobotState_t NextState = CurrentState;
    ES_Event EntryEventKind = { ES_ENTRY, 0 };// default to normal entry to new state
    ES_Event ReturnEvent = { ES_NO_EVENT, 0 }; // assume no error
-	 //printf("\r\n Run TOP event : %i\r\n", CurrentEvent.EventType);
+
    switch ( CurrentState )
    {
 				// CASE 1/8
@@ -353,11 +348,9 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
         break;
 			
 				// CASE 2/8				 
-			 case DRIVING2STAGING:  	 	 
-			 
+			 case DRIVING2STAGING:  	 	 			 
        CurrentEvent = DuringDriving2Staging(CurrentEvent);	 
-			 // Process events	
-				
+			 // Process events				
 			 if (CurrentEvent.EventType == STATION_REACHED)
 				{
 					 printf("\r\nReceived STATION_REACHED event at DRIVING2STAGING state \r\n");
@@ -365,7 +358,6 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				}
-
 				else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == WireFollow_TIMER))
 				{		
 					 // Internal self transition
@@ -377,7 +369,6 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				
 			 // CASE 3/8				 
 			 case CHECKING_IN:
-
 			 // During function
        CurrentEvent = DuringCheckIn(CurrentEvent);			 
 			 // Process events			 
@@ -387,7 +378,6 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 					NextState = SHOOTING;
 					MakeTransition = true; 
 				 stop();
-				 //getchar();
 			 }
 			 if(CurrentEvent.EventType == KEEP_DRIVING)
 			 {
@@ -398,34 +388,29 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 			 
 			 // CASE 4/8				 
 			 case SHOOTING:
-			 // During function
-       CurrentEvent = DuringShooting(CurrentEvent);
+				// During function
+				CurrentEvent = DuringShooting(CurrentEvent);
+				
 			 // Process events	
-			 //(1)
-
 			  //The following event is for 3/8/2017		 
 			 	if (CurrentEvent.EventType == ReloadingGoalAligned )
 				{
 					NextState = DRIVING2STAGING; // EXTERNAL Self transition
 					MakeTransition = true; 
 				}
-				
 				else if (CurrentEvent.EventType == FINISHED_SHOT) // This event comes from the sub SM
 				{
 					NextState = SHOOTING; // INTERNAL Self transition
-				}
-				//(2)			 
+				}		 
 				else if (CurrentEvent.EventType == COM_STATUS) 
 				{
 					NextState = SHOOTING; // INTERNAL Self transition
-				}
-			  //(3)			 				
+				}		 				
 				else if (CurrentEvent.EventType == SCORED) 
 				{
 					NextState = DRIVING2STAGING;
 					MakeTransition = true;
-				}		
-			  //(4)			 			
+				}			 			
 				else if (CurrentEvent.EventType == MISSED_SHOT )
 				{
 					NextState = SHOOTING; // EXTERNAL Self transition
@@ -488,7 +473,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
     //   If we are making a state transition
     if (MakeTransition == true)
     {
-			printf("\r\n Transition: current %i,next %i\r\n",CurrentState,NextState);
+			 printf("\r\n Transition: current %i,next %i\r\n",CurrentState,NextState);
        //   Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunRobotTopSM(CurrentEvent);
@@ -525,9 +510,9 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
   //CurrentState = ENDING_STRATEGY;
-	//CurrentState = DRIVING2STAGING;
+	CurrentState = DRIVING2STAGING;
 	//CurrentState = WAITING2START;
-	CurrentState = DRIVING2RELOAD;
+	//CurrentState = DRIVING2RELOAD;
 	
   // now we need to let the Run function init the lower level state machines
   // use LocalEvent to keep the compiler from complaining about unused var
@@ -571,17 +556,13 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 				PostSPIService(PostEvent);
 				
 				//Turn on TeamColor LEDs
-				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);	
-				
-				//SetFlyDuty(80);
-
-				//printf("\r\n Team Color (0 red): %i", TeamColor);
-				
+				TurnOnOFFTeamColorLEDs(LEDS_ON, TeamColor);		
     }
     else if ( Event.EventType == ES_EXIT )
     { 
     }
 		
+		// DURING
 		else if(Event.EventType == COM_STATUS)
 		{
 			printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
@@ -641,17 +622,12 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 
     }
     else if ( Event.EventType == ES_EXIT )
-    {
-		
+    {	
     }
 		
-
 		// ----- DURING
 		else if ((Event.EventType == ES_TIMEOUT) && (Event.EventParam == WireFollow_TIMER))
     {
-			// Need CurrentStagingArea and NextStagingArea. Are these set correctly by the time we enter this part of the code?
-						//printf("\r\n DURING ---- WireFollow_TIMER \r\n");
-
 			// Read the RLC sensor values
 			ReadRLCSensor(RLCReading);
 			RLCReading_Right = RLCReading[1];
@@ -682,13 +658,13 @@ static ES_Event DuringDriving2Staging( ES_Event Event)
 			
 			// Drive the motors using new PWM duty cycles
 			driveSeperate(PWMLeft,PWMRight,FORWARD);		
+			printf("\r\nLeft=%d,Right=%d,PWM Left=%d,PWM Right=%d\r\n",RLCReading_Left,RLCReading_Right,PWMLeft,PWMRight);
 			
 			// Restart the timer
 			ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
 			
 			// Check if a staging area has been reached
 			PeriodCode = GetStagingAreaCodeArray();
-			//printf("\r\nstaging area code=%i\r\n",PeriodCode);
 			
 			if((PeriodCode != codeInvalidStagingArea) && (PeriodCode != LastPeriodCode))//&&(PeriodCode != CurrentStagingCode4Redriving))
 			{ 
@@ -763,9 +739,6 @@ static ES_Event DuringShooting( ES_Event Event)
 				//SEE ME
 			  stop();
 			
-        //Set shooting flag to true
-				ShootingFlag = 1;
-			
 			  //Yellow LEDs ON to signal shooting is going to start
 				TurnOnOffYellowLEDs(LEDS_ON, TeamColor);
 			
@@ -782,10 +755,7 @@ static ES_Event DuringShooting( ES_Event Event)
 		else 
     {
 			if(Event.EventType == FINISHED_SHOT)
-			{
-				//Reset shooting flag to 0
-				ShootingFlag = 0;
-				
+			{			
 				// Get the old score - that was saved at the beginning of the sub SM
 				OldScore = GetScoreFromShootingSM();
 				
@@ -883,23 +853,18 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 							OrientedWithWire_Driving2Reload = 1;
 						}
 					}
-			} else if (OrientedWithWire_Driving2Reload == 1) 
-				{
-					// Drive
-					printf("\r\n drivin");
-					Drivin();
-				}
+					}else if (OrientedWithWire_Driving2Reload == 1) 
+					{
+						// Drive
+						printf("\r\n drivin");
+						Drivin();
+					}
 				
 				// Reinitialize timer
 				ES_Timer_InitTimer(WireFollow_TIMER,WireFollow_TIME);
+			}
 		}
-		}
-		
-//		else 
-//    { 
-//			// Now, copy the wire following code from Driving2Staging
-//			// Only send PWM to wheel motors if OrientedWithWire_Driving2Reload == 1
-//    }
+
     // return either Event, if you don't want to allow the lower level machine
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
@@ -923,14 +888,7 @@ static ES_Event DuringReloading( ES_Event Event)
         // on exit, give the lower levels a chance to clean up first
         RunReloadingSM(Event);
 			
-			// either rotate 180 deg (EASIER)
-			
-			// or, align with beacon on opposite side of reloader
-			
-			// if on the GREEN side
-				// align with 2200 Hz
-			// else if on the RED side
-				// align with 1700 Hz
+				// rotate 180 deg
     }
 		
 		// do the 'during' function for this state
@@ -954,23 +912,9 @@ static ES_Event DuringEndingStrategy( ES_Event Event)
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        // implement any entry actions required for this state machine
-        
-        // after that start any lower level machines that run in this state
-        //StartLowerLevelSM( Event );
-        // repeat the StartxxxSM() functions for concurrent state machines
-        // on the lower level
-			
-			//SEE ME: get rid of this, just for testing shooter
-			//SetFlyDuty(80);
     }
     else if ( Event.EventType == ES_EXIT )
     {
-        // on exit, give the lower levels a chance to clean up first
-        //RunLowerLevelSM(Event);
-        // repeat for any concurrently running state machines
-        // now do any local exit functionality
-      
     }
 		else // do the 'during' function for this state
     {
@@ -990,12 +934,10 @@ static ES_Event DuringStop( ES_Event Event)
 
     // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
-    {
- 
+    { 
     }
     else if ( Event.EventType == ES_EXIT )
-    {
-  
+    { 
     }
 		else // do the 'during' function for this state
     {

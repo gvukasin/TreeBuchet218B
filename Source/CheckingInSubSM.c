@@ -82,7 +82,7 @@ static uint8_t CurrentStageCode = codeInvalidStagingArea;
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
-    RunTemplateSM
+    RunCheckingInSM
 
  Parameters
    ES_Event: the event to process
@@ -91,7 +91,7 @@ static uint8_t CurrentStageCode = codeInvalidStagingArea;
    ES_Event: an event to return
 
  Description
-   add your description here
+  
  Notes
    uses nested switch/case to implement the machine.
  Author
@@ -191,7 +191,7 @@ ES_Event RunCheckingInSM( ES_Event CurrentEvent )
 }
 /****************************************************************************
  Function
-     StartTemplateSM
+     StartCheckingInSM
 
  Parameters
      None
@@ -220,30 +220,9 @@ void StartCheckingInSM ( ES_Event CurrentEvent )
    RunCheckingInSM(CurrentEvent);
 }
 
-/****************************************************************************
- Function
-     QueryTemplateSM
-
- Parameters
-     None
-
- Returns
-     TemplateState_t The current state of the Template state machine
-
- Description
-     returns the current state of the Template state machine
- Notes
-
- Author
-     J. Edward Carryer, 2/11/05, 10:38AM
-****************************************************************************/
-//ShootingState_t QueryShootingSM ( void )
-//{
-//   return(CurrentState);
-//}
 
 /***************************************************************************
-  DuringLooking4Goal
+  DuringFirstReportDone
  ***************************************************************************/
 
 static ES_Event DuringFirstReportDone( ES_Event Event)  
@@ -273,8 +252,7 @@ static ES_Event DuringFirstReportDone( ES_Event Event)
 	// ****************** DURING
 	else
 	{
-		 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == ReportInterval_TIMER)){
-			 
+		 if (Event.EventType == ES_TIMEOUT && (Event.EventParam == ReportInterval_TIMER)){			 
 		 }
 	}
 	return ReturnEvent;

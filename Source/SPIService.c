@@ -244,11 +244,11 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 					ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
 				}
 	
-			// reset timer 
-			ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
+				// reset timer 
+				ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 			}
 			
-		//WAITING4TIMEOUT State
+	//WAITING4TIMEOUT State
 	}	else if (CurrentState == WAITING4TIMEOUT){
 		
 			if(CurrentEvent.EventType == ES_TIMEOUT){
@@ -491,9 +491,9 @@ static void SendData(void){
 			}
 	}
 	
-		// Post event to RobotTopSM
-		PostEvent.EventParam = Data2Return;
-		PostRobotTopSM(PostEvent);
+	// Post event to RobotTopSM
+	PostEvent.EventParam = Data2Return;
+	PostRobotTopSM(PostEvent);
 }
 
 /*------------------------------- Footnotes -------------------------------*/
