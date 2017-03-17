@@ -866,7 +866,6 @@ static ES_Event DuringDriving2Reload( ES_Event Event)
 						{
 							// stop rotating
 							stop();
-							printf("\r\n stopping green");
 							
 							// set flag so that you can drive to station
 							OrientedWithWire_Driving2Reload = 1;

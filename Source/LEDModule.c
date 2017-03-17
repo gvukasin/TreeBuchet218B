@@ -52,98 +52,108 @@
 /*----------------------------- Module Functions ----------------------------*/
 static void InitializeLEDHardware(void);
 
-/*---------------------------- Module Variables ---------------------------*/
-
-
 /*----------------------------- Public Functions ----------------------------*/
+/****************************************************************************************
+	TurnOnOffYellowLEDs
+		Turn on or off construction LEDs, while maintaining TeamColor LEDs
+*******************************************************************************************/
+
 void TurnOnOffYellowLEDs(bool ONorOFF, bool TeamColor) 
 {
 	// Initialize hardware
   InitializeLEDHardware();
 	
-	// Turn on/off
+	// If ONorOFF is true
 	if(ONorOFF == ON)
 	{
+		// If TeamColor is Green
 		if (TeamColor == GREEN)
+			// Write to SR green and yellow LED bits
 			SR_Write((YELLOW_ON|GREEN_ON));
+		// If TeamColor is Red
 		else 
+			// Write to SR red and yellow LED bits
 			SR_Write((YELLOW_ON|RED_ON));
 	}
-	
+	// Else If ONorOFF is false
 	else //Leave only team color led ON
 	{
+		// If TeamColor is green, write green bits to SR
 		if (TeamColor == GREEN)
 			SR_Write(GREEN_ON);
+		// Else If TeamColor is red, write red bits to SR
 		else 
 			SR_Write(RED_ON);
 	}
 }
 
+/****************************************************************************************
+	TurnOnOffBlueLEDs
+		Turn on or off communication LEDs, while maintaining TeamColor LEDs
+*******************************************************************************************/
 void TurnOnOffBlueLEDs(bool ONorOFF, bool TeamColor)
 {
 	// Initialize hardware
 	InitializeLEDHardware();
-
-	// Turn on/off
-		// Initialize hardware
-  InitializeLEDHardware();
 	
-	// Turn on/off
+	// If ONorOFF is true
 	if(ONorOFF == ON)
 	{
+		// If TeamColor is green
 		if (TeamColor == GREEN)
+			// Write to SR green and blue bits
 			SR_Write((BLUE_ON|GREEN_ON));
+		// Else If TeamColor is red
 		else 
+			// Write to SR red and blue bits
 			SR_Write((BLUE_ON|RED_ON));
 	}
 	
+	// Else If ONorOFF is false
 	else //Leave only team color led ON
 	{
+		// If TeamColor is green, write to SR green bits
 		if (TeamColor == GREEN)
-			SR_Write(BLUE_ON);
+			SR_Write(GREEN_ON);
+		// Else If TeamColor is red, write to SR red bits
 		else 
-			SR_Write(BLUE_ON);
+			SR_Write(RED_ON);
 	}
 }
 
+/****************************************************************************************
+	TurnOnOffTeamColorLEDs
+		Turn on or off TeamColor LEDs, chosing either red or green
+*******************************************************************************************/
 void TurnOnOFFTeamColorLEDs(bool ONorOFF, bool TeamColor)
 {
 	// Initialize hardware
 	InitializeLEDHardware();
 
-	// Turn on/off
+	// If ONorOFF is true
 	if(ONorOFF == ON)
 	{
+		// If TeamColor is Green
 		if (TeamColor == GREEN)
+				// Write to SR bits that turn on Green LEDS
 				SR_Write(GREEN_ON);
+		// Else if TeamColor is Red
 		else 
+			// Write to SR bits that turn on Red LEDS
 				SR_Write(RED_ON);
 	}
+	// else 
 	else
+		// Turn off red and gree LEDS
 		SR_Write(LEDS_OFF);
 }
-
+/****************************************************************************************
+	InitializeLEDHardware
+		Initialize hardware needed for LEDs to be turned on
+*******************************************************************************************/
 /*----------------------------- Module Functions ----------------------------*/
 static void InitializeLEDHardware(void)
 {
 	// Init shift register
 	SR_Init();
 }
-
-#ifdef TEST
-#include "termio.h"
-#define clrScrn() 	printf("\x1b[2J")
-int main(void){
-	
-// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
-	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
-			| SYSCTL_XTAL_16MHZ);
-	TERMIO_Init();
-	clrScrn();
-	printf("\r\n pwm test module \r\n");
-	TurnOnOFFTeamColorLEDs(ON,GREEN);
-	TurnOnOffBlueLEDs(1,GREEN);
-	TurnOnOffYellowLEDs(1,GREEN);
-	
-}
-#endif

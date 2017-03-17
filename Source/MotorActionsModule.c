@@ -57,9 +57,13 @@ static bool wheelSide;
 static bool direction;
 
 /*------------------------------ Module Code ------------------------------*/
+/***************************************************************************
+  start2rotate
+		rotates the wheels so that the robot is spinning clockwise or counter clockwise at a specific duty cycle
+ ***************************************************************************/
 void start2rotate(bool rotationDirection, uint8_t DutyCycle)
 {
-	// pick arbitrary DutyCycle, keep for testing
+	// If rotationDirection is clockwise
 	if (rotationDirection == CW)
 	{
 		// pick the left wheel and rotate it forward to make robot spin CW
@@ -72,8 +76,8 @@ void start2rotate(bool rotationDirection, uint8_t DutyCycle)
 		direction = BACKWARD;
 		SetPWMDutyCycle(DutyCycle, direction, wheelSide);
 	}
-	
-	else // rotationDirection is CCW
+	// If rotationDirection is counterclockwise
+	else 
 	{
 		// pick the left wheel and rotate it backward to make robot spin CCW
 		wheelSide = LEFT;
@@ -87,51 +91,29 @@ void start2rotate(bool rotationDirection, uint8_t DutyCycle)
 	}
 }
 
-void rotate2beacon(void)
-{
-	// pick arbitrary DutyCycle, keep for testing
-	uint8_t DutyCycle = 60;
-	
-	// pick the left wheel and rotate it forward to make robot spin CW
-	wheelSide = LEFT;
-	direction = FORWARD;
-	SetPWMDutyCycle(DutyCycle, direction, wheelSide);
-		
-	// pick the right wheel and rotate it backward to make robot spin CW
-	wheelSide = RIGHT;
-	direction = BACKWARD;
-	SetPWMDutyCycle(DutyCycle, direction, wheelSide);
-}
-
-void drive(uint8_t DutyCycle, bool direction)
-{
-	// drive left motor at specified DutyCycle and direction
-	wheelSide = LEFT;
-	SetPWMDutyCycle(DutyCycle, direction, wheelSide);
-	
-	// drive right motor at specified DutyCycle and direction
-	wheelSide = RIGHT;
-	SetPWMDutyCycle(DutyCycle - 5, direction, wheelSide);
-}
-
-
-// Drive with seperate duty cycles for left/right wheel
+/***************************************************************************
+  driveSeperate
+		rotates the wheels so that the robot drives in direction, "direction," with separate duty cycles for left/right wheels
+ ***************************************************************************/
 void driveSeperate(uint8_t LeftDutyCycle, uint8_t RightDutyCycle, bool direction)
 {
-	// drive left motor at specified DutyCycle and direction
+	// drive left motor at specified LeftDutyCycle and direction
 	wheelSide = LEFT;
 	SetPWMDutyCycle(LeftDutyCycle, direction, wheelSide);
 	
-	// drive right motor at specified DutyCycle and direction
+	// drive right motor at specified RightDutyCycle and direction
 	wheelSide = RIGHT;
 	SetPWMDutyCycle(RightDutyCycle, direction, wheelSide);
 }
 
-
+/***************************************************************************
+  stop
+		stop the motors for both wheels
+ ***************************************************************************/
 void stop(void)
 {
 	uint8_t DutyCycle = 0; // to stop motor
-	direction = FORWARD; // does not matter
+	direction = FORWARD; 
 	
 	// stop the left motor
 	wheelSide = LEFT;
@@ -140,8 +122,4 @@ void stop(void)
 	// stop the right motor
 	wheelSide = RIGHT;
 	SetPWMDutyCycle(DutyCycle, direction, wheelSide);	
-	printf("\n\rAt the end of stop function\r\n");
 }
-/***************************************************************************
- private functions
- ***************************************************************************/

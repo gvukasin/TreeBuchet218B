@@ -88,6 +88,10 @@ static void EnableFlyWheel( bool );
 
 /*------------------------------ Module Code ------------------------------*/
 
+/***************************************************************************
+  SetPWMDutyCycle
+		Set the duty cycle of one of the wheels corresponding to inputs: DutyCycle, direction (0=cw,1=ccw), and wheelSide (0=right,1=left)
+ ***************************************************************************/
 void InitializePWM(void)
 {
 	// Enable the clock to the PWM Module (PWM0)
@@ -151,14 +155,12 @@ void InitializeAltPWM(void){
 	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R4;
 	HWREG(SYSCTL_RCGCGPIO) |= SYSCTL_RCGCGPIO_R5;
 	
-	// SEE ME: this is already set in the other initialization function so I do not want to reset it
 	// Select the PWM clock as System Clock/32
 	HWREG(SYSCTL_RCC) = (HWREG(SYSCTL_RCC) & ~SYSCTL_RCC_PWMDIV_M) | (SYSCTL_RCC_USEPWMDIV | SYSCTL_RCC_PWMDIV_32);
 	
 	// Make sure that the PWM module clock has gotten going
 	while ((HWREG(SYSCTL_PRPWM) & SYSCTL_PRPWM_R1) != SYSCTL_PRPWM_R1);
-	
-	// SEE ME: is this the correct for using M0PWM2,3,4?
+
 	// Disable the PWM while initializing
 	HWREG(PWM1_BASE+PWM_O_1_CTL) = 0;
 	HWREG(PWM1_BASE+PWM_O_2_CTL) = 0;
@@ -189,7 +191,6 @@ void InitializeAltPWM(void){
 	// Configure the Port F pins 0,1 to be PWM outputs -- alternate function 5
 	HWREG(GPIO_PORTF_BASE + GPIO_O_AFSEL) |= (IRPin | ExtraPWMPin);
 	HWREG(GPIO_PORTF_BASE + GPIO_O_PCTL) = (HWREG(GPIO_PORTF_BASE+GPIO_O_PCTL) & 0xffffff00) + (5) + (5<<(BitsPerNibble));
-	printf("\r\n SEE ME6");
 	
 	// Enable pins 4,5 on Port E for digital I/O
 	HWREG(GPIO_PORTE_BASE+GPIO_O_DEN) |= (ServoMotorPin|FlyWheelMotorPin);
@@ -220,162 +221,203 @@ void InitializeAltPWM(void){
 		
 		//make pin 2 on Port D into an output
 		HWREG(GPIO_PORTD_BASE + GPIO_O_DIR) |= FlyWheelEnablePin;
-		printf("\r\n got thru alt pwm init");
 }
+
+/***************************************************************************
+  SetPWMDutyCycle
+		Set the duty cycle of one of the driving wheel motors corresponding to inputs: DutyCycle, direction (0=backwards,1=forward), and wheelSide (0=right,1=left)
+ ***************************************************************************/
 
 void SetPWMDutyCycle(uint8_t DutyCycle, bool direction, bool wheelSide)
 {
+	// If wheelSide is left and the direction is forward
 	if (wheelSide == LEFT && direction == FORWARD)
 	{
-		
+		// If the DutyCycle is 0
 		if (DutyCycle == 0)
 		{
+			// Set output of both left pins to 0
 			Set0DC(L_CCW_MOTOR_PIN); //PB4 to 0
 			Set0DC(L_CW_MOTOR_PIN);  //PB5 to 0
 		}
+		
+		//Else If the DutyCycle is 100
 		else if (DutyCycle == 100)
 		{
+			// Set output of left, counterclockwise pin to 100 and left clockwise pin to 0
 			Set100DC(L_CCW_MOTOR_PIN);//PB4 to 100
 			Set0DC(L_CW_MOTOR_PIN);		//PB5 to 0
 		}
+		// Else 
 		else
 		{
+			// Restore pwm to left, counterclockwise pin 
 			RestoreDC(L_CCW_MOTOR_PIN);
 			
-			// PB4 set to DutyCycle
+			// Set left, counterclockwise pin to DutyCycle
 			HWREG( PWM0_BASE + PWM_O_1_CMPA) = (HWREG( PWM0_BASE + PWM_O_1_LOAD)) - ((DutyCycle*(PeriodInUS * PWMTicksPerUS)/100)>>1);
 			
-			// PB5 set to 0
+			// Set left, clockwise pin to 0
 			Set0DC(L_CW_MOTOR_PIN);
 		}
 	}
 	
+	// Else If wheelSide is left and direction is backwards
 	else if (wheelSide == LEFT && direction == BACKWARD)
 	{
+		// If the DutyCycle is 0
 		if (DutyCycle == 0)
 		{
+			// Set the left, counterclockwise and clockwise pins to 0
 			Set0DC(L_CCW_MOTOR_PIN); //PB4 to 0
 			Set0DC(L_CW_MOTOR_PIN);  //PB5 to 0
 		}
+		// Else If the DutyCycle is 100
 		else if (DutyCycle == 100)
 		{
+			// Set the left, counterclockwise pin to 0 and the left, clockwise pin to 100
 			Set0DC(L_CCW_MOTOR_PIN); //PB4 to 0
 			Set100DC(L_CW_MOTOR_PIN);//PB5 to 100
 		}
+		// Else 
 		else
 		{
+			// Restore pwm to the left, clockwise pin 
 			RestoreDC(L_CW_MOTOR_PIN);
 			
-			// PB4 set to 0
+			//Set the duty cycle of the left counterclockwise pin to 0
 			Set0DC(L_CCW_MOTOR_PIN);
 			
-			// PB5 commands motor CW
+			//Set the duty cycle of the left clockwise pin to the DutyCycle
 			HWREG( PWM0_BASE + PWM_O_1_CMPB) = (HWREG( PWM0_BASE + PWM_O_1_LOAD)) - ((DutyCycle*(PeriodInUS * PWMTicksPerUS)/100)>>1);	
 		}
 	}
 	
+	// Else If wheelSide is right and direction is forward 
 	else if (wheelSide == RIGHT && direction == FORWARD)
 	{
-	
+		// If the DutyCycle is 0
 		if (DutyCycle == 0)
 		{
+			// Set the right, clockwise and counterclockwise pins to 0
 			Set0DC(R_CW_MOTOR_PIN); //PB6 to 0
 			Set0DC(R_CCW_MOTOR_PIN);//PB7 to 0
 		}
+		// Else If the DutyCycle is 100
 		else if (DutyCycle == 100)
 		{
+			// Set the right cw pin to 100 and the right ccw pin to 0
 			Set100DC(R_CW_MOTOR_PIN);//PB6 to 100
 			Set0DC(R_CCW_MOTOR_PIN); //PB7 to 0
 		}
+		// Else 
 		else
 		{
+			// Restore pwm to the right cw pin 
 			RestoreDC(R_CW_MOTOR_PIN);
 			
-			// PB6 commands motor CW
+			// Set the duty cycle of the right cw pin to DutyCycle 
 			HWREG( PWM0_BASE + PWM_O_0_CMPA) = (HWREG( PWM0_BASE + PWM_O_0_LOAD)) - ((DutyCycle*(PeriodInUS * PWMTicksPerUS)/100)>>1);
 			
-			// PB7 set to 0
+			// Set the duty cycle of the right ccw pin to 0
 			Set0DC(R_CCW_MOTOR_PIN);
 		}
 	}
 	
 	else // right wheel selected, backward direction selected
 	{
-	
+		// If the DutyCycle is 0
 		if (DutyCycle == 0)
 		{
+			// Set the right cw and ccw pins to 0
 			Set0DC(R_CW_MOTOR_PIN); //PB6 to 0
 			Set0DC(R_CCW_MOTOR_PIN);//PB7 to 0
 		}
+		// Else If the DutyCycle is 100
 		else if (DutyCycle == 100)
 		{
+			// Set the right cw pin to 0 and the right ccw pin to 100
 			Set0DC(R_CW_MOTOR_PIN);   //PB6 to 0
 			Set100DC(R_CCW_MOTOR_PIN);//PB7 to 100
 		}
+		// Else 
 		else
 		{
+			// Restore pwm to the right ccw pin
 			RestoreDC(R_CCW_MOTOR_PIN);
 			
-			// PB6 set to 0
+			// Set the output of the right cw pin to 0
 			Set0DC(R_CW_MOTOR_PIN);
 			
-			// PB7 commands motor CCW
+			// Set the duty cycle of the right ccw pin to DutyCycle 
 			HWREG( PWM0_BASE + PWM_O_0_CMPB) = (HWREG( PWM0_BASE + PWM_O_0_LOAD)) - ((DutyCycle*(PeriodInUS * PWMTicksPerUS)/100)>>1);
 		}
 	}
 }
-
+/***************************************************************************
+  SetPWMPeriodUS
+		Set the loads to the period/2 that is the input of this function (in us)
+***************************************************************************/	
 void SetPWMPeriodUS(uint16_t Period)
 {
 		HWREG( PWM0_BASE + PWM_O_0_LOAD) = ((Period * PWMTicksPerUS))>>1;
 	  HWREG( PWM0_BASE + PWM_O_1_LOAD) = ((Period * PWMTicksPerUS))>>1;
 }
 
-uint16_t GetPWMPeriodUS(void)
-{
-	return PeriodInUS;
-}
-
+/***************************************************************************
+  EmitIR
+		Enable/Disable PWM at 25% duty cycle to IR LED based on input boolean OnOrOff
+***************************************************************************/	
 void EmitIR( bool OnOrOff ){
+	// If OnOrOff is true
 	if(OnOrOff == 1){
-		// turn on PWM to IR 
-		// restore pwm 
+		// Restore PWM to IR LED Pin
 		HWREG( PWM1_BASE + PWM_O_2_GENB) = PWM2_GenB_Normal;
 		 
-		// set duty cycle to 25%
+		// Set duty cycle to 25%
 		HWREG( PWM1_BASE + PWM_O_2_CMPB) = (HWREG(PWM1_BASE + PWM_O_2_LOAD)) - ((DutyCycle25*(IRPeriodInUS * PWMTicksPerUS)/100)>>1);
-		
+	
+	// Else If OnOrOff is false
 	} else {
-		// disable PWM to IR pin
+		// Disable PWM to IR pin, set pwm to 0% duty cycle
 		HWREG(PWM1_BASE + PWM_O_2_GENB) = PWM_2_GENB_ACTZERO_ZERO;
 	}
 }
-
+/***************************************************************************
+  SetServoDuty
+		Set the duty cycle, which is the input of function (TheDooty), of the pin associated with the servo 
+***************************************************************************/	
 void SetServoDuty( uint16_t TheDooty ){
-	
+	// If TheDooty is 0% duty cycle
 	if (TheDooty == 0)
 		{
-			// set duty cycle to 0
+			// Set duty cycle to 0V or 0% duty cycle
 			HWREG(PWM1_BASE + PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ZERO;
 
 		}
+		// Else If TheDooty is 100% duty cycle
 		else if (TheDooty == 100)
 		{
-			// set duty cycle to 100
+			// Set output of Servo Pin to 3.3V (duty cycle to 100)
 			HWREG( PWM1_BASE+PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ONE;
 		}
+		// Else If TheDooty is between 0% and 100% duty cycle
 		else if ((TheDooty > 0) && (TheDooty < 100))
 		{
-			// restore pwm 
+			// Restore PWM function to the Servo Pin
 			HWREG( PWM1_BASE + PWM_O_1_GENA) = PWM1_GenA_Normal;
 		 
-			// set duty cycle to 25%
+			// Set duty cycle to TheDooty
 			HWREG( PWM1_BASE + PWM_O_1_CMPA) = (HWREG(PWM1_BASE + PWM_O_1_LOAD)) - ((TheDooty*(MotorPeriodInUS * PWMTicksPerUS)/100)>>1);
 		}
 	
 }
+/***************************************************************************
+  SetFlyWheel
+		Set the duty cycle, which is the input of function (DatDooty), of the pin associated with the flywheel 
+ ***************************************************************************/
 void SetFlyDuty( uint16_t DatDooty ){
-	
+	// If DatDooty is 0% duty cycle
 	if (DatDooty == 0)
 		{
 			// disable H-bridge
@@ -385,6 +427,7 @@ void SetFlyDuty( uint16_t DatDooty ){
 			HWREG(PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ZERO;
 
 		}
+		// Else If DatDooty 100% duty cycle
 		else if (DatDooty == 100)
 		{
 			// enable H-bridge
@@ -393,6 +436,7 @@ void SetFlyDuty( uint16_t DatDooty ){
 			// set duty cycle to 100
 			HWREG( PWM1_BASE + PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ONE;
 		}
+		// Else If DatDooty is between 0% and 100% duty cycle
 		else if ((DatDooty > 0) && (DatDooty < 100))
 		{
 			// enable H-bridge
@@ -411,12 +455,18 @@ void SetFlyDuty( uint16_t DatDooty ){
 /***************************************************************************
  private functions
  ***************************************************************************/
+/***************************************************************************
+  EnableFlyWheel
+		Enable/Disable the HBridge attached to the flywheel 
+ ***************************************************************************/
+
 static void EnableFlyWheel( bool OnOrOff ){
-	
+	// If input boolean is true
 	if(OnOrOff){
 		// enable H-bridge by setting enable pin Hi
 		HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) |= FlyWheelEnablePin;
-		
+	
+		// Else If input boolean is false
 	} else {
 		// disable H-bridge by setting enable pin Lo
 		HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= (~FlyWheelEnablePin);
@@ -424,116 +474,106 @@ static void EnableFlyWheel( bool OnOrOff ){
 	}
 }
 
+/***************************************************************************
+  Set100DC
+		Program 100% duty cycle (3.3V output) on selected pin, input of function
+ ***************************************************************************/
 static void Set100DC(uint8_t SelectedPin){
-
-	// Program 100% DC - set the action on Zero to set the output to one
+	
+	// If the SelectedPin is the left, counterclockwise motor pin
 	if (SelectedPin == L_CCW_MOTOR_PIN)
 	{
 		// PB4 to 100%
 		HWREG( PWM0_BASE+PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ONE;
 	}
 	
+	// Else If the SelectedPin is the left, clockwise motor pin
 	else if (SelectedPin == L_CW_MOTOR_PIN)
 	{
 		// PB5 to 100%
 		HWREG( PWM0_BASE+PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ONE;
 	}
 	
+	// Else If the SelectedPin is the right, clockwise motor pin
 	else if (SelectedPin == R_CW_MOTOR_PIN)
 	{
 		// PB6 to 100%
 		HWREG( PWM0_BASE+PWM_O_0_GENA) = PWM_0_GENA_ACTZERO_ONE;
 	}
 	
-	else // PB7 selected
+	else // Else If the SelectedPin is the right, counterclockwise motor pin
 	{
 		// PB7 to 100%
 		HWREG( PWM0_BASE+PWM_O_0_GENB) = PWM_0_GENB_ACTZERO_ONE;
 	}
 }
 
-static void Set0DC(uint8_t SelectedPin){
+/***************************************************************************
+Set0DC
+	Set the output on the respective pin, input of function to zero
+ ***************************************************************************/
 
-	// Program 0% DC - set the action on Zero to set the output to zero
+static void Set0DC(uint8_t SelectedPin){
+	
+	// If the SelectedPin is the left, counterclockwise motor pin
 	if (SelectedPin == L_CCW_MOTOR_PIN)
 	{
 		// PB4 to 0%
 		HWREG( PWM0_BASE+PWM_O_1_GENA) = PWM_1_GENA_ACTZERO_ZERO;
 	}
 	
+	// Else if the SelectedPin is the left, clockwise motor pin
 	else if (SelectedPin == L_CW_MOTOR_PIN)
 	{
 		// PB5 to 0%
 		HWREG( PWM0_BASE+PWM_O_1_GENB) = PWM_1_GENB_ACTZERO_ZERO;
 	}
 	
+	// Else If the SelectedPin is the right, clockwise motor pin
 	else if (SelectedPin == R_CW_MOTOR_PIN)
 	{
 		// PB6 to 0%
 		HWREG( PWM0_BASE+PWM_O_0_GENA) = PWM_0_GENA_ACTZERO_ZERO;
 	}
 	
-	else // PB7 selected
+	else // Else If the SelectedPin in the right, counterclockwise motor pin
 	{
 		// PB7 to 0%
 		HWREG( PWM0_BASE+PWM_O_0_GENB) = PWM_0_GENB_ACTZERO_ZERO;
 	}
 }
 
+/***************************************************************************
+  RestoreDC
+		Reprogram generators to go to 1 at rising compare A/B, 0 on falling compare A/B
+ ***************************************************************************/
 static void RestoreDC(uint8_t SelectedPin){
-
-	// Restore the previous DC - set the action back to the normal actions
+		
+	// If the SelectedPin is the left, counterclockwise motor pin
 	if (SelectedPin == L_CCW_MOTOR_PIN)
 	{
 		// Restore PB4
 		HWREG( PWM0_BASE+PWM_O_1_GENA) = PWM1_GenA_Normal;
 	}
 	
+	// Else If the SelectedPin is the left, clockwise motor pin
 	else if (SelectedPin == L_CW_MOTOR_PIN)
 	{
 		// Restore PB5
 		HWREG( PWM0_BASE+PWM_O_1_GENB) = PWM1_GenB_Normal;
 	}
 	
+	// Else If the SelectedPin is the right, clockwise motor pin
 	else if (SelectedPin == R_CW_MOTOR_PIN)
 	{
 		// Restore PB6
 		HWREG( PWM0_BASE+PWM_O_0_GENA) = PWM0_GenA_Normal;
 	}
 	
-	else // PB7 selected
+	else // Else If the SelectedPin is the right, counterclockwise motor pin
 	{
 		// Restore PB7
 		HWREG( PWM0_BASE+PWM_O_0_GENB) = PWM0_GenB_Normal;
 	}
 }
 
-// test harness for first check-off
-#ifdef TEST
-#include "termio.h"
-#define clrScrn() 	printf("\x1b[2J")
-int main(void){
-	
-// Set the clock to run at 40MhZ using the PLL and 16MHz external crystal
-	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN
-			| SYSCTL_XTAL_16MHZ);
-	TERMIO_Init();
-	clrScrn();
-	printf("\r\n pwm test module \r\n");
-
-//	//initialize pwm
-//	InitializePWM();
-//	
-//	printf("\r\n pwm initialized \r\n");
-//	
-//	Set100DC(R_CW_MOTOR_PIN);
-//	Set0DC(R_CCW_MOTOR_PIN);
-	InitializeAltPWM();
-	//EmitIR( 0 );
-	SetFlyDuty(80);
-	//HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= (~FlyWheelEnablePin);
-	SetServoDuty(60); 
-	//EnableFlyWheel(0);
-	
-}
-#endif
