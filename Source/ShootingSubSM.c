@@ -104,9 +104,7 @@
 static ES_Event DuringLooking4Bucket( ES_Event Event);
 static ES_Event DuringSettingBallSpeed( ES_Event Event);
 static ES_Event DuringWaiting4ShotComplete( ES_Event Event);
-
 static bool DetectAGoal();
-// static void SetServoAndFlyWheelSpeed(); // Do we still need this?
 
 /*---------------------------- Module Variables ---------------------------*/
 // everybody needs a state variable, you may need others as well
@@ -137,7 +135,7 @@ static bool rotationDirection;
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
-    RunTemplateSM
+    RunShootingSM
 
  Parameters
    ES_Event: the event to process
@@ -146,7 +144,7 @@ static bool rotationDirection;
    ES_Event: an event to return
 
  Description
-   add your description here
+   Run function for this sub state machine
  Notes
    uses nested switch/case to implement the machine.
  Author
@@ -174,96 +172,109 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 	 - Wait for a timeout and then check if you have scored or not 
 		 in order to do one thing or another	 
 	 */
-	 
+	
+	// Switch the CurrentState
    switch ( CurrentState )
    {
 			
-			 // CASE 1/3			 
+			 // CASE 1/3, LOOKING4BUCKET			 
 			 case LOOKING4BUCKET :
-				 printf("\r\n LOOKING4Bucket \r\n");
 				 // Execute During function 
-         CurrentEvent = DuringLooking4Bucket(CurrentEvent);				 
-				 // process events
+         		CurrentEvent = DuringLooking4Bucket(CurrentEvent);				 
+				 // If current event is BucketAligned
 				 if (CurrentEvent.EventType == BucketAligned)
 				 {
+				 	// Change NextState to SETTING_BALL_SPEED
 					 NextState = SETTING_BALL_SPEED;
+					 // Set MakeTransition to true
 					 MakeTransition = true;
+					 // Set ReturnEvent to ES_NO_EVENT
 					 ReturnEvent.EventType = ES_NO_EVENT;
 				 }
+				 // If CurrentEvent is ES_TIMEOUT and the param IRAligning_TIMER
 				 else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
 				 {
-					  // Internal Transition
-						NextState = LOOKING4BUCKET;
-					  MakeTransition = false;
-						ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+					// Internal Transition
+					NextState = LOOKING4BUCKET;
+					// Set MakeTransition to false
+					MakeTransition = false;
+					// Set ReturnEvent to ES_NO_EVENT, consume for the upper level state machine
+					ReturnEvent.EventType = ES_NO_EVENT; 
 				 }
 				 break;
 				 
-		   // CASE 2/3
-       case SETTING_BALL_SPEED : 
-				 printf("\r\n SETTING_BALL_SPEED \r\n");				 
+		// CASE 2/3, SETTING_BALL_SPEED
+       case SETTING_BALL_SPEED : 				 
          // Execute During function 
          CurrentEvent = DuringSettingBallSpeed(CurrentEvent);
-         //process any events
 			 
-				 // Wait for the flywheel to rotate for a while to reach desired speed
+		// Wait for the flywheel to rotate for a while to reach desired speed
+         // If CurrentEvent is ES_TIMEOUT and the param is IRAligning_TIMER
          if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
          {       
+         	// Change the state to WAITING4SHOT_COMPLETE
             NextState = WATING4SHOT_COMPLETE;
+            // Set MakeTransition to true
             MakeTransition = true; 
-            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+            // Set ReturnEvent to ES_NO_EVENT, consume for upper level state machine
+            ReturnEvent.EventType = ES_NO_EVENT;
          }
          break;
 				 
-				// CASE 3/3			 
-			  case WATING4SHOT_COMPLETE :  
-				  printf("\r\n WATING4SHOT_COMPLETE \r\n");				 		 
-			    // During function
-				  CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
-				  // Process events		 
-				 if (CurrentEvent.EventType == ShotComplete)
+		// CASE 3/3, WATING4SHOT_COMPLETE		 
+		 case WATING4SHOT_COMPLETE :  			 		 
+			// During function
+			CurrentEvent = DuringWaiting4ShotComplete(CurrentEvent);
+			// If CurrentEvent is ShotComplete		 
+			if (CurrentEvent.EventType == ShotComplete)
          {  
-            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+         	// Consume for the upper level state machine
+            ReturnEvent.EventType = ES_NO_EVENT; 
          }
+         // Else If CurrentEvent is ES_TIMEOUT and param is IRAligning_TIMER
          else if (CurrentEvent.EventType == ES_TIMEOUT && (CurrentEvent.EventParam == IRAligning_TIMER))
          {  
-						// Internal Transition
+			// Internal Transition
+			// Set state to WATING4SHOT_COMPLETE
             NextState = WATING4SHOT_COMPLETE;
+            // Set MakeTransition to false
             MakeTransition = false; 
-            ReturnEvent.EventType = ES_NO_EVENT; // consume for the upper level state machine
+            // consume for the upper level state machine
+            ReturnEvent.EventType = ES_NO_EVENT; 
          }							
 				 break;
 				 			 
     }
 	 
-    //   If we are making a state transition
+    // If we are making a state transition
     if (MakeTransition == true)
     {
-			printf("\r\n--------Shooting transition made from %u to %u---------\r\n",CurrentState,NextState);
-       //   Execute exit function for current state
+       // Execute exit function for current state
        CurrentEvent.EventType = ES_EXIT;
        RunShootingSM(CurrentEvent);
 
-       CurrentState = NextState; //Modify state variable
+       // Modify state variable
+       CurrentState = NextState; 
 
-       //   Execute entry function for new state
+       // Execute entry function for new state
        // this defaults to ES_ENTRY
        RunShootingSM(EntryEventKind);
      }
+     // Return ReturnEvent
      return(ReturnEvent);
 }
 /****************************************************************************
  Function
-     StartTemplateSM
+     StartShootingSM
 
  Parameters
-     None
+     ES_Event CurrentEvent
 
  Returns
      None
 
  Description
-     Does any required initialization for this state machine
+     Initializes this state machine
  Notes
 
  Author
@@ -271,30 +282,28 @@ ES_Event RunShootingSM( ES_Event CurrentEvent )
 ****************************************************************************/
 void StartShootingSM ( ES_Event CurrentEvent )
 {
-   // to implement entry directly to a substate
-   // you can modify the initialization of the CurrentState variable
-   // otherwise just start in the entry state every time the state machine
-   // is started
+   // If current event is ES_ENTRY_HISTORY
    if ( ES_ENTRY_HISTORY != CurrentEvent.EventType )
    {
+   		// change current state to LOOKING4BUCKET
         CurrentState = LOOKING4BUCKET;
    }
-   // call the entry function (if any) for the ENTRY_STATE
+   // Call the entry function (if any) for the ENTRY_STATE
    RunShootingSM(CurrentEvent);
 }
 
 /****************************************************************************
  Function
-     QueryTemplateSM
+     QueryShootingSM
 
  Parameters
      None
 
  Returns
-     TemplateState_t The current state of the Template state machine
+     ShootingState_t The current state of this state machine
 
  Description
-     returns the current state of the Template state machine
+     Returns the current state of this state machine
  Notes
 
  Author
@@ -302,33 +311,50 @@ void StartShootingSM ( ES_Event CurrentEvent )
 ****************************************************************************/
 ShootingState_t QueryShootingSM ( void )
 {
+	// Return the current state
    return(CurrentState);
 }
-/***************************************************************************
-***************************************************************************
-***************************************************************************
- ***************************************************************************/
-
 
 /***************************************************************************
-  DuringLooking4Bucket
- ***************************************************************************/
+ Function
+     DuringLooking4Bucket
+
+ Parameters
+     ES_Event Event
+
+ Returns
+     ES_Event Return Event, event to return to the rest of the state machine
+
+ Description
+     During function for the Looking4Bucket
+ Notes
+
+ Author
+     J. Edward Carryer, 2/11/05, 10:38AM
+****************************************************************************/
 
 static ES_Event DuringLooking4Bucket( ES_Event Event)  
 {
+	// Create variable for ReturnEvent
 	ES_Event ReturnEvent = Event; 
 	ES_Event Event2Post;
 	
-	// ****************** ENTRY
+	// If Event is ES_ENTRY or ES_ENTRY_HISTORY
 	if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
   {
-		// Set the frequency we are looking for
+		// Get team color
 		TeamColor = GetTeamColor();
+		// If TeamColor is Green
 		if(TeamColor == GREEN){
+			// Set GoalCode to 1950 Hz
 			GoalCode = code513us; //1950 Hz
+			// Set rotation direction to ccw
 			rotationDirection = CCW;
+		// Else If TeamColor is red
 		}else if(TeamColor == RED){
+			// Set GoalCode to 1250 Hz
 		  GoalCode = code800us; //1250 Hz
+		  // Set rotation diretion to cw
 			rotationDirection = CW;
 		}
 		
@@ -342,40 +368,57 @@ static ES_Event DuringLooking4Bucket( ES_Event Event)
 		ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
 
 	}
-	
-	// ****************** EXIT	
+	// Else If ES_EXIT	
 	else if ( Event.EventType == ES_EXIT )
   {
 		// Stop Rotating
 		stop(); 		
 	}
 	
-	// ****************** DURING
+	// Else, do the during function
 	else
 	{
+		// If Event is ES_TIMEOUT and param is IRAligning_TIMER
 		if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 		{
 			// Read the detected IR frequency
-			Front_MeasuredIRPeriodCode = Front_GetIRCode();
-      //printf("\r\n-----IR Code = %u,looking for %u------\r\n",Front_MeasuredIRPeriodCode,GoalCode);			
+			Front_MeasuredIRPeriodCode = Front_GetIRCode();		
 
 			// If Goal Freq detected, post event; Otherwise restart timer
 			if(Front_MeasuredIRPeriodCode == GoalCode){
+				// Post GoalAligned to Robot Top SM
 				Event2Post.EventType = GoalAligned;
 				Event2Post.EventParam = Front_MeasuredIRPeriodCode;
 				PostRobotTopSM(Event2Post);
+		// Else 
       }else{
+      			// Kick off IRAligning_TIMER
 				ES_Timer_InitTimer(IRAligning_TIMER,IRAligning_TIME);
 			}				
 		}
 	}	
+	// Return ReturnEvent
 	return ReturnEvent;
 }
 
-
 /***************************************************************************
-DuringSettingBallSpeed
-***************************************************************************/
+
+ Function
+     DuringSettingBallSpeed
+
+ Parameters
+     ES_Event Event
+
+ Returns
+     ES_Event Return Event, event to return to the rest of the state machine
+
+ Description
+     During function for the SettingBallSpeed
+ Notes
+
+ Author
+     J. Edward Carryer, 2/11/05, 10:38AM
+****************************************************************************/
 static ES_Event DuringSettingBallSpeed( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
@@ -389,13 +432,16 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			// Start timer to allow the flywheel to reach desired speed
 			ES_Timer_InitTimer(FlyWheel_TIMER,FlyWheel_TIME);
 		}
+	// Else If Event is ES_EXIT
     else if ( Event.EventType == ES_EXIT )
-    {  			
+    {
+    	// Do nothing		
 			
     }
-		//DURING
+		//Else do during function
 		else 
 		{
+			// If Event is ES_TIMEOUT and param is FlyWheel_TIMER
 			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == FlyWheel_TIMER))
 			{
 					//start servo motor 
@@ -403,7 +449,8 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 				
 					// start timer to turn off servo
 					ES_Timer_InitTimer(Servo_TIMER,SeparatorONTime);
-					
+				
+			// Else If Event is ES_TIMEOUT and param is Servo_TIMER	
 			} else if (Event.EventType == ES_TIMEOUT && (Event.EventParam == Servo_TIMER)) 
 			{
 				// stop servo motor
@@ -411,8 +458,7 @@ static ES_Event DuringSettingBallSpeed( ES_Event Event)
 			}
 		}
 		
-    // return either Event, if you don't want to allow the lower level machine
-    // to remap the current event, or ReturnEvent if you do want to allow it.
+    // Return ReturnEvent
     return(ReturnEvent);
 }
 
@@ -442,7 +488,6 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
     }
 		else //DURING - Scored, Missed, or No Balls?
     {  
-			// SEE ME: For 3/8/2017, don't check if scored
 			// Post Event to indicate shooting complete when timer expires
 			if (Event.EventType == ES_TIMEOUT && (Event.EventParam == IRAligning_TIMER))
 			{
@@ -480,14 +525,6 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
     }
     return(ReturnEvent);
 }
-		
-
-/****************************************************************************
-****************************************************************************
-****************************************************************************
-****************************************************************************
-****************************************************************************
-****************************************************************************/
 
 /****************************************************************************************
 	AlignWithGoal
@@ -495,20 +532,23 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
 *******************************************************************************************/
 static bool DetectAGoal()
 {
-		
+		// If firstIRBeaconAlignment is true
 		if ( firstIRBeaconAlignment == 1 )
 		{
 			// reset flag
-			firstIRBeaconAlignment = 0;  //SEE ME - I guess this needs to happen here. It was a flag that was never reset!!! - Elena 
+			firstIRBeaconAlignment = 0;  
 			
 			// If aligned with 1450Hz beacon - Ready to move on to SHOOTING
 			if ( Back_MeasuredIRPeriodCode ==  code690us)		// We compare the value measured with the ISR with the desired code
+				// Return true
 				return true;
+			// Else
 			else
+				// Return false
 				return false;
 		}
 		
-		
+		// Else If firstIRBeaconAlignment is false
 		else{
 			
 			// (A) If on the GREEN side
@@ -556,7 +596,7 @@ static bool DetectAGoal()
 					BeaconRotationDirection = CW;
 				}
 			}
-			
+			// Return False
 			return false;
 		}
 }
@@ -570,6 +610,7 @@ uint16_t GetMyScoreFromStatusResponse( uint16_t StatusResponse)
 	uint16_t score;	
 	// We want to look at SB2 or SB3 four our total # of scores
 	score = (StatusResponse & GOAL_BYTE_MASK) ; // VALUE IN BINARY	
+	// Return score
 	return score;
 }
 
@@ -579,6 +620,7 @@ uint16_t GetMyScoreFromStatusResponse( uint16_t StatusResponse)
 *******************************************************************************************/
 uint16_t GetScoreFromShootingSM()
 {
+	// Return ScoreBeforeShooting
 	return ScoreBeforeShooting;
 }
 
@@ -589,5 +631,6 @@ GetBallCount
 
 uint8_t GetBallCount()
 {
+	// Return BallCount
 	return BallCount;
 }
