@@ -17,8 +17,6 @@
  10/22/15 20:36 Elena   second pass
  
 ****************************************************************************/
-//#define TEST
-
 // the common headers for C99 types 
 #include <stdint.h>
 #include <stdbool.h>
@@ -55,20 +53,6 @@
 // an image of the last 8 bits written to the shift register
 static uint8_t LocalRegisterImage=0;
 
-/////////////////////////////////////////////
-//-------------- Test ---------------------//
-/////////////////////////////////////////////
-
-#ifdef TEST
-int main(void)
-{
-	void SR_Init(void);
-	uint8_t SR_GetCurrentRegister(void);
-	void SR_Write(uint8_t NewValue);
-	return 0;
-}
-#endif
-
 /********************** SR_Init ********************************************
  Function
    SR_Init
@@ -87,15 +71,15 @@ int main(void)
 ****************************************************************************/
 void SR_Init(void)
 {
-  // set up port D by enabling the peripheral clock and setting the direction
-  // of PD0, PD1 & PD2 to output
+  // set up port D by enabling the peripheral clock
 	HWREG(SYSCTL_RCGCGPIO) |= BIT3HI;
 	while ((HWREG(SYSCTL_PRGPIO) & SYSCTL_PRGPIO_R3) != SYSCTL_PRGPIO_R3);
 	
+	// Set the direction of PD0, PD1 & PD2 to output and digital pins
 	HWREG(GPIO_PORTD_BASE+GPIO_O_DEN) |= (DATA | SCLK | RCLK);	
 	HWREG(GPIO_PORTD_BASE+GPIO_O_DIR) |= (DATA | SCLK | RCLK);
   
-  // start with the data & sclk lines low and the RCLK line high
+  // Start with the data & sclk lines low and the RCLK line high
 	HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= SCLK_LO;
 	HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) &= BIT0LO;
 	HWREG(GPIO_PORTD_BASE+(GPIO_O_DATA + ALL_BITS)) |= RCLK_HI;	
@@ -119,6 +103,7 @@ void SR_Init(void)
 ****************************************************************************/
 uint8_t SR_GetCurrentRegister(void)
 {
+	// Return the value for LocalRegisterImage
   return LocalRegisterImage;
 }
 
@@ -140,9 +125,12 @@ uint8_t SR_GetCurrentRegister(void)
 ****************************************************************************/
 void SR_Write(uint8_t NewValue)
 {
+// Create a local variable to count bits
   uint8_t BitCounter;
-  LocalRegisterImage = NewValue; // save a local copy
+  // save a local copy of NewValue
+  LocalRegisterImage = NewValue; 
 	
+	// For 0 through 8 
 	for(BitCounter = 0; BitCounter < 8; BitCounter++)
 	{
 		// Isolate the MSB of NewValue, put it into the LSB position and output

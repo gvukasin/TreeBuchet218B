@@ -105,7 +105,7 @@ static ReloadingState_t CurrentState;
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
-    RunTemplateSM
+    RunReloadingSM
 
  Parameters
    ES_Event: the event to process
@@ -114,9 +114,7 @@ static ReloadingState_t CurrentState;
    ES_Event: an event to return
 
  Description
-   add your description here
- Notes
-   uses nested switch/case to implement the machine.
+   Uses nested switch/case to implement a statemachine to reload the robot from the supply depots
  Author
    J. Edward Carryer, 2/11/05, 10:45AM
 ****************************************************************************/
@@ -133,7 +131,7 @@ ES_Event RunReloadingSM( ES_Event CurrentEvent )
        case REQUESTING_BALL :       
          // Execute During function 
          CurrentEvent = DuringRequestingBall(CurrentEvent);
-         //process any events
+         //If event type is not ES_NO_EVENT or ES_TIMEOUT, process the event
          if (( CurrentEvent.EventType != ES_NO_EVENT ) && ( CurrentEvent.EventType == ES_TIMEOUT ) && (CurrentEvent.EventParam == SendingIRPulses_TIMER)) //If an event is active and it's the correct one
          {       
                   NextState = WAITING4BALL;//Decide what the next state will be
@@ -174,20 +172,21 @@ ES_Event RunReloadingSM( ES_Event CurrentEvent )
        // this defaults to ES_ENTRY
        RunShootingSM(EntryEventKind);
      }
+     // Return the return event
      return(ReturnEvent);
 }
 /****************************************************************************
  Function
-     StartTemplateSM
+     StartReloadingSM
 
  Parameters
-     None
+     ES_Event CurrentEvent
 
  Returns
      None
 
  Description
-     Does any required initialization for this state machine
+     Initializes this state machine
  Notes
 
  Author
@@ -204,25 +203,22 @@ void StartReloadingSM ( ES_Event CurrentEvent )
         CurrentState = REQUESTING_BALL;
    }
 	 
-	 // Initialize timer
-	 //ES_Timer_SetTimer(Waiting4Ball_TIMER, TimeWaiting4Ball);
-	 
    // call the entry function (if any) for the ENTRY_STATE
    RunReloadingSM(CurrentEvent);
 }
 
 /****************************************************************************
  Function
-     QueryTemplateSM
+     QueryReloadingSM
 
  Parameters
      None
 
  Returns
-     TemplateState_t The current state of the Template state machine
+     The current state of this state machine
 
  Description
-     returns the current state of the Template state machine
+     Returns the current state of this state machine
  Notes
 
  Author
@@ -230,41 +226,55 @@ void StartReloadingSM ( ES_Event CurrentEvent )
 ****************************************************************************/
 ReloadingState_t QueryReloadingSM ( void )
 {
+  // Return the current state of this state machine
    return(CurrentState);
 }
 
 /***************************************************************************
  private functions
  ***************************************************************************/
-//		// Start ISR for IR frequency detection (Initialization is done in Init function of top SM)
-//		EnableBackIRInterrupt();
-//		
-//		// Start Rotating
-//		start2rotate(BeaconRotationDirection,BeaconRotationDutyCycle);
 
-//		// Start the timer to periodically check the IR frequency
-//		ES_Timer_InitTimer(Looking4Beacon_TIMER,Looking4Beacon_TIME);
+/****************************************************************************
+ Function
+     DuringRequestingBall
 
-static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
+ Parameters
+     ES_Event Event to respond to 
+
+ Returns
+     ES_Event ReturnEvent to return to the rest of the state machine infrastructure
+
+ Description
+     During function for RequestingBall state, which sends IR pulses to request a ball
+ Notes
+
+ Author
+     J. Edward Carryer, 2/11/05, 10:38AM
+****************************************************************************/
+static ES_Event DuringRequestingBall( ES_Event Event) 
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or consumption
 
-    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+    // IF event is ES_ENTRY or ES_ENTRY_HISTORY
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
-        
+        // do nothing
     }
+    // Else If event is ES_EXIT
     else if ( Event.EventType == ES_EXIT )
     {
+      // turn off communication LEDS
         TurnOnOffBlueLEDs(LEDS_OFF, GetTeamColor());
     }
 		
-		// do the 'during' function for this state
+		// Else do the 'during' function for this state
 		else 
     {
-				// Send 15 pulses (10ms ON + 30ms OFF)
-				TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());			
+				// Turn off communication LEDs
+				TurnOnOffBlueLEDs(LEDS_ON, GetTeamColor());	
+        // Kick off SendingIRPulses_TIMER		
 				ES_Timer_InitTimer(SendingIRPulses_TIMER, PulseDuration);
+        // Send 15 pulses (10ms ON + 30ms OFF)
 				EmitIR(START_PWM);	
     }
     // return either Event, if you don't want to allow the lower level machine
@@ -272,11 +282,28 @@ static ES_Event DuringRequestingBall( ES_Event Event) //Align AND send IR pulses
     return(ReturnEvent);
 }
 
+/****************************************************************************
+ Function
+     DuringWaiting4Ball
+
+ Parameters
+     ES_Event Event to respond to 
+
+ Returns
+     ES_Event ReturnEvent to return to the rest of the state machine infrastructure
+
+ Description
+     During function for Waiting4Ball state, which waits 3 seconds in between requests
+ Notes
+
+ Author
+     J. Edward Carryer, 2/11/05, 10:38AM
+****************************************************************************/
 static ES_Event DuringWaiting4Ball( ES_Event Event)
 {
     ES_Event ReturnEvent = Event; // assume no re-mapping or comsumption
 
-    // process ES_ENTRY, ES_ENTRY_HISTORY & ES_EXIT events
+    // If Event is ES_ENTRY or ES_ENTRY_HISTORY 
     if ( (Event.EventType == ES_ENTRY) || (Event.EventType == ES_ENTRY_HISTORY) )
     {
       // Stop sending IR pulses
@@ -285,11 +312,13 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
 			// Start 3 second timer
 			ES_Timer_InitTimer(Waitin4Ball_TIMER, TimeWaiting4Ball);
     }
+    // Else If Event is ES_EXIT
     else if ( Event.EventType == ES_EXIT )
     {
+      // do nothing
     }
 		
-		// do the 'during' function for this state
+		// Else do the 'during' function for this state
 		else 
     {
 				// we are just waiting to get a timeout OR repeating if we want more balls
@@ -298,7 +327,4 @@ static ES_Event DuringWaiting4Ball( ES_Event Event)
     // to remap the current event, or ReturnEvent if you do want to allow it.
     return(ReturnEvent);
 }
-
-/********************************************************************************
-********************************************************************************/
 
