@@ -500,17 +500,14 @@ static ES_Event DuringWaiting4ShotComplete( ES_Event Event)
 			{
 					// Substract 1 from ball count independetly of whether we scored or not. 			
 					BallCount = BallCount - 1;
-					printf("\r\n #balls = %i\r\n", BallCount);
 					
 					if (BallCount == 0) // go to RELOADING
 					{
-						printf("\r\n No balls after shooting\r\n");
 						Event2Post.EventType = NO_BALLS;
 						PostRobotTopSM(Event2Post);
 					}
 					else // Go back to the robot top state machine and from there post SCORED or MISSED
 					{
-						printf("\r\n Finished shooting\r\n");
 						Event2Post.EventType = FINISHED_SHOT;
 						PostRobotTopSM(Event2Post);
 					}
