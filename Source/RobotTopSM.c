@@ -184,7 +184,7 @@ static void Drivin( void );
 // is just a single state container for orthogonal regions, you could get
 // away without it
 
-static bool TeamColor = GREEN;
+static bool TeamColor;
 
 static RobotState_t CurrentState;
 static uint8_t MyPriority;
@@ -341,6 +341,7 @@ ES_Event RunRobotTopSM( ES_Event CurrentEvent )
 				//process any events
 				if (CurrentEvent.EventType == START) //an event is active and it is START
 				{
+					printf("\r\n game started");
 					 NextState = DRIVING2STAGING;
 					 MakeTransition = true;
 					 ReturnEvent.EventType = ES_NO_EVENT;
@@ -510,8 +511,8 @@ void StartRobotTopSM ( ES_Event CurrentEvent )
 {
 	//Initial state
   //CurrentState = ENDING_STRATEGY;
-	CurrentState = DRIVING2STAGING;
-	//CurrentState = WAITING2START;
+	//CurrentState = DRIVING2STAGING;
+	CurrentState = WAITING2START;
 	//CurrentState = DRIVING2RELOAD;
 	
   // now we need to let the Run function init the lower level state machines
@@ -565,10 +566,10 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 		// DURING
 		else if(Event.EventType == COM_STATUS)
 		{
-			printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
+			//printf("\r\nCOM_STATUS: %x \r\n",Event.EventParam);
 							
-			// check game status bit
-			if( ((Event.EventParam & GAME_STATUS_BIT) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
+			// check game status bit (SEE ME: added ~ statement be)
+			if( ((Event.EventParam & (GAME_STATUS_BIT)) == GAME_STATUS_BIT) && (Event.EventParam != 0xff))
 			{			
 				//Start game timer
 				SetTimeoutAndStartGameTimer(GameTimeoutMS);
@@ -579,7 +580,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 			}			
 			else 
 			{		
-				printf("\r\n ask loc again 1\r\n");					
+				//printf("\r\n ask loc again 1\r\n");					
 				//ask LOC for GAME STATUS again (until it says we're ready to start)
 				ES_Event PostEvent;
 				PostEvent.EventType = ROBOT_STATUS;	
@@ -588,7 +589,7 @@ static ES_Event DuringWaiting2Start( ES_Event Event)
 		}
 		else 
 		{	
-			printf("\r\n ask loc again 2\r\n");					
+			//printf("\r\n ask loc again 2\r\n");					
 			//ask LOC for GAME STATUS again (until it says we're ready to start)
 			ES_Event PostEvent;
 			PostEvent.EventType = ROBOT_STATUS;	

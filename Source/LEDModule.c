@@ -41,7 +41,7 @@
 /*----------------------------- Module Defines ----------------------------*/
 #define ON 1
 #define OFF 0
-#define GREEN 0
+#define GREEN 1
 #define YELLOW_ON 0x40 //01000000
 #define RED_ON 0x10 //00010000
 #define GREEN_ON 0x08 //00001000

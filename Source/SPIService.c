@@ -60,7 +60,7 @@
 #define SCR 0x63
 
 // SPI period (ms)
-#define SPIPeriod 2 
+#define SPIPeriod 4
 
 // defining ALL_BITS
 #define ALL_BITS (0xff<<2)
@@ -70,8 +70,6 @@
 
 // number of bytes sent/received to/from LOC with each interaction with the LOC
 #define numReceivedBytes 4
-
-
 
 // Commands to send to the LOC
 // Status command
@@ -105,7 +103,7 @@ static uint8_t MyPriority;
 static SPIState_t CurrentState;
 
 // received data from data register
-static uint8_t ReceivedLines;
+static uint8_t ReceivedLines = 5;
 static uint8_t ReceivedLOCData[5];
 
 // ISR events
@@ -239,11 +237,13 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				// Change State to WAITING4TIMEOUT
 				CurrentState = WAITING4TIMEOUT;
 
+				// SEE ME: put this in the isr
 				// Read lines of last received data	
 				for(int i=0; i<ReceivedLines;i++){
-					ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);	
+					ReceivedLOCData[i] = HWREG(SSI0_BASE+SSI_O_DR);
+					//printf("\r\n byte %i = %x",i,ReceivedLOCData[i]);
 				}
-	
+				
 				// reset timer 
 				ES_Timer_InitTimer(SPI_TIMER,SPIPeriod);
 			}
@@ -258,7 +258,6 @@ ES_Event RunSPIService ( ES_Event CurrentEvent )
 				
 				// Change state to WAITING2TRANSMIT
 				CurrentState = WAITING2TRANSMIT;
-			
 			}
 	}
 		
@@ -307,12 +306,11 @@ void SPI_InterruptResponse( void )
 {	
 	// clear interrupt
 	HWREG(SSI0_BASE + SSI_O_IM) &= (~SSI_IM_TXIM);
-
+	
 	// post EOT event
 	ES_Event Event2Post;
 	Event2Post.EventType = EOTEvent;
 	PostSPIService(Event2Post);
-	
 }
 
 /*----------------------------------------------------------------------------
@@ -485,9 +483,10 @@ static void SendData(void){
 			if(TeamColor == RED){	
 				
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[4]);
+				//printf("\r\n data2return red %x",Data2Return);
 			} else {
 				Data2Return = ((ReceivedLOCData[2]<<NumResponseBits)|ReceivedLOCData[3]|(BIT7HI & ReceivedLOCData[4]));
-
+				//printf("\r\n data2return green %x",Data2Return);
 			}
 	}
 	
